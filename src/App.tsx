@@ -1,0 +1,95 @@
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Index from "./pages/Index";
+import Dashboard from "./pages/Dashboard";
+
+import Produits from "./pages/Produits";
+import ProductDetails from "./pages/ProductDetails";
+import ProductionPlanning from "./pages/ProductionPlanning";
+import Productions from "./pages/Productions";
+import BatchDetails from "./pages/BatchDetails";
+import Commandes from "./pages/Commandes";
+import CommandeDetails from "./pages/CommandeDetails";
+import Transactions from "./pages/Transactions";
+import TransactionsAnalytics from "./pages/TransactionsAnalytics";
+import Stock from "./pages/Stock";
+import GlobalStockView from "./pages/GlobalStockView";
+import MaterialDetails from "./pages/MaterialDetails";
+import MaterialAudit from "./pages/MaterialAudit";
+import AddMaterial from "./pages/AddMaterial";
+import EditMaterial from "./pages/EditMaterial";
+import Categories from "./pages/Categories";
+import ClientsExternes from "./pages/ClientsExternes";
+import ClientsSoustraitance from "./pages/ClientsSoustraitance";
+import ClientSoustraitanceDetails from "./pages/ClientSoustraitanceDetails";
+import SoustraitanceProducts from "./pages/SoustraitanceProducts";
+import SoustraitanceProductDetails from "./pages/SoustraitanceProductDetails";
+import SoustraitanceProductionPlanning from "./pages/SoustraitanceProductionPlanning";
+import AddSoustraitanceProduct from "./pages/AddSoustraitanceProduct";
+import Utilisateurs from "./pages/Utilisateurs";
+import ConfigurerMateriaux from "./pages/ConfigurerMateriaux";
+import ConfigurerMateriauxSoustraitance from "./pages/ConfigurerMateriauxSoustraitance";
+import Boutiques from "./pages/Boutiques";
+import LucciBYEy from "./pages/LucciBYEy";
+import Spadadibattaglia from "./pages/Spadadibattaglia";
+import LucciProductDetails from "./pages/LucciProductDetails";
+import SpadaProductDetails from "./pages/SpadaProductDetails";
+import MainLayout from "./components/layout/MainLayout";
+import NotFound from "./pages/NotFound";
+
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
+          
+          <Route path="/produits" element={<MainLayout><Produits /></MainLayout>} />
+          <Route path="/produits/:id" element={<MainLayout><ProductDetails /></MainLayout>} />
+          <Route path="/produits/:id/production-planning" element={<MainLayout><ProductionPlanning /></MainLayout>} />
+          <Route path="/produits/:productId/configurer-materiaux" element={<MainLayout><ConfigurerMateriaux /></MainLayout>} />
+          <Route path="/soustraitance-products/:productId/configurer-materiaux" element={<MainLayout><ConfigurerMateriauxSoustraitance /></MainLayout>} />
+          <Route path="/productions" element={<MainLayout><Productions /></MainLayout>} />
+          <Route path="/productions/:id" element={<MainLayout><BatchDetails /></MainLayout>} />
+          <Route path="/commandes" element={<MainLayout><Commandes /></MainLayout>} />
+          <Route path="/commandes/:id" element={<MainLayout><CommandeDetails /></MainLayout>} />
+          <Route path="/transactions" element={<MainLayout><Transactions /></MainLayout>} />
+          <Route path="/transactions-analytics" element={<MainLayout><TransactionsAnalytics /></MainLayout>} />
+          <Route path="/stock" element={<MainLayout><Stock /></MainLayout>} />
+          <Route path="/global-stock-view" element={<MainLayout><GlobalStockView /></MainLayout>} />
+          <Route path="/material-details/:id" element={<MainLayout><MaterialDetails /></MainLayout>} />
+          <Route path="/material-audit/:id" element={<MainLayout><MaterialAudit /></MainLayout>} />
+          <Route path="/add-material" element={<MainLayout><AddMaterial /></MainLayout>} />
+          <Route path="/edit-material/:id" element={<MainLayout><EditMaterial /></MainLayout>} />
+          <Route path="/categories" element={<MainLayout><Categories /></MainLayout>} />
+          <Route path="/clients-externes" element={<MainLayout><ClientsExternes /></MainLayout>} />
+          <Route path="/clients-soustraitance" element={<MainLayout><ClientsSoustraitance /></MainLayout>} />
+          <Route path="/clients-soustraitance/:id" element={<MainLayout><ClientSoustraitanceDetails /></MainLayout>} />
+          <Route path="/soustraitance-products" element={<MainLayout><SoustraitanceProducts /></MainLayout>} />
+          <Route path="/soustraitance-products/:id" element={<MainLayout><SoustraitanceProductDetails /></MainLayout>} />
+          <Route path="/soustraitance-products/:id/production-planning" element={<MainLayout><SoustraitanceProductionPlanning /></MainLayout>} />
+          <Route path="/soustraitance-products/add" element={<MainLayout><AddSoustraitanceProduct /></MainLayout>} />
+          <Route path="/soustraitance-products/edit/:id" element={<MainLayout><AddSoustraitanceProduct /></MainLayout>} />
+          <Route path="/utilisateurs" element={<MainLayout><Utilisateurs /></MainLayout>} />
+          <Route path="/boutiques" element={<MainLayout><Boutiques /></MainLayout>} />
+          <Route path="/lucci-by-ey" element={<MainLayout><LucciBYEy /></MainLayout>} />
+          <Route path="/lucci-by-ey/:id" element={<MainLayout><LucciProductDetails /></MainLayout>} />
+          <Route path="/spadadibattaglia" element={<MainLayout><Spadadibattaglia /></MainLayout>} />
+          <Route path="/spadadibattaglia/:id" element={<MainLayout><SpadaProductDetails /></MainLayout>} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
+
+export default App;
