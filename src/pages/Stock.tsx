@@ -673,6 +673,15 @@ const Stock = () => {
             </div>
             <div className="flex gap-2">
               <Button 
+                onClick={() => navigate('/categories')} 
+                variant="outline" 
+                className="rounded-xl"
+              >
+                <Tag className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Catégories</span>
+                <span className="sm:hidden">Cat</span>
+              </Button>
+              <Button 
                 onClick={() => navigate('/global-stock-view')} 
                 variant="outline" 
                 className="rounded-xl"
