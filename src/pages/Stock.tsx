@@ -391,10 +391,16 @@ const Stock = () => {
   const externCount = stockItems.filter(item => item.materiere_type === "extern").length;
   
   // Get unique categories for filter
-  const categories = Array.from(new Set(stockItems.filter(item => item.category_name).map(item => ({ 
-    id: item.category_id, 
-    name: item.category_name 
-  }))));
+  const categoriesMap = new Map();
+  stockItems.forEach(item => {
+    if (item.category_id && item.category_name) {
+      categoriesMap.set(item.category_id, {
+        id: item.category_id,
+        name: item.category_name
+      });
+    }
+  });
+  const categories = Array.from(categoriesMap.values()).sort((a, b) => a.name.localeCompare(b.name));
   
   // Clear category filter
   const clearCategoryFilter = () => {
