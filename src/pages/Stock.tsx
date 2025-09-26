@@ -700,11 +700,6 @@ const Stock = () => {
                 <span className="hidden sm:inline">Vue Globale</span>
                 <span className="sm:hidden">Vue</span>
               </Button>
-              <Button onClick={handleRefresh} disabled={refreshing} variant="outline" className="rounded-xl">
-                <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Actualiser</span>
-                <span className="sm:hidden">Maj</span>
-              </Button>
               <Button 
                 className="rounded-xl" 
                 onClick={() => navigate('/add-material')}
