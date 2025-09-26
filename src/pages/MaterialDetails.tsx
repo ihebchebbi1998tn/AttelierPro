@@ -26,6 +26,7 @@ interface MaterialDetails {
   reference?: string;
   title: string;
   color?: string;
+  laize?: string;
   price?: number;
   quantity_type: string;
   quantity_total: number;
@@ -124,7 +125,8 @@ const MaterialDetails = () => {
           material_id: parseInt(materialData.material_id),
           reference: materialData.reference,
           title: materialData.title,
-          color: materialData.color,
+          color: materialData.couleur,
+          laize: materialData.laize,
           price: parseFloat(materialData.price) || 0,
           quantity_type: materialData.quantity_type,
           quantity_total: parseFloat(materialData.quantity_total) || 0,
@@ -363,6 +365,10 @@ const MaterialDetails = () => {
                     <p className="font-medium text-muted-foreground">Non spécifiée</p>
                   )}
                 </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Laize</p>
+                <p className="font-medium">{material.laize || "Non spécifiée"}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Prix unitaire</p>

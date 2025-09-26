@@ -43,6 +43,7 @@ import ImageCapture from "@/components/ImageCapture";
       reference: z.string().optional(),
       title: z.string().min(1, "Le titre est obligatoire"),
       color: z.string().optional(),
+      laize: z.string().optional(),
       price: z.number().min(0, "Le prix doit être positif").optional(),
       quantity_type: z.number().min(1, "Le type de quantité est obligatoire"),
       quantity_total: z.number().min(0, "La quantité doit être positive"),
@@ -116,6 +117,7 @@ const AddMaterial = () => {
       reference: "",
       title: "",
       color: "",
+      laize: "",
       price: undefined,
       quantity_type: undefined,
       quantity_total: undefined,
@@ -328,6 +330,7 @@ const AddMaterial = () => {
         formData.append('reference', data.reference || '');
         formData.append('title', data.title);
         formData.append('color', data.color || '');
+        formData.append('laize', data.laize || '');
         formData.append('price', data.price?.toString() || '0');
         formData.append('quantity_type_id', data.quantity_type?.toString() || '');
         formData.append('quantity_total', (data.quantity_total || 0).toString());
@@ -373,6 +376,7 @@ const AddMaterial = () => {
           reference: data.reference,
           title: data.title,
           color: data.color,
+          laize: data.laize,
           price: data.price,
           quantity_type_id: data.quantity_type,
           quantity_total: data.quantity_total || 0,
@@ -535,6 +539,20 @@ const AddMaterial = () => {
                         <FormLabel>Couleur</FormLabel>
                         <FormControl>
                           <Input placeholder="Ex: Bleu Marine" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="laize"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Laize</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: 1.50m" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

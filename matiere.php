@@ -435,8 +435,8 @@ switch($method) {
                     // New version with materiere_type columns
                     $stmt = $db->prepare("
                         INSERT INTO production_matieres 
-                        (reference, nom, description, category_id, quantity_type_id, quantite_stock, quantite_min, quantite_max, prix_unitaire, location, couleur, taille, laize, fournisseur, id_fournisseur, image_url, other_attributes, materiere_type, extern_customer_id, active, created_at, updated_at) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())
+                        (reference, nom, description, category_id, quantity_type_id, quantite_stock, quantite_min, quantite_max, prix_unitaire, location, couleur, taille, fournisseur, id_fournisseur, image_url, other_attributes, materiere_type, extern_customer_id, active, created_at, updated_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())
                     ");
                     
                     $result = $stmt->execute([
@@ -452,7 +452,6 @@ switch($method) {
                         $input['location'] ?? null,
                         $input['color'] ?? null,
                         $input['size'] ?? null,
-                        $input['laize'] ?? null,
                         $input['supplier'] ?? null,
                         !empty($input['id_fournisseur']) ? intval($input['id_fournisseur']) : null,
                         $input['image_url'] ?? null,
@@ -464,8 +463,8 @@ switch($method) {
                     // Legacy version without materiere_type columns  
                     $stmt = $db->prepare("
                         INSERT INTO production_matieres 
-                        (reference, nom, description, category_id, quantity_type_id, quantite_stock, quantite_min, quantite_max, prix_unitaire, location, couleur, taille, laize, fournisseur, id_fournisseur, image_url, other_attributes, active, created_at, updated_at) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())
+                        (reference, nom, description, category_id, quantity_type_id, quantite_stock, quantite_min, quantite_max, prix_unitaire, location, couleur, taille, fournisseur, id_fournisseur, image_url, other_attributes, active, created_at, updated_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())
                     ");
                     
                     $result = $stmt->execute([
@@ -481,7 +480,6 @@ switch($method) {
                         $input['location'] ?? null,
                         $input['color'] ?? null,
                         $input['size'] ?? null,
-                        $input['laize'] ?? null,
                         $input['supplier'] ?? null,
                         !empty($input['id_fournisseur']) ? intval($input['id_fournisseur']) : null,
                         $input['image_url'] ?? null,
@@ -637,7 +635,7 @@ switch($method) {
                 // New version with materiere_type columns
                 $stmt = $db->prepare("
                     UPDATE production_matieres 
-                    SET reference=?, nom=?, description=?, category_id=?, quantity_type_id=?, quantite_stock=?, quantite_min=?, quantite_max=?, prix_unitaire=?, location=?, couleur=?, taille=?, laize=?, fournisseur=?, id_fournisseur=?, other_attributes=?, materiere_type=?, extern_customer_id=?, updated_at=NOW() 
+                    SET reference=?, nom=?, description=?, category_id=?, quantity_type_id=?, quantite_stock=?, quantite_min=?, quantite_max=?, prix_unitaire=?, location=?, couleur=?, taille=?, fournisseur=?, id_fournisseur=?, other_attributes=?, materiere_type=?, extern_customer_id=?, updated_at=NOW() 
                     WHERE id=?
                 ");
                 
@@ -654,7 +652,6 @@ switch($method) {
                     $input['location'] ?? null,
                     $input['color'] ?? null,
                     $input['size'] ?? null,
-                    $input['laize'] ?? null,
                     $input['supplier'] ?? null,
                     !empty($input['id_fournisseur']) ? intval($input['id_fournisseur']) : null,
                     $other_attributes,
@@ -666,7 +663,7 @@ switch($method) {
                 // Legacy version without materiere_type columns
                 $stmt = $db->prepare("
                     UPDATE production_matieres 
-                    SET reference=?, nom=?, description=?, category_id=?, quantity_type_id=?, quantite_stock=?, quantite_min=?, quantite_max=?, prix_unitaire=?, location=?, couleur=?, taille=?, laize=?, fournisseur=?, id_fournisseur=?, other_attributes=?, updated_at=NOW() 
+                    SET reference=?, nom=?, description=?, category_id=?, quantity_type_id=?, quantite_stock=?, quantite_min=?, quantite_max=?, prix_unitaire=?, location=?, couleur=?, taille=?, fournisseur=?, id_fournisseur=?, other_attributes=?, updated_at=NOW() 
                     WHERE id=?
                 ");
                 
@@ -683,7 +680,6 @@ switch($method) {
                     $input['location'] ?? null,
                     $input['color'] ?? null,
                     $input['size'] ?? null,
-                    $input['laize'] ?? null,
                     $input['supplier'] ?? null,
                     !empty($input['id_fournisseur']) ? intval($input['id_fournisseur']) : null,
                     $other_attributes,
