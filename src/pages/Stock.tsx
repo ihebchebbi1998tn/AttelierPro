@@ -660,8 +660,8 @@ const Stock = () => {
                 </Button>
                 <div>
                   <h1 className="page-title">
-                    {selectedLocation === 'lucci' ? 'Matières - Lucci By Ey' :
-                     selectedLocation === 'spada' ? 'Matières - Spada di Battaglia' :
+                    {selectedLocation === 'lucci' ? 'Lucci By Ey' :
+                     selectedLocation === 'spada' ? 'Spada di battaglia' :
                      selectedLocation === 'extern' ? 'Matières Externes' :
                      'Toutes les Matières'}
                   </h1>
