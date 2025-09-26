@@ -226,6 +226,14 @@ const Stock = () => {
         // If same status, sort by actual quantity (lowest first for urgency)
         return a.quantity_total - b.quantity_total;
       } else if (sortBy === "name") {
+        // Check if both titles are numbers for numeric sorting
+        const aIsNumber = /^\d+$/.test(a.title.trim());
+        const bIsNumber = /^\d+$/.test(b.title.trim());
+        
+        if (aIsNumber && bIsNumber) {
+          return parseInt(a.title) - parseInt(b.title);
+        }
+        
         return a.title.localeCompare(b.title);
       } else if (sortBy === "status") {
         const statusOrder = { "critical": 0, "warning": 1, "good": 2 };
@@ -699,6 +707,11 @@ const Stock = () => {
                 <BarChart3 className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Vue Globale</span>
                 <span className="sm:hidden">Vue</span>
+              </Button>
+              <Button onClick={handleRefresh} disabled={refreshing} variant="outline" className="rounded-xl">
+                <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Actualiser</span>
+                <span className="sm:hidden">Maj</span>
               </Button>
               <Button 
                 className="rounded-xl" 

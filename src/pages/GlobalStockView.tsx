@@ -57,10 +57,17 @@ const GlobalStockView = () => {
       );
     }
     
-    // Sort by status priority (critical first, then warning, then good)
+    // Sort by name first (numeric sorting for numbers), then by status priority
     filtered.sort((a, b) => {
-      const statusOrder = { "critical": 0, "warning": 1, "good": 2 };
-      return statusOrder[a.status] - statusOrder[b.status];
+      // Check if both titles are numbers for numeric sorting
+      const aIsNumber = /^\d+$/.test(a.title.trim());
+      const bIsNumber = /^\d+$/.test(b.title.trim());
+      
+      if (aIsNumber && bIsNumber) {
+        return parseInt(a.title) - parseInt(b.title);
+      }
+      
+      return a.title.localeCompare(b.title);
     });
     
     setFilteredMaterials(filtered);
