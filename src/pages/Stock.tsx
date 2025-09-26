@@ -32,7 +32,7 @@ interface MaterialItem {
   reference?: string;
   title: string;
   color?: string;
-  price?: number;
+  laize?: string;
   quantity_type: string;
   quantity_total: number;
   lowest_quantity_needed: number;
@@ -57,7 +57,7 @@ const Stock = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [materiereTypeFilter, setMateriereTypeFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("quantity");
+  const [sortBy, setSortBy] = useState("name");
   const [refreshing, setRefreshing] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedMaterialId, setSelectedMaterialId] = useState<number | null>(null);
@@ -126,7 +126,7 @@ const Stock = () => {
           reference: item.reference,
           title: item.title,
           color: item.color,
-          price: parseFloat(item.price) || 0,
+          laize: item.laize,
           quantity_type: item.quantity_type,
           quantity_total: parseFloat(item.quantity_total) || 0,
           lowest_quantity_needed: parseFloat(item.lowest_quantity_needed) || 0,
@@ -438,9 +438,9 @@ const Stock = () => {
                 <p className="font-medium">{item.quantity_total} {item.quantity_type}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">Prix</p>
+                <p className="text-muted-foreground">Laize</p>
                 <p className="font-medium">
-                  {item.price ? `${item.price.toFixed(2)} TND` : '-'}
+                  {item.laize || '-'}
                 </p>
               </div>
               <div>
@@ -900,7 +900,7 @@ const Stock = () => {
                       <TableHead>Matière</TableHead>
                       <TableHead className="text-center">Stock Actuel</TableHead>
                       <TableHead className="text-center">Statut</TableHead>
-                      <TableHead className="text-center">Prix</TableHead>
+                      <TableHead className="text-center">Laize</TableHead>
                       <TableHead className="text-center">Lieu</TableHead>
                       <TableHead className="text-center rounded-tr-xl">Actions</TableHead>
                     </TableRow>
@@ -972,7 +972,7 @@ const Stock = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center font-medium">
-                          {item.price ? `${item.price.toFixed(2)} TND` : '-'}
+                          {item.laize || '-'}
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge variant="outline" className="text-xs">
