@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import materialPlaceholder from "@/assets/material-placeholder.png";
 import { 
@@ -23,7 +23,10 @@ import {
   Filter,
   Trash2,
   Tag,
-  BarChart3
+  BarChart3,
+  Store,
+  Building2,
+  Globe
 } from "lucide-react";
 
 
@@ -38,7 +41,7 @@ interface MaterialItem {
   lowest_quantity_needed: number;
   medium_quantity_needed: number;
   good_quantity_needed: number;
-  location?: "Usine" | "Lucci By Ey";
+  location?: "spadadibattaglia" | "lucci by ey" | "extern";
   category_id?: number;
   category_name?: string;
   status: "critical" | "warning" | "good";
@@ -56,6 +59,8 @@ const Stock = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [materiereTypeFilter, setMateriereTypeFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState("all");
   const [sortBy, setSortBy] = useState("quantity");
   const [refreshing, setRefreshing] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -66,8 +71,17 @@ const Stock = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Initialize category filter from URL params
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setCategoryFilter(categoryParam);
+    }
+  }, [searchParams]);
   
   // Fetch materials from API
   useEffect(() => {
@@ -176,6 +190,14 @@ const Stock = () => {
       filtered = filtered.filter(item => item.materiere_type === materiereTypeFilter);
     }
 
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter(item => item.category_id?.toString() === categoryFilter);
+    }
+
+    if (locationFilter !== "all") {
+      filtered = filtered.filter(item => item.location === locationFilter);
+    }
+
     // Sorting
     filtered.sort((a, b) => {
       if (sortBy === "quantity") {
@@ -199,7 +221,7 @@ const Stock = () => {
     });
 
     setFilteredItems(filtered);
-  }, [stockItems, searchTerm, statusFilter, materiereTypeFilter, sortBy]);
+  }, [stockItems, searchTerm, statusFilter, materiereTypeFilter, categoryFilter, locationFilter, sortBy]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -345,6 +367,27 @@ const Stock = () => {
   const warningCount = stockItems.filter(item => item.status === "warning").length;
   const goodCount = stockItems.filter(item => item.status === "good").length;
   const externCount = stockItems.filter(item => item.materiere_type === "extern").length;
+  
+  // Location counts
+  const lucciCount = stockItems.filter(item => item.location === "lucci by ey").length;
+  const spadaCount = stockItems.filter(item => item.location === "spadadibattaglia").length;
+  const externLocationCount = stockItems.filter(item => item.location === "extern").length;
+  
+  // Get unique categories for filter
+  const categories = Array.from(new Set(stockItems.filter(item => item.category_name).map(item => ({ 
+    id: item.category_id, 
+    name: item.category_name 
+  }))));
+  
+  // Clear category filter
+  const clearCategoryFilter = () => {
+    setCategoryFilter("all");
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      newParams.delete('category');
+      return newParams;
+    });
+  };
 
   // Mobile Card Component
   const MobileCard = ({ item }: { item: MaterialItem }) => (
@@ -598,6 +641,69 @@ const Stock = () => {
         </Card>
       </div>
 
+      {/* Location Filter Cards */}
+      <div className="grid-stats">
+        <Card 
+          className={`border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 ${
+            locationFilter === "lucci by ey" ? "ring-2 ring-blue-300" : ""
+          }`}
+          onClick={() => setLocationFilter(locationFilter === "lucci by ey" ? "all" : "lucci by ey")}
+        >
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-white/70">Lucci By Ey</p>
+                <p className="text-2xl font-bold text-white">{lucciCount}</p>
+                <p className="text-xs text-white/70">Matières en boutique</p>
+              </div>
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-white/10 flex items-center justify-center">
+                <Store className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className={`border-0 shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 ${
+            locationFilter === "spadadibattaglia" ? "ring-2 ring-purple-300" : ""
+          }`}
+          onClick={() => setLocationFilter(locationFilter === "spadadibattaglia" ? "all" : "spadadibattaglia")}
+        >
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-white/70">Spada di Battaglia</p>
+                <p className="text-2xl font-bold text-white">{spadaCount}</p>
+                <p className="text-xs text-white/70">Matières en boutique</p>
+              </div>
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-white/10 flex items-center justify-center">
+                <Building2 className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className={`border-0 shadow-lg bg-gradient-to-br from-green-500 to-green-600 hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 ${
+            locationFilter === "extern" ? "ring-2 ring-green-300" : ""
+          }`}
+          onClick={() => setLocationFilter(locationFilter === "extern" ? "all" : "extern")}
+        >
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-white/70">Extern</p>
+                <p className="text-2xl font-bold text-white">{externLocationCount}</p>
+                <p className="text-xs text-white/70">Matières externes</p>
+              </div>
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-white/10 flex items-center justify-center">
+                <Globe className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Filters */}
       <div className="space-y-4">
         <div className="relative">
@@ -622,15 +728,39 @@ const Stock = () => {
             </SelectContent>
           </Select>
           
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-full sm:w-auto sm:min-w-[200px] rounded-xl">
+              <SelectValue placeholder="Filtrer par catégorie" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes les catégories</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id?.toString() || ""}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
           <Button 
             variant="outline" 
             className="w-full sm:w-auto rounded-xl text-sm"
             onClick={() => navigate('/categories')}
           >
             <Tag className="mr-2 h-3 w-3" />
-            <span className="hidden sm:inline text-xs">Catégories</span>
+            <span className="hidden sm:inline text-xs">Gérer catégories</span>
             <span className="sm:hidden text-xs">Cat.</span>
           </Button>
+          
+          {categoryFilter !== "all" && (
+            <Button 
+              variant="outline" 
+              className="w-full sm:w-auto rounded-xl text-sm"
+              onClick={clearCategoryFilter}
+            >
+              Effacer filtre
+            </Button>
+          )}
         </div>
       </div>
 
@@ -785,11 +915,11 @@ const Stock = () => {
         <div className="empty-state">
           <Package2 className="empty-state-icon" />
           <h3 className="empty-state-title">Aucune matière trouvée</h3>
-          <p className="empty-state-description">
-            {searchTerm || statusFilter !== "all" 
-              ? "Aucune matière ne correspond à vos critères de recherche."
-              : "Aucune matière n'est enregistrée dans le stock."
-            }
+           <p className="empty-state-description">
+             {searchTerm || statusFilter !== "all" || categoryFilter !== "all" || materiereTypeFilter !== "all" || locationFilter !== "all"
+               ? "Aucune matière ne correspond à vos critères de recherche."
+               : "Aucune matière n'est enregistrée dans le stock."
+             }
           </p>
         </div>
       )}

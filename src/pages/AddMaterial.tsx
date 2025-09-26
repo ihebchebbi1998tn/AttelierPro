@@ -49,7 +49,7 @@ import ImageCapture from "@/components/ImageCapture";
       lowest_quantity_needed: z.number().min(0, "Le seuil critique doit être positif"),
       medium_quantity_needed: z.number().min(0, "Le seuil moyen doit être positif"),
       good_quantity_needed: z.number().min(0, "Le seuil optimal doit être positif"),
-      location: z.enum(["Usine", "Lucci By Ey"]).default("Usine"),
+      location: z.enum(["spadadibattaglia", "lucci by ey", "extern"]).default("lucci by ey"),
       category_id: z.number().optional(),
       id_fournisseur: z.number().optional(),
       materiere_type: z.enum(["intern", "extern"]).default("intern"),
@@ -122,7 +122,7 @@ const AddMaterial = () => {
       lowest_quantity_needed: undefined,
       medium_quantity_needed: undefined,
       good_quantity_needed: undefined,
-      location: "Usine",
+      location: "lucci by ey",
       category_id: undefined,
       id_fournisseur: undefined,
       materiere_type: "intern",
@@ -142,14 +142,25 @@ const AddMaterial = () => {
 
   const fetchCategories = async () => {
     try {
-      // Mock data - replace with actual API call
-      const mockCategories = [
-        { category_id: 1, name: "Tissus" },
-        { category_id: 2, name: "Fils" },
-        { category_id: 3, name: "Accessoires" },
-        { category_id: 4, name: "Doublures" },
-      ];
-      setCategories(mockCategories);
+      // Fetch categories from API
+      const response = await fetch('https://luccibyey.com.tn/production/api/matieres_category.php?active_only=true');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && Array.isArray(data.data)) {
+        const categoryData = data.data.map((cat: any) => ({
+          category_id: parseInt(cat.id),
+          name: cat.nom
+        }));
+        setCategories(categoryData);
+      } else {
+        console.warn('No categories found or API error');
+        setCategories([]);
+      }
     } catch (error) {
       console.error("Error fetching categories:", error);
     }
@@ -536,16 +547,17 @@ const AddMaterial = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Emplacement</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value || "Usine"}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Choisir l'emplacement" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="bg-background border z-50">
-                            <SelectItem value="Usine">Usine</SelectItem>
-                            <SelectItem value="Lucci By Ey">Lucci By Ey</SelectItem>
-                          </SelectContent>
+                         <Select onValueChange={field.onChange} defaultValue={field.value || "lucci by ey"}>
+                           <FormControl>
+                             <SelectTrigger>
+                               <SelectValue placeholder="Choisir l'emplacement" />
+                             </SelectTrigger>
+                           </FormControl>
+                           <SelectContent className="bg-background border z-50">
+                             <SelectItem value="spadadibattaglia">Spada di Battaglia</SelectItem>
+                             <SelectItem value="lucci by ey">Lucci By Ey</SelectItem>
+                             <SelectItem value="extern">Extern</SelectItem>
+                           </SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>

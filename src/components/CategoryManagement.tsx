@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import {
   Form,
   FormControl,
@@ -25,7 +26,8 @@ import {
   Edit,
   Trash2,
   Tag,
-  Save
+  Save,
+  Eye
 } from "lucide-react";
 
 const categorySchema = z.object({
@@ -48,6 +50,7 @@ interface Category {
 
 const CategoryManagement = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -69,56 +72,32 @@ const CategoryManagement = () => {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      // Mock data - replace with actual API call
-      const mockCategories: Category[] = [
-        {
-          category_id: 1,
-          name: "Tissus",
-          description: "Matières textiles principales",
-          is_active: true,
-          material_count: 8,
-          created_date: "2024-01-10",
-          modified_date: "2024-01-10"
-        },
-        {
-          category_id: 2,
-          name: "Fils",
-          description: "Fils de couture et broderie",
-          is_active: true,
-          material_count: 5,
-          created_date: "2024-01-10",
-          modified_date: "2024-01-10"
-        },
-        {
-          category_id: 3,
-          name: "Accessoires",
-          description: "Boutons, fermetures, etc.",
-          is_active: true,
-          material_count: 12,
-          created_date: "2024-01-10",
-          modified_date: "2024-01-10"
-        },
-        {
-          category_id: 4,
-          name: "Doublures",
-          description: "Matières de doublure",
-          is_active: true,
-          material_count: 3,
-          created_date: "2024-01-10",
-          modified_date: "2024-01-10"
-        },
-        {
-          category_id: 5,
-          name: "Matières spéciales",
-          description: "Matières techniques et spécialisées",
-          is_active: false,
-          material_count: 0,
-          created_date: "2024-01-10",
-          modified_date: "2024-01-15"
-        }
-      ];
-      setCategories(mockCategories);
+      const response = await fetch('https://luccibyey.com.tn/production/api/matieres_category.php?with_material_count=true');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && Array.isArray(data.data)) {
+        const categoryData = data.data.map((cat: any) => ({
+          category_id: parseInt(cat.id),
+          name: cat.nom,
+          description: cat.description || '',
+          is_active: cat.active === 1,
+          material_count: parseInt(cat.material_count) || 0,
+          created_date: cat.created_at || '',
+          modified_date: cat.updated_at || ''
+        }));
+        setCategories(categoryData);
+      } else {
+        console.warn('No categories found or API error');
+        setCategories([]);
+      }
     } catch (error) {
+      console.error('Error fetching categories:', error);
+      setCategories([]);
       toast({
         title: "Erreur",
         description: "Impossible de charger les catégories",
@@ -131,32 +110,42 @@ const CategoryManagement = () => {
 
   const onSubmit = async (data: CategoryFormData) => {
     try {
-      console.log("Category data:", data);
-      console.log("Editing category:", editingCategory);
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      if (editingCategory) {
+      const method = editingCategory ? 'PUT' : 'POST';
+      const payload = {
+        ...(editingCategory && { id: editingCategory.category_id }),
+        nom: data.name,
+        description: data.description || '',
+        active: data.is_active ? 1 : 0
+      };
+
+      const response = await fetch('https://luccibyey.com.tn/production/api/matieres_category.php', {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
         toast({
-          title: "Catégorie modifiée",
-          description: `La catégorie "${data.name}" a été mise à jour.`,
+          title: editingCategory ? "Catégorie modifiée" : "Catégorie créée",
+          description: `La catégorie "${data.name}" a été ${editingCategory ? 'mise à jour' : 'ajoutée'}.`,
         });
+        
+        setIsAddDialogOpen(false);
+        setEditingCategory(null);
+        form.reset();
+        fetchCategories();
       } else {
-        toast({
-          title: "Catégorie créée",
-          description: `La catégorie "${data.name}" a été ajoutée.`,
-        });
+        throw new Error(result.message || 'Erreur lors de la sauvegarde');
       }
-      
-      setIsAddDialogOpen(false);
-      setEditingCategory(null);
-      form.reset();
-      fetchCategories();
     } catch (error) {
+      console.error('Error saving category:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de sauvegarder la catégorie",
+        description: error instanceof Error ? error.message : "Impossible de sauvegarder la catégorie",
         variant: "destructive",
       });
     }
@@ -178,24 +167,42 @@ const CategoryManagement = () => {
     }
 
     try {
-      console.log("Deleting category:", categoryId);
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      toast({
-        title: "Catégorie supprimée",
-        description: `La catégorie "${categoryName}" a été supprimée.`,
+      const response = await fetch('https://luccibyey.com.tn/production/api/matieres_category.php', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: categoryId }),
       });
-      
-      fetchCategories();
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast({
+          title: "Catégorie supprimée",
+          description: `La catégorie "${categoryName}" a été supprimée.`,
+        });
+        
+        fetchCategories();
+      } else {
+        throw new Error(result.message || 'Erreur lors de la suppression');
+      }
     } catch (error) {
+      console.error('Error deleting category:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de supprimer la catégorie",
+        description: error instanceof Error ? error.message : "Impossible de supprimer la catégorie",
         variant: "destructive",
       });
     }
+  };
+
+  const handleViewMaterials = (categoryId: number, categoryName: string) => {
+    navigate(`/stock?category=${categoryId}`);
+    toast({
+      title: "Filtre appliqué",
+      description: `Affichage des matières de la catégorie "${categoryName}"`,
+    });
   };
 
   const closeDialog = () => {
@@ -320,7 +327,12 @@ const CategoryManagement = () => {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div>
-                          <p className="font-medium">{category.name}</p>
+                          <p 
+                            className="font-medium cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => handleViewMaterials(category.category_id, category.name)}
+                          >
+                            {category.name}
+                          </p>
                           <p className="text-xs text-muted-foreground">
                             ID: {category.category_id}
                           </p>
@@ -333,7 +345,11 @@ const CategoryManagement = () => {
                       </p>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Badge variant="outline">
+                      <Badge 
+                        variant="outline" 
+                        className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                        onClick={() => handleViewMaterials(category.category_id, category.name)}
+                      >
                         {category.material_count || 0} matériaux
                       </Badge>
                     </TableCell>
@@ -348,7 +364,17 @@ const CategoryManagement = () => {
                           variant="outline"
                           size="sm"
                           className="h-8 w-8 p-0"
+                          onClick={() => handleViewMaterials(category.category_id, category.name)}
+                          title="Voir les matières"
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 p-0"
                           onClick={() => handleEdit(category)}
+                          title="Modifier"
                         >
                           <Edit className="h-3 w-3" />
                         </Button>
@@ -358,6 +384,7 @@ const CategoryManagement = () => {
                           className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                           onClick={() => handleDelete(category.category_id, category.name)}
                           disabled={category.material_count > 0}
+                          title="Supprimer"
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>

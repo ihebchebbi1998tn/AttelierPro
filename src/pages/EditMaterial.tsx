@@ -144,30 +144,33 @@ const EditMaterial = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('https://luccibyey.com.tn/production/api/matieres_category.php');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && Array.isArray(data.data)) {
-          const formattedCategories = data.data.map((cat: any) => ({
-            category_id: parseInt(cat.id || cat.category_id),
-            name: cat.nom || cat.name
-          }));
-          setCategories(formattedCategories);
-          return;
-        }
+      const response = await fetch('https://luccibyey.com.tn/production/api/matieres_category.php?active_only=true');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && Array.isArray(data.data)) {
+        const categoryData = data.data.map((cat: any) => ({
+          category_id: parseInt(cat.id),
+          name: cat.nom
+        }));
+        setCategories(categoryData);
+      } else {
+        console.warn('No categories found or API error');
+        setCategories([]);
       }
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      console.error('Error fetching categories:', error);
+      setCategories([]);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les catégories",
+        variant: "destructive",
+      });
     }
-    
-    // Fallback categories
-    const fallbackCategories = [
-      { category_id: 1, name: "Tissus" },
-      { category_id: 2, name: "Fils" },
-      { category_id: 3, name: "Accessoires" },
-      { category_id: 4, name: "Doublures" },
-    ];
-    setCategories(fallbackCategories);
   };
 
   const fetchQuantityTypes = async () => {
