@@ -174,10 +174,20 @@ const Stock = () => {
 
   // Filtering and sorting
   useEffect(() => {
-    let filtered = stockItems.filter(item =>
-      (item.title && item.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.reference && item.reference.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    let filtered = stockItems.filter(item => {
+      const searchLower = searchTerm.toLowerCase();
+      
+      // If search term ends with space, treat it as exact name search
+      if (searchTerm.endsWith(' ')) {
+        const exactSearch = searchLower.trim();
+        return (item.title && item.title.toLowerCase().startsWith(exactSearch)) ||
+               (item.reference && item.reference.toLowerCase().startsWith(exactSearch));
+      }
+      
+      // Normal search - contains
+      return (item.title && item.title.toLowerCase().includes(searchLower)) ||
+             (item.reference && item.reference.toLowerCase().includes(searchLower));
+    });
 
     // Location filtering based on selected location
     if (selectedLocation && selectedLocation !== 'all') {
