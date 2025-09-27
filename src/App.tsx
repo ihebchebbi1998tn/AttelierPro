@@ -39,6 +39,13 @@ import LucciProductDetails from "./pages/LucciProductDetails";
 import SpadaProductDetails from "./pages/SpadaProductDetails";
 import MainLayout from "./components/layout/MainLayout";
 import NotFound from "./pages/NotFound";
+import GestionRH from "./pages/GestionRH";
+import { ProtectedRHRoute } from "./components/ProtectedRHRoute";
+import Employes from "./pages/rh/Employes";
+import Planning from "./pages/rh/Planning";
+import Conges from "./pages/rh/Conges";
+import Salaires from "./pages/rh/Salaires";
+import Statistiques from "./pages/rh/Statistiques";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +91,15 @@ const App = () => (
           <Route path="/lucci-by-ey/:id" element={<MainLayout><LucciProductDetails /></MainLayout>} />
           <Route path="/spadadibattaglia" element={<MainLayout><Spadadibattaglia /></MainLayout>} />
           <Route path="/spadadibattaglia/:id" element={<MainLayout><SpadaProductDetails /></MainLayout>} />
+          
+          {/* Routes RH - Protected */}
+          <Route path="/rh" element={<MainLayout><ProtectedRHRoute><GestionRH /></ProtectedRHRoute></MainLayout>} />
+          <Route path="/rh/employes" element={<MainLayout><ProtectedRHRoute><Employes /></ProtectedRHRoute></MainLayout>} />
+          <Route path="/rh/planning" element={<MainLayout><ProtectedRHRoute><Planning /></ProtectedRHRoute></MainLayout>} />
+          <Route path="/rh/conges" element={<MainLayout><ProtectedRHRoute><Conges /></ProtectedRHRoute></MainLayout>} />
+          <Route path="/rh/salaires" element={<MainLayout><ProtectedRHRoute><Salaires /></ProtectedRHRoute></MainLayout>} />
+          <Route path="/rh/statistiques" element={<MainLayout><ProtectedRHRoute><Statistiques /></ProtectedRHRoute></MainLayout>} />
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

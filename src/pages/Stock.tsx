@@ -845,7 +845,7 @@ const Stock = () => {
                         <SelectValue placeholder="Catégorie" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Toutes</SelectItem>
+                        <SelectItem value="all">Toutes Categories</SelectItem>
                         {categories.map((category) => (
                           <SelectItem key={category.id} value={category.id?.toString() || ''}>
                             {category.name}

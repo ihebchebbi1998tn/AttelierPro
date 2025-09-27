@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
-import { fetchSurMesureOrders } from '../utils/surMesureService';
+import { fetchSurMesureOrders, markSurMesureOrderAsSeen } from '../utils/surMesureService';
 import { useNavigate } from 'react-router-dom';
 
 export interface SurMesureOrder {
@@ -36,6 +36,7 @@ export interface SurMesureOrder {
   commentaires: Array<{ id: number; commentaire: string; created_by: string; date_creation: string }>;
   created_at: string;
   updated_at: string;
+  is_seen: string;
 }
 
 const statusColors = {
@@ -83,8 +84,35 @@ const Commandes = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleViewOrder = (order: SurMesureOrder) => {
+  const handleViewOrder = async (order: SurMesureOrder) => {
+    try {
+      // Mark order as seen
+      await markSurMesureOrderAsSeen(order.id);
+      // Refetch to update the UI
+      refetch();
+    } catch (error) {
+      console.error('Error marking order as seen:', error);
+    }
     navigate(`/commandes/${order.id}`);
+  };
+
+  // Helper function to determine row highlighting
+  const getRowHighlight = (order: SurMesureOrder) => {
+    const now = new Date();
+    const createdAt = new Date(order.created_at);
+    const daysDiff = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Red if created more than 1 day ago
+    if (daysDiff > 1) {
+      return 'bg-red-50 hover:bg-red-100 border-l-4 border-red-400';
+    }
+    
+    // Yellow if not seen
+    if (order.is_seen === '0') {
+      return 'bg-yellow-50 hover:bg-yellow-100 border-l-4 border-yellow-400';
+    }
+    
+    return 'hover:bg-muted/50';
   };
 
   return (
@@ -228,7 +256,7 @@ const Commandes = () => {
                   {filteredOrders.map((order: SurMesureOrder) => (
                     <tr 
                       key={order.id} 
-                      className="border-b hover:bg-muted/50 cursor-pointer transition-colors"
+                      className={`border-b cursor-pointer transition-colors ${getRowHighlight(order)}`}
                       onClick={() => handleViewOrder(order)}
                     >
                       <td className="p-2">

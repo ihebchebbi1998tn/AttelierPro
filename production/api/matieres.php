@@ -90,6 +90,7 @@ switch($method) {
             // Get specific material with enhanced data including customer info
             $stmt = $db->prepare("
                 SELECT m.*, c.nom as category_name, f.name as fournisseur_name, sc.name as customer_name,
+                        qt.nom as quantity_type_name, qt.unite as quantity_type_unit,
                         (SELECT COUNT(*) FROM production_transactions_stock WHERE material_id = m.id AND type_mouvement = 'in') as total_entries,
                        (SELECT COUNT(*) FROM production_transactions_stock WHERE material_id = m.id AND type_mouvement = 'out') as total_exits,
                        (SELECT MAX(date_transaction) FROM production_transactions_stock WHERE material_id = m.id AND type_mouvement = 'in') as last_entry_date,
@@ -98,6 +99,7 @@ switch($method) {
                 LEFT JOIN production_matieres_category c ON m.category_id = c.id
                 LEFT JOIN production_materials_fournisseurs f ON m.id_fournisseur = f.id AND f.active = 1
                 LEFT JOIN production_soustraitance_clients sc ON m.extern_customer_id = sc.id
+                LEFT JOIN production_quantity_types qt ON m.quantity_type_id = qt.id
                 WHERE m.id = ?
             ");
             $stmt->execute([$_GET['id']]);
@@ -121,7 +123,7 @@ switch($method) {
                 $material['lowest_quantity_needed'] = $material['quantite_min'];
                 $material['medium_quantity_needed'] = $material['quantite_min']; // Using min as medium for now
                 $material['good_quantity_needed'] = $material['quantite_max'];
-                $material['quantity_type'] = 'unit'; // Default value
+                $material['quantity_type'] = $material['quantity_type_unit'] ?: 'unit'; // Use actual unit or default
                 $material['color'] = $material['couleur'];
                 $material['price'] = $material['prix_unitaire'];
                 $material['images'] = $images; // Add images array
@@ -148,6 +150,7 @@ switch($method) {
             
             $stmt = $db->query("
                 SELECT m.*, c.nom as category_name, f.name as fournisseur_name, sc.name as customer_name,
+                       qt.nom as quantity_type_name, qt.unite as quantity_type_unit,
                        (SELECT MAX(date_transaction) FROM production_transactions_stock WHERE material_id = m.id AND type_mouvement = 'in') as last_entry_date,
                        (SELECT MAX(date_transaction) FROM production_transactions_stock WHERE material_id = m.id AND type_mouvement = 'out') as last_exit_date,
                        (SELECT file_path FROM production_images WHERE related_type = 'matiere' AND related_id = m.id ORDER BY upload_date ASC LIMIT 1) as first_image_path
@@ -155,6 +158,7 @@ switch($method) {
                 LEFT JOIN production_matieres_category c ON m.category_id = c.id
                 LEFT JOIN production_materials_fournisseurs f ON m.id_fournisseur = f.id AND f.active = 1
                 LEFT JOIN production_soustraitance_clients sc ON m.extern_customer_id = sc.id
+                LEFT JOIN production_quantity_types qt ON m.quantity_type_id = qt.id
                 WHERE m.active = 1
                 " . $order_clause . "
             ");
@@ -168,7 +172,9 @@ switch($method) {
                 $material['lowest_quantity_needed'] = $material['quantite_min'];
                 $material['medium_quantity_needed'] = $material['quantite_min'];
                 $material['good_quantity_needed'] = $material['quantite_max'];
-                $material['quantity_type'] = 'unit';
+                
+                // Ensure quantity_type shows the actual unit (m, kg, etc.) not 'unit'
+                $material['quantity_type'] = !empty($material['quantity_type_unit']) ? $material['quantity_type_unit'] : 'unit';
                 $material['color'] = $material['couleur'];
                 $material['price'] = $material['prix_unitaire'];
                 
@@ -249,11 +255,13 @@ switch($method) {
             
             $stmt = $db->query("
                 SELECT m.*, c.nom as category_name, f.name as fournisseur_name, sc.name as customer_name,
+                       qt.nom as quantity_type_name, qt.unite as quantity_type_unit,
                        (SELECT file_path FROM production_images WHERE related_type = 'matiere' AND related_id = m.id ORDER BY upload_date ASC LIMIT 1) as first_image_path
                 FROM production_matieres m 
                 LEFT JOIN production_matieres_category c ON m.category_id = c.id
                 LEFT JOIN production_materials_fournisseurs f ON m.id_fournisseur = f.id AND f.active = 1
                 LEFT JOIN production_soustraitance_clients sc ON m.extern_customer_id = sc.id
+                LEFT JOIN production_quantity_types qt ON m.quantity_type_id = qt.id
                 " . $order_clause . "
             ");
             $materials = $stmt->fetchAll();

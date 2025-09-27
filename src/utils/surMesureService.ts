@@ -21,7 +21,7 @@ export interface SurMesureOrder {
   third_try_date?: string;
   third_try_scheduled_time?: string;
   third_try_completed_at?: string;
-  status: 'new' | 'in_progress' | 'ready_for_pickup' | 'first_try' | 'needs_revision' | 'ready_for_second_try' | 'completed';
+  status: 'new' | 'in_progress' | 'ready_for_pickup' | 'ready_for_try' | 'first_try' | 'needs_revision' | 'ready_for_second_try' | 'completed';
   measurements: Record<string, number>;
   tolerance: Record<string, number>;
   images: Array<{ id: number; path: string; commentaire?: string }>;
@@ -29,6 +29,7 @@ export interface SurMesureOrder {
   commentaires: Array<{ id: number; commentaire: string; created_by: string; date_creation: string }>;
   created_at: string;
   updated_at: string;
+  is_seen: string;
 }
 
 export const fetchSurMesureOrders = async (): Promise<SurMesureOrder[]> => {
@@ -40,6 +41,20 @@ export const fetchSurMesureOrders = async (): Promise<SurMesureOrder[]> => {
     throw new Error('Failed to fetch orders');
   } catch (error) {
     console.error('Error fetching sur mesure orders:', error);
+    throw error;
+  }
+};
+
+// Fetch only unseen sur mesure orders
+export const fetchUnseenSurMesureOrders = async (): Promise<SurMesureOrder[]> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/get_sur_mesure_orders.php?is_seen=0`);
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error('Failed to fetch unseen orders');
+  } catch (error) {
+    console.error('Error fetching unseen sur mesure orders:', error);
     throw error;
   }
 };
@@ -501,6 +516,29 @@ export const uploadOptionFinitionImage = async (optionId: number, imageFile: Fil
     return data.data;
   } catch (error) {
     console.error('Error uploading option/finition image:', error);
+    throw error;
+  }
+};
+
+// Mark sur mesure order as seen
+export const markSurMesureOrderAsSeen = async (orderId: number): Promise<void> => {
+  try {
+    console.log('🔄 Marking order as seen, ID:', orderId);
+    const response = await axios.post('https://luccibyey.com.tn/production/api/mark_sur_mesure_seen.php', {
+      id: orderId
+    });
+    console.log('✅ API Response:', response.data);
+    if (!response.data.success) {
+      console.error('❌ API returned error:', response.data.message);
+      throw new Error(response.data.message || 'Failed to mark order as seen');
+    }
+    console.log('✅ Order marked as seen successfully, rows affected:', response.data.rows_affected);
+  } catch (error) {
+    console.error('❌ Error marking sur mesure order as seen:', error);
+    if (error.response) {
+      console.error('❌ Response data:', error.response.data);
+      console.error('❌ Response status:', error.response.status);
+    }
     throw error;
   }
 };

@@ -1,6 +1,8 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { RHPasswordProtection } from "../RHPasswordProtection";
 import {
   Package2,
   Home,
@@ -17,6 +19,7 @@ import {
   ExternalLink,
   Globe,
   Building2,
+  UsersIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,6 +34,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { SurMesureNotifications } from "@/components/SurMesureNotifications";
 
 interface SidebarItem {
   title: string;
@@ -96,6 +100,12 @@ const sidebarItems: SidebarItem[] = [
     icon: Package,
     roles: ["admin", "production"],
   },
+  {
+    title: "Gestion RH",
+    href: "/rh",
+    icon: UsersIcon,
+    roles: ["admin", "rh"],
+  },
 ];
 
 interface AppSidebarProps {
@@ -106,10 +116,31 @@ interface AppSidebarProps {
 
 export function AppSidebar({ currentUser, onLogout, isMobile }: AppSidebarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [showRHPassword, setShowRHPassword] = useState(false);
 
   const filteredItems = sidebarItems.filter(item => 
     !item.roles || item.roles.includes(currentUser?.role || "")
   );
+
+  const handleRHAccess = () => {
+    // Check if user already has RH access
+    const rhAccess = sessionStorage.getItem("rh_access");
+    if (rhAccess === "granted") {
+      navigate("/rh");
+    } else {
+      setShowRHPassword(true);
+    }
+  };
+
+  const handleRHPasswordSuccess = () => {
+    setShowRHPassword(false);
+    navigate("/rh");
+  };
+
+  const handleRHPasswordCancel = () => {
+    setShowRHPassword(false);
+  };
 
   const getNavClassName = (href: string) => {
     // Check for exact match or if current path starts with the href (for nested routes)
@@ -135,13 +166,17 @@ export function AppSidebar({ currentUser, onLogout, isMobile }: AppSidebarProps)
           <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shrink-0">
             <Package2 className="h-5 w-5 text-primary-foreground" />
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col flex-1">
             <span className="font-playfair text-xl font-bold text-sidebar-foreground tracking-wide">
               AttelierPro
             </span>
             <span className="text-xs text-sidebar-foreground/60 font-medium">
               Production System
             </span>
+          </div>
+          {/* Notifications Bell */}
+          <div className="ml-2">
+            <SurMesureNotifications />
           </div>
         </div>
       </SidebarHeader>
@@ -157,13 +192,23 @@ export function AppSidebar({ currentUser, onLogout, isMobile }: AppSidebarProps)
               {filteredItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild>
-                    <Link
-                      to={item.href}
-                      className={getNavClassName(item.href)}
-                    >
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      <span className="truncate font-medium">{item.title}</span>
-                    </Link>
+                    {item.href === "/rh" ? (
+                      <button
+                        onClick={handleRHAccess}
+                        className={getNavClassName(item.href)}
+                      >
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        <span className="truncate font-medium">{item.title}</span>
+                      </button>
+                    ) : (
+                      <Link
+                        to={item.href}
+                        className={getNavClassName(item.href)}
+                      >
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        <span className="truncate font-medium">{item.title}</span>
+                      </Link>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -191,6 +236,13 @@ export function AppSidebar({ currentUser, onLogout, isMobile }: AppSidebarProps)
           <span className="ml-2">Déconnexion</span>
         </Button>
       </SidebarFooter>
+
+      {/* RH Password Protection Dialog */}
+      <RHPasswordProtection
+        isOpen={showRHPassword}
+        onSuccess={handleRHPasswordSuccess}
+        onCancel={handleRHPasswordCancel}
+      />
     </Sidebar>
   );
 }
