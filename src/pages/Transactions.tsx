@@ -259,21 +259,21 @@ const Transactions = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6 p-3 md:p-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Transactions de Stock</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl md:text-3xl font-bold">Transactions de Stock</h1>
+            <p className="text-sm md:text-base text-muted-foreground">
               Chargement des transactions depuis l'API...
             </p>
           </div>
         </div>
         <div className="border rounded-lg overflow-hidden bg-white">
-          <div className="flex items-center justify-center p-12">
-            <div className="text-center space-y-4">
-              <ArrowUpCircle className="h-8 w-8 animate-pulse mx-auto text-primary" />
-              <p className="text-lg font-medium">Chargement des transactions</p>
-              <p className="text-muted-foreground">Récupération des données depuis https://luccibyey.com.tn/</p>
+          <div className="flex items-center justify-center p-8 md:p-12">
+            <div className="text-center space-y-3 md:space-y-4">
+              <ArrowUpCircle className="h-6 w-6 md:h-8 md:w-8 animate-pulse mx-auto text-primary" />
+              <p className="text-base md:text-lg font-medium">Chargement des transactions</p>
+              <p className="text-xs md:text-sm text-muted-foreground">Récupération des données depuis https://luccibyey.com.tn/</p>
             </div>
           </div>
         </div>
@@ -282,75 +282,78 @@ const Transactions = () => {
   }
 
   return (
-    <div className="space-y-6 lg:space-y-8">
+    <div className="space-y-4 md:space-y-6 lg:space-y-8 p-3 md:p-0">
       {/* Header */}
       <div className="page-header">
-        <h1 className="page-title">Journal des Transactions</h1>
-        <p className="page-description">
+        <h1 className="text-2xl md:text-3xl font-bold">Journal des Transactions</h1>
+        <p className="text-sm md:text-base text-muted-foreground">
           Aperçu des événements et activités de stock de l'équipe
         </p>
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-1">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        <div className="flex gap-2">
+      <div className="flex flex-col gap-3 md:gap-4">
+        {/* Search */}
+        <div className="relative w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 h-9 md:h-10"
+          />
+        </div>
+
+        {/* Filter Buttons */}
+        <div className="flex flex-wrap gap-2">
           <Button 
             variant={typeFilter === "in" ? "default" : "outline"} 
             size="sm" 
-            className={`flex items-center gap-2 ${
+            className={`flex items-center gap-1.5 text-xs md:text-sm h-8 md:h-9 ${
               typeFilter === "in" 
                 ? "bg-green-600 text-white hover:bg-green-700" 
                 : "text-green-600 border-green-600 hover:bg-green-50"
             }`}
             onClick={() => setTypeFilter(typeFilter === "in" ? "all" : "in")}
           >
-            <ArrowUpCircle className="h-4 w-4" />
+            <ArrowUpCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
             Entrée
           </Button>
           <Button 
             variant={typeFilter === "out" ? "default" : "outline"} 
             size="sm" 
-            className={`flex items-center gap-2 ${
+            className={`flex items-center gap-1.5 text-xs md:text-sm h-8 md:h-9 ${
               typeFilter === "out" 
                 ? "bg-red-600 text-white hover:bg-red-700" 
                 : "text-red-600 border-red-600 hover:bg-red-50"
             }`}
             onClick={() => setTypeFilter(typeFilter === "out" ? "all" : "out")}
           >
-            <ArrowDownCircle className="h-4 w-4" />
+            <ArrowDownCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
             Sortie
           </Button>
-        </div>
-        </div>
-        <div className="flex gap-2">
           <Button 
             onClick={() => navigate('/transactions-analytics')} 
             size="sm" 
             variant="outline"
-            className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+            className="flex items-center gap-1.5 text-xs md:text-sm h-8 md:h-9 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
           >
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Analytics
+            <BarChart3 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+            <span className="hidden sm:inline">Analytics</span>
           </Button>
-          <Button onClick={handleExport} size="sm" className="bg-primary text-primary-foreground">
-            <Download className="h-4 w-4 mr-2" />
-            Exporter
+          <Button 
+            onClick={handleExport} 
+            size="sm" 
+            className="flex items-center gap-1.5 text-xs md:text-sm h-8 md:h-9 bg-primary text-primary-foreground ml-auto"
+          >
+            <Download className="h-3.5 w-3.5 md:h-4 md:w-4" />
+            <span className="hidden sm:inline">Exporter</span>
           </Button>
         </div>
       </div>
 
-      {/* Transactions Table */}
-      <div className="border rounded-lg overflow-hidden">
+      {/* Transactions - Table for desktop, Cards for mobile */}
+      <div className="hidden md:block border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
@@ -361,71 +364,117 @@ const Transactions = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(() => {
-              console.log('Rendering table with filteredTransactions:', filteredTransactions.length);
-              return filteredTransactions.map((transaction) => (
-                <TableRow 
-                  key={transaction.transaction_id} 
-                  className="hover:bg-muted/30 cursor-pointer transition-colors"
-                  onClick={() => handleTransactionClick(transaction)}
-                >
-                  <TableCell className="font-medium text-sm">
-                    {formatDate(transaction.transaction_date)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center text-xs font-medium">
-                        {transaction.user_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                      </div>
-                      <span className="text-sm">{transaction.user_name}</span>
+            {filteredTransactions.map((transaction) => (
+              <TableRow 
+                key={transaction.transaction_id} 
+                className="hover:bg-muted/30 cursor-pointer transition-colors"
+                onClick={() => handleTransactionClick(transaction)}
+              >
+                <TableCell className="font-medium text-sm">
+                  {formatDate(transaction.transaction_date)}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center text-xs font-medium">
+                      {transaction.user_name.split(' ').map(n => n[0]).join('').toUpperCase()}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className={`p-1.5 rounded-md ${
-                        transaction.type === "in" ? "bg-green-500/10" : "bg-red-500/10"
-                      }`}>
-                        {getTypeIcon(transaction.type)}
+                    <span className="text-sm">{transaction.user_name}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-md ${
+                      transaction.type === "in" ? "bg-green-500/10" : "bg-red-500/10"
+                    }`}>
+                      {getTypeIcon(transaction.type)}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">
+                        {getEventDescription(transaction)}
                       </div>
-                      <div>
-                        <div className="text-sm font-medium">
-                          {getEventDescription(transaction)}
-                        </div>
-                        {transaction.material_color && (
-                          <div className="text-xs text-muted-foreground">
-                            Couleur: {transaction.material_color}
-                          </div>
-                        )}
+                      {transaction.material_color && (
                         <div className="text-xs text-muted-foreground">
-                          ID: #{transaction.material_id}
+                          Couleur: {transaction.material_color}
                         </div>
+                      )}
+                      <div className="text-xs text-muted-foreground">
+                        ID: #{transaction.material_id}
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge 
-                      variant="outline"
-                      className={`${
-                        transaction.type === "in" 
-                          ? "bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20" 
-                          : "bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20"
-                      }`}
-                    >
-                      {transaction.type === "in" ? "+" : "-"}{transaction.quantity}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ));
-            })()}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Badge 
+                    variant="outline"
+                    className={`${
+                      transaction.type === "in" 
+                        ? "bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20" 
+                        : "bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20"
+                    }`}
+                  >
+                    {transaction.type === "in" ? "+" : "-"}{transaction.quantity}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>
 
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {filteredTransactions.map((transaction) => (
+          <div
+            key={transaction.transaction_id}
+            onClick={() => handleTransactionClick(transaction)}
+            className="border rounded-lg p-3 bg-card hover:bg-muted/30 cursor-pointer transition-colors"
+          >
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className={`p-1.5 rounded-md ${
+                  transaction.type === "in" ? "bg-green-500/10" : "bg-red-500/10"
+                }`}>
+                  {getTypeIcon(transaction.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">
+                    {transaction.material_title}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    ID: #{transaction.material_id}
+                  </div>
+                </div>
+              </div>
+              <Badge 
+                variant="outline"
+                className={`shrink-0 ${
+                  transaction.type === "in" 
+                    ? "bg-green-500/10 text-green-600 border-green-500/20" 
+                    : "bg-red-500/10 text-red-600 border-red-500/20"
+                }`}
+              >
+                {transaction.type === "in" ? "+" : "-"}{transaction.quantity}
+              </Badge>
+            </div>
+            
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 bg-muted rounded-full flex items-center justify-center text-[10px] font-medium">
+                  {transaction.user_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                </div>
+                <span>{transaction.user_name}</span>
+              </div>
+              <span>{formatDate(transaction.transaction_date)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {filteredTransactions.length === 0 && (
-        <div className="text-center py-12">
-          <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">Aucune transaction trouvée</h3>
-          <p className="text-muted-foreground">
+        <div className="text-center py-8 md:py-12">
+          <Package className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground mx-auto mb-3 md:mb-4" />
+          <h3 className="text-base md:text-lg font-medium text-foreground mb-2">Aucune transaction trouvée</h3>
+          <p className="text-sm md:text-base text-muted-foreground px-4">
             {searchTerm || typeFilter !== "all"
               ? "Aucune transaction ne correspond à vos critères de recherche."
               : "Les transactions système apparaîtront ici automatiquement."}
@@ -435,65 +484,65 @@ const Transactions = () => {
 
       {/* Transaction Details Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-2 text-base md:text-lg">
+              <FileText className="h-4 w-4 md:h-5 md:w-5" />
               Détails de la transaction #{selectedTransaction?.transaction_id}
             </DialogTitle>
           </DialogHeader>
           
           {selectedTransaction && (
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               {/* Header Info */}
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+                <div className="space-y-1 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge 
                       variant="outline" 
-                      className={
+                      className={`text-xs ${
                         selectedTransaction.type === "in" 
                           ? "bg-green-500/10 text-green-600 border-green-500/20" 
                           : "bg-red-500/10 text-red-600 border-red-500/20"
-                      }
+                      }`}
                     >
                       {getTypeLabel(selectedTransaction.type)}
                     </Badge>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-xs md:text-sm text-muted-foreground">
                       {formatDate(selectedTransaction.transaction_date)}
                     </span>
                   </div>
-                  <h3 className="text-lg font-semibold">
+                  <h3 className="text-base md:text-lg font-semibold">
                     {getEventDescription(selectedTransaction)}
                   </h3>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold">
+                <div className="text-left sm:text-right">
+                  <div className="text-xl md:text-2xl font-bold">
                     {selectedTransaction.type === "in" ? "+" : "-"}{selectedTransaction.quantity}
                   </div>
-                  <div className="text-sm text-muted-foreground">unités</div>
+                  <div className="text-xs md:text-sm text-muted-foreground">unités</div>
                 </div>
               </div>
 
               {/* Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {/* Material Info */}
-                <div className="space-y-3">
-                  <h4 className="font-medium flex items-center gap-2">
-                    <Package className="h-4 w-4" />
+                <div className="space-y-2 md:space-y-3">
+                  <h4 className="text-sm md:text-base font-medium flex items-center gap-2">
+                    <Package className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     Matériau
                   </h4>
-                  <div className="pl-6 space-y-2">
-                    <div className="flex justify-between">
+                  <div className="pl-5 md:pl-6 space-y-1.5 md:space-y-2 text-xs md:text-sm">
+                    <div className="flex justify-between gap-2">
                       <span className="text-muted-foreground">Nom:</span>
-                      <span className="font-medium">{selectedTransaction.material_title}</span>
+                      <span className="font-medium text-right">{selectedTransaction.material_title}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between gap-2">
                       <span className="text-muted-foreground">ID:</span>
                       <span className="font-mono">#{selectedTransaction.material_id}</span>
                     </div>
                     {selectedTransaction.material_color && (
-                      <div className="flex justify-between">
+                      <div className="flex justify-between gap-2">
                         <span className="text-muted-foreground">Couleur:</span>
                         <span>{selectedTransaction.material_color}</span>
                       </div>
@@ -502,13 +551,13 @@ const Transactions = () => {
                 </div>
 
                 {/* User Info */}
-                <div className="space-y-3">
-                  <h4 className="font-medium flex items-center gap-2">
-                    <User className="h-4 w-4" />
+                <div className="space-y-2 md:space-y-3">
+                  <h4 className="text-sm md:text-base font-medium flex items-center gap-2">
+                    <User className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     Utilisateur
                   </h4>
-                  <div className="pl-6 space-y-2">
-                    <div className="flex justify-between">
+                  <div className="pl-5 md:pl-6 space-y-1.5 md:space-y-2 text-xs md:text-sm">
+                    <div className="flex justify-between gap-2">
                       <span className="text-muted-foreground">Nom:</span>
                       <span className="font-medium">{selectedTransaction.user_name}</span>
                     </div>
@@ -516,17 +565,17 @@ const Transactions = () => {
                 </div>
 
                 {/* Transaction Info */}
-                <div className="space-y-3">
-                  <h4 className="font-medium flex items-center gap-2">
-                    <Hash className="h-4 w-4" />
+                <div className="space-y-2 md:space-y-3">
+                  <h4 className="text-sm md:text-base font-medium flex items-center gap-2">
+                    <Hash className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     Transaction
                   </h4>
-                  <div className="pl-6 space-y-2">
-                    <div className="flex justify-between">
+                  <div className="pl-5 md:pl-6 space-y-1.5 md:space-y-2 text-xs md:text-sm">
+                    <div className="flex justify-between gap-2">
                       <span className="text-muted-foreground">ID:</span>
                       <span className="font-mono">#{selectedTransaction.transaction_id}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between gap-2">
                       <span className="text-muted-foreground">Source:</span>
                       <span>{getSourceInfo(selectedTransaction)}</span>
                     </div>
@@ -534,14 +583,14 @@ const Transactions = () => {
                 </div>
 
                 {/* Additional Info if available */}
-                <div className="space-y-3">
-                  <h4 className="font-medium flex items-center gap-2">
-                    <Tag className="h-4 w-4" />
+                <div className="space-y-2 md:space-y-3">
+                  <h4 className="text-sm md:text-base font-medium flex items-center gap-2">
+                    <Tag className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     Références
                   </h4>
-                  <div className="pl-6 space-y-2">
+                  <div className="pl-5 md:pl-6 space-y-1.5 md:space-y-2 text-xs md:text-sm">
                     {selectedTransaction.related_order_id && (
-                      <div className="flex justify-between">
+                      <div className="flex justify-between gap-2">
                         <span className="text-muted-foreground">Commande:</span>
                         <Link 
                           to={`/commandes/${selectedTransaction.related_order_id}`}
@@ -552,7 +601,7 @@ const Transactions = () => {
                       </div>
                     )}
                     {selectedTransaction.related_product_id && (
-                      <div className="flex justify-between">
+                      <div className="flex justify-between gap-2">
                         <span className="text-muted-foreground">Produit:</span>
                         <Link 
                           to={`/produits/${selectedTransaction.related_product_id}`}
@@ -563,7 +612,7 @@ const Transactions = () => {
                       </div>
                     )}
                     {!selectedTransaction.related_order_id && !selectedTransaction.related_product_id && (
-                      <div className="text-muted-foreground text-sm">
+                      <div className="text-muted-foreground">
                         Transaction manuelle
                       </div>
                     )}
@@ -573,13 +622,13 @@ const Transactions = () => {
 
               {/* Notes if available */}
               {selectedTransaction.note && (
-                <div className="space-y-3">
-                  <h4 className="font-medium flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
+                <div className="space-y-2 md:space-y-3">
+                  <h4 className="text-sm md:text-base font-medium flex items-center gap-2">
+                    <FileText className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     Notes
                   </h4>
-                  <div className="bg-muted/30 rounded-lg p-3">
-                    <p className="text-sm">{selectedTransaction.note}</p>
+                  <div className="bg-muted/30 rounded-lg p-2.5 md:p-3">
+                    <p className="text-xs md:text-sm">{selectedTransaction.note}</p>
                   </div>
                 </div>
               )}

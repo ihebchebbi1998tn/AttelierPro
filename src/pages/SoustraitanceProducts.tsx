@@ -334,43 +334,43 @@ const SoustraitanceProducts = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-          <p className="mt-4 text-muted-foreground">Chargement des produits...</p>
+          <div className="animate-spin rounded-full h-16 w-16 md:h-32 md:w-32 border-b-2 border-primary"></div>
+          <p className="mt-4 text-sm md:text-base text-muted-foreground">Chargement des produits...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="container mx-auto px-3 md:px-4 py-4 md:py-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Produits Sous-traitance</h1>
-          <p className="text-muted-foreground">Gérez les produits des clients sous-traitants</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Produits Sous-traitance</h1>
+          <p className="text-xs md:text-sm text-muted-foreground">Gérez les produits des clients sous-traitants</p>
         </div>
-        <Button onClick={() => navigate('/soustraitance-products/add')} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Ajouter Produit
+        <Button onClick={() => navigate('/soustraitance-products/add')} className="flex items-center gap-2 w-full sm:w-auto" size="sm">
+          <Plus className="h-3 w-3 md:h-4 md:w-4" />
+          <span className="text-xs md:text-sm">Ajouter Produit</span>
         </Button>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button style={{ display: 'none' }}>Hidden</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-base md:text-lg">
                 {editingProduct ? 'Modifier le produit' : 'Ajouter un nouveau produit'}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-xs md:text-sm">
                 Remplissez les informations du produit sous-traitance
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div>
-                  <Label htmlFor="client_id">Client *</Label>
+                  <Label htmlFor="client_id" className="text-xs md:text-sm">Client *</Label>
                   <Select value={formData.client_id} onValueChange={(value) => setFormData({...formData, client_id: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner un client" />
@@ -385,7 +385,7 @@ const SoustraitanceProducts = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="reference_product">Référence</Label>
+                  <Label htmlFor="reference_product" className="text-xs md:text-sm">Référence</Label>
                   <Input
                     id="reference_product"
                     value={formData.reference_product}
@@ -396,7 +396,7 @@ const SoustraitanceProducts = () => {
               </div>
               
               <div>
-                <Label htmlFor="nom_product">Nom du produit *</Label>
+                <Label htmlFor="nom_product" className="text-xs md:text-sm">Nom du produit *</Label>
                 <Input
                   id="nom_product"
                   value={formData.nom_product}
@@ -407,7 +407,7 @@ const SoustraitanceProducts = () => {
               </div>
               
               <div>
-                <Label htmlFor="description_product">Description</Label>
+                <Label htmlFor="description_product" className="text-xs md:text-sm">Description</Label>
                 <Textarea
                   id="description_product"
                   value={formData.description_product}
@@ -417,27 +417,29 @@ const SoustraitanceProducts = () => {
                 />
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                 <div>
-                  <Label htmlFor="type_product">Type</Label>
+                  <Label htmlFor="type_product" className="text-xs md:text-sm">Type</Label>
                   <Input
                     id="type_product"
                     value={formData.type_product}
                     onChange={(e) => setFormData({...formData, type_product: e.target.value})}
                     placeholder="Type"
+                    className="text-xs md:text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="category_product">Catégorie</Label>
+                  <Label htmlFor="category_product" className="text-xs md:text-sm">Catégorie</Label>
                   <Input
                     id="category_product"
                     value={formData.category_product}
                     onChange={(e) => setFormData({...formData, category_product: e.target.value})}
                     placeholder="Catégorie"
+                    className="text-xs md:text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="color_product">Couleur</Label>
+                  <Label htmlFor="color_product" className="text-xs md:text-sm">Couleur</Label>
                   <Input
                     id="color_product"
                     value={formData.color_product}
@@ -447,28 +449,30 @@ const SoustraitanceProducts = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                 <div>
-                  <Label htmlFor="price_product">Prix</Label>
+                  <Label htmlFor="price_product" className="text-xs md:text-sm">Prix</Label>
                   <Input
                     id="price_product"
                     type="number"
                     step="0.01"
                     value={formData.price_product}
                     onChange={(e) => setFormData({...formData, price_product: parseFloat(e.target.value) || 0})}
+                    className="text-xs md:text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="qnty_product">Quantité</Label>
+                  <Label htmlFor="qnty_product" className="text-xs md:text-sm">Quantité</Label>
                   <Input
                     id="qnty_product"
                     type="number"
                     value={formData.qnty_product}
                     onChange={(e) => setFormData({...formData, qnty_product: parseInt(e.target.value) || 0})}
+                    className="text-xs md:text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="status_product">Statut</Label>
+                  <Label htmlFor="status_product" className="text-xs md:text-sm">Statut</Label>
                   <Select value={formData.status_product} onValueChange={(value) => setFormData({...formData, status_product: value})}>
                     <SelectTrigger>
                       <SelectValue />
@@ -482,11 +486,11 @@ const SoustraitanceProducts = () => {
                 </div>
               </div>
               
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto text-xs md:text-sm" size="sm">
                   Annuler
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="w-full sm:w-auto text-xs md:text-sm" size="sm">
                   {editingProduct ? 'Mettre à jour' : 'Créer'}
                 </Button>
               </DialogFooter>
@@ -496,44 +500,44 @@ const SoustraitanceProducts = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-8">
         <Card className="bg-primary text-primary-foreground border-primary">
-          <CardContent className="flex items-center p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-primary-foreground/20">
-                <Package className="h-6 w-6 text-primary-foreground" />
+          <CardContent className="flex items-center p-4 md:p-6">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="p-2 md:p-3 rounded-xl bg-primary-foreground/20">
+                <Package className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-primary-foreground">{stats.total}</p>
-                <p className="text-sm text-primary-foreground/80">Total Produits</p>
+                <p className="text-xl md:text-2xl font-bold text-primary-foreground">{stats.total}</p>
+                <p className="text-xs md:text-sm text-primary-foreground/80">Total Produits</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card className="bg-primary text-primary-foreground border-primary">
-          <CardContent className="flex items-center p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-primary-foreground/20">
-                <ShoppingCart className="h-6 w-6 text-primary-foreground" />
+          <CardContent className="flex items-center p-4 md:p-6">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="p-2 md:p-3 rounded-xl bg-primary-foreground/20">
+                <ShoppingCart className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-primary-foreground">{stats.active}</p>
-                <p className="text-sm text-primary-foreground/80">Produits Actifs</p>
+                <p className="text-xl md:text-2xl font-bold text-primary-foreground">{stats.active}</p>
+                <p className="text-xs md:text-sm text-primary-foreground/80">Produits Actifs</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card className="bg-primary text-primary-foreground border-primary">
-          <CardContent className="flex items-center p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-primary-foreground/20">
-                <Users className="h-6 w-6 text-primary-foreground" />
+          <CardContent className="flex items-center p-4 md:p-6">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="p-2 md:p-3 rounded-xl bg-primary-foreground/20">
+                <Users className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-primary-foreground">{stats.clients}</p>
-                <p className="text-sm text-primary-foreground/80">Clients Actifs</p>
+                <p className="text-xl md:text-2xl font-bold text-primary-foreground">{stats.clients}</p>
+                <p className="text-xs md:text-sm text-primary-foreground/80">Clients Actifs</p>
               </div>
             </div>
           </CardContent>
@@ -542,30 +546,30 @@ const SoustraitanceProducts = () => {
 
       {/* Products Table */}
       <Card className="modern-card">
-        <CardHeader className="pb-4">
-          <CardTitle>Liste des Produits</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-4 md:pb-4">
+          <CardTitle className="text-base md:text-lg">Liste des Produits</CardTitle>
+          <CardDescription className="text-xs md:text-sm">
             Produits des clients sous-traitants avec leurs informations
           </CardDescription>
         </CardHeader>
         
         {/* Search and Filter */}
-        <div className="px-6 pb-4 space-y-4">
-          <div className="flex gap-4">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="px-3 md:px-6 pb-4 space-y-3 md:space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+            <div className="relative flex-1 sm:max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
               <Input
                 placeholder="Rechercher un produit..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 rounded-xl"
+                className="pl-9 md:pl-10 rounded-xl text-xs md:text-sm h-9 md:h-10"
               />
             </div>
             <Select value={selectedClient} onValueChange={(value) => {
               setSelectedClient(value);
               setTimeout(fetchProducts, 100);
             }}>
-              <SelectTrigger className="max-w-xs">
+              <SelectTrigger className="w-full sm:max-w-xs text-xs md:text-sm h-9 md:h-10">
                 <SelectValue placeholder="Filtrer par client" />
               </SelectTrigger>
               <SelectContent>
@@ -581,7 +585,8 @@ const SoustraitanceProducts = () => {
         </div>
         
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -617,7 +622,6 @@ const SoustraitanceProducts = () => {
                                       alt={`${product.nom_product} ${index + 1}`}
                                       className="w-full h-full object-cover"
                                     />
-                                    {/* Delete overlay */}
                                     <div 
                                       className="absolute inset-0 bg-red-500/80 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
                                       onClick={(e) => {
@@ -639,7 +643,6 @@ const SoustraitanceProducts = () => {
                                 )}
                               </div>
                               
-                              {/* Upload overlay for empty slots */}
                               {!imageUrl && !isUploading && (
                                 <label 
                                   className="absolute inset-0 cursor-pointer bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
@@ -663,7 +666,6 @@ const SoustraitanceProducts = () => {
                           );
                         })}
                         
-                        {/* Add button for quick upload to next available slot */}
                         <div className="relative">
                           <label className="cursor-pointer block w-12 h-12 border-2 border-dashed border-primary/40 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors flex items-center justify-center group"
                             onClick={(e) => e.stopPropagation()}>
@@ -723,6 +725,152 @@ const SoustraitanceProducts = () => {
                 ))}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3 p-3">
+            {filteredProducts.map((product) => (
+              <Card 
+                key={product.id} 
+                className="cursor-pointer hover:bg-accent/50 transition-colors"
+                onClick={() => navigate(`/soustraitance-products/${product.id}`)}
+              >
+                <CardContent className="p-4 space-y-3">
+                  {/* Product Header */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-sm break-words">{product.nom_product}</h3>
+                      <p className="text-xs text-muted-foreground break-all">{product.reference_product}</p>
+                    </div>
+                    <Badge variant={product.status_product === 'active' ? 'default' : 'secondary'} className="text-xs shrink-0">
+                      {product.status_product}
+                    </Badge>
+                  </div>
+
+                  {/* Client and Category */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <p className="text-muted-foreground">Client</p>
+                      <p className="font-medium break-words">{product.client_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Catégorie</p>
+                      <p className="font-medium">{product.category_product || '-'}</p>
+                    </div>
+                  </div>
+
+                  {/* Images Section */}
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Images</p>
+                    <div className="flex gap-1 flex-wrap">
+                      {['img_product', 'img2_product', 'img3_product', 'img4_product', 'img5_product'].map((imageSlot, index) => {
+                        const imageUrl = product[imageSlot as keyof SoustraitanceProduct] as string;
+                        const uploadKey = `${product.id}-upload`;
+                        const isUploading = uploadingImages[uploadKey];
+                        
+                        return (
+                          <div key={imageSlot} className="relative group">
+                            <div className="w-12 h-12 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary transition-colors overflow-hidden">
+                              {imageUrl ? (
+                                <>
+                                  <img
+                                    src={getImageUrl(imageUrl)}
+                                    alt={`${product.nom_product} ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div 
+                                    className="absolute inset-0 bg-red-500/80 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleImageDelete(product.id, imageSlot);
+                                    }}
+                                  >
+                                    <Trash2 className="h-3 w-3 text-white" />
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  {isUploading ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                  ) : (
+                                    <ImageIcon className="h-4 w-4 text-gray-400" />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            
+                            {!imageUrl && !isUploading && (
+                              <label 
+                                className="absolute inset-0 cursor-pointer bg-black/0 active:bg-black/20 transition-colors flex items-center justify-center"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Upload className="h-3 w-3 text-primary/60" />
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/gif,image/webp"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      handleImageUpload(product.id, file);
+                                    }
+                                  }}
+                                />
+                              </label>
+                            )}
+                          </div>
+                        );
+                      })}
+                      
+                      <div className="relative">
+                        <label className="cursor-pointer block w-12 h-12 border-2 border-dashed border-primary/40 rounded-lg active:border-primary active:bg-primary/5 transition-colors flex items-center justify-center"
+                          onClick={(e) => e.stopPropagation()}>
+                          {uploadingImages[`${product.id}-upload`] ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                          ) : (
+                            <Plus className="h-4 w-4 text-primary/60" />
+                          )}
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                handleImageUpload(product.id, file);
+                              }
+                            }}
+                            disabled={uploadingImages[`${product.id}-upload`]}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/soustraitance-products/edit/${product.id}`)}
+                      className="flex-1 text-xs h-8"
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Modifier
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(product.id)}
+                      className="flex-1 text-xs h-8"
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Supprimer
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </CardContent>
       </Card>

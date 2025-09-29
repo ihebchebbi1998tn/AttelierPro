@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, RefreshCw, Search } from "lucide-react";
+import { ArrowLeft, RefreshCw, Search, Package2 } from "lucide-react";
 
 interface MaterialItem {
   material_id: number;
@@ -19,6 +19,7 @@ interface MaterialItem {
   progress_percentage: number;
   materiere_type?: "intern" | "extern";
   extern_customer_id?: number;
+  location?: "Usine" | "Lucci By Ey" | "Spada";
 }
 
 const GlobalStockView = () => {
@@ -27,6 +28,7 @@ const GlobalStockView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
   const [materiereTypeFilter, setMateriereTypeFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -35,7 +37,7 @@ const GlobalStockView = () => {
     fetchMaterials();
   }, []);
 
-  // Filter materials when statusFilter, materiereTypeFilter or searchTerm changes
+  // Filter materials when statusFilter, materiereTypeFilter, locationFilter or searchTerm changes
   useEffect(() => {
     let filtered = materials;
     
@@ -47,6 +49,19 @@ const GlobalStockView = () => {
     // Filter by materiere type
     if (materiereTypeFilter !== "all") {
       filtered = filtered.filter(material => material.materiere_type === materiereTypeFilter);
+    }
+    
+    // Filter by location
+    if (locationFilter !== "all") {
+      if (locationFilter === "lucci") {
+        filtered = filtered.filter(material => material.location === "Lucci By Ey");
+      } else if (locationFilter === "spada") {
+        filtered = filtered.filter(material => material.location === "Spada");
+      } else if (locationFilter === "extern") {
+        filtered = filtered.filter(material => 
+          material.location !== "Lucci By Ey" && material.location !== "Spada"
+        );
+      }
     }
     
     // Filter by search term
@@ -71,7 +86,7 @@ const GlobalStockView = () => {
     });
     
     setFilteredMaterials(filtered);
-  }, [materials, statusFilter, materiereTypeFilter, searchTerm]);
+  }, [materials, statusFilter, materiereTypeFilter, locationFilter, searchTerm]);
 
   const fetchMaterials = async () => {
     try {
@@ -97,6 +112,7 @@ const GlobalStockView = () => {
           progress_percentage: item.progress_percentage || 0,
           materiere_type: item.materiere_type || "intern",
           extern_customer_id: item.extern_customer_id,
+          location: item.location || "Usine",
         }));
         
         setMaterials(transformedData);
@@ -178,57 +194,143 @@ const GlobalStockView = () => {
             </p>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex flex-wrap gap-1.5 sm:gap-2">
-            <Button
-              variant={statusFilter === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setStatusFilter("all")}
-              className="rounded-xl text-xs sm:text-sm px-2 sm:px-3"
-            >
-              Tous ({materials.length})
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setStatusFilter("critical")}
-              className="rounded-xl text-xs sm:text-sm px-2 sm:px-3"
-            >
-              Critique ({materials.filter(m => m.status === "critical").length})
-            </Button>
-            <Button
-              variant={statusFilter === "warning" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setStatusFilter("warning")}
-              className={`rounded-xl text-xs sm:text-sm px-2 sm:px-3 ${statusFilter === "warning" ? "bg-yellow-600 text-white" : "text-yellow-600 border-yellow-200 hover:bg-yellow-50"}`}
-            >
-              Faible ({materials.filter(m => m.status === "warning").length})
-            </Button>
-            <Button
-              variant={statusFilter === "good" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setStatusFilter("good")}
-              className={`rounded-xl text-xs sm:text-sm px-2 sm:px-3 ${statusFilter === "good" ? "bg-green-600 text-white" : "text-green-600 border-green-200 hover:bg-green-50"}`}
-            >
-              Bon ({materials.filter(m => m.status === "good").length})
-            </Button>
+        <div className="flex flex-col gap-4">
+          {/* Location Filters */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Emplacement</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={locationFilter === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setLocationFilter("all")}
+                className={`rounded-xl text-xs sm:text-sm px-3 sm:px-4 transition-all ${
+                  locationFilter === "all" ? "bg-green-600 hover:bg-green-700 shadow-md" : "hover:border-green-600"
+                }`}
+              >
+                Tous
+              </Button>
+              <Button
+                variant={locationFilter === "lucci" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setLocationFilter("lucci")}
+                className={`rounded-xl text-xs sm:text-sm px-3 sm:px-4 transition-all ${
+                  locationFilter === "lucci" ? "bg-green-600 hover:bg-green-700 shadow-md" : "hover:border-green-600"
+                }`}
+              >
+                Lucci By Ey
+                <Badge variant="secondary" className="ml-2 text-[10px]">
+                  {materials.filter(m => m.location === "Lucci By Ey").length}
+                </Badge>
+              </Button>
+              <Button
+                variant={locationFilter === "spada" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setLocationFilter("spada")}
+                className={`rounded-xl text-xs sm:text-sm px-3 sm:px-4 transition-all ${
+                  locationFilter === "spada" ? "bg-green-600 hover:bg-green-700 shadow-md" : "hover:border-green-600"
+                }`}
+              >
+                Spada di Battaglia
+                <Badge variant="secondary" className="ml-2 text-[10px]">
+                  {materials.filter(m => m.location === "Spada").length}
+                </Badge>
+              </Button>
+              <Button
+                variant={locationFilter === "extern" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setLocationFilter("extern")}
+                className={`rounded-xl text-xs sm:text-sm px-3 sm:px-4 transition-all ${
+                  locationFilter === "extern" ? "bg-green-600 hover:bg-green-700 shadow-md" : "hover:border-green-600"
+                }`}
+              >
+                <Package2 className="h-3 w-3 mr-2" />
+                Matières Externes
+                <Badge variant="secondary" className="ml-2 text-[10px]">
+                  {materials.filter(m => m.location !== "Lucci By Ey" && m.location !== "Spada").length}
+                </Badge>
+              </Button>
+            </div>
           </div>
-          <Button 
-            onClick={() => setMateriereTypeFilter(materiereTypeFilter === "extern" ? "all" : "extern")}
-            variant="outline" 
-            size="sm" 
-            className={`rounded-xl ${
-              materiereTypeFilter === "extern" 
-                ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white border-orange-500 hover:bg-orange-600" 
-                : "text-orange-600 border-orange-200 hover:bg-orange-50"
-            }`}
-          >
-            Stock Extern ({materials.filter(m => m.materiere_type === "extern").length})
-          </Button>
-          <Button onClick={handleRefresh} variant="outline" size="sm" className="rounded-xl">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Actualiser
-          </Button>
+
+          {/* Status Filters */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Niveau de Stock</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={statusFilter === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter("all")}
+                className="rounded-xl text-xs sm:text-sm px-3 sm:px-4 transition-all shadow-sm hover:shadow-md"
+              >
+                Tous les Statuts
+                <Badge variant="secondary" className="ml-2 text-[10px]">
+                  {materials.length}
+                </Badge>
+              </Button>
+              <Button
+                variant={statusFilter === "critical" ? "destructive" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter("critical")}
+                className={`rounded-xl text-xs sm:text-sm px-3 sm:px-4 transition-all shadow-sm hover:shadow-md ${
+                  statusFilter !== "critical" ? "text-red-600 border-red-200 hover:bg-red-50" : ""
+                }`}
+              >
+                Stock Critique
+                <Badge 
+                  variant={statusFilter === "critical" ? "secondary" : "destructive"} 
+                  className="ml-2 text-[10px]"
+                >
+                  {materials.filter(m => m.status === "critical").length}
+                </Badge>
+              </Button>
+              <Button
+                variant={statusFilter === "warning" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter("warning")}
+                className={`rounded-xl text-xs sm:text-sm px-3 sm:px-4 transition-all shadow-sm hover:shadow-md ${
+                  statusFilter === "warning" 
+                    ? "bg-yellow-600 text-white hover:bg-yellow-700" 
+                    : "text-yellow-600 border-yellow-200 hover:bg-yellow-50"
+                }`}
+              >
+                Stock Faible
+                <Badge 
+                  variant={statusFilter === "warning" ? "secondary" : "outline"} 
+                  className="ml-2 text-[10px]"
+                >
+                  {materials.filter(m => m.status === "warning").length}
+                </Badge>
+              </Button>
+              <Button
+                variant={statusFilter === "good" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter("good")}
+                className={`rounded-xl text-xs sm:text-sm px-3 sm:px-4 transition-all shadow-sm hover:shadow-md ${
+                  statusFilter === "good" 
+                    ? "bg-green-600 text-white hover:bg-green-700" 
+                    : "text-green-600 border-green-200 hover:bg-green-50"
+                }`}
+              >
+                Stock Bon
+                <Badge 
+                  variant={statusFilter === "good" ? "secondary" : "outline"} 
+                  className="ml-2 text-[10px]"
+                >
+                  {materials.filter(m => m.status === "good").length}
+                </Badge>
+              </Button>
+              
+              <Button 
+                onClick={handleRefresh} 
+                variant="outline" 
+                size="sm" 
+                className="rounded-xl ml-auto hidden sm:flex px-3 sm:px-4 transition-all shadow-sm hover:shadow-md"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Actualiser
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -320,10 +422,14 @@ const GlobalStockView = () => {
           <p className="text-muted-foreground">Aucune matière trouvée pour ce filtre</p>
           <Button 
             variant="outline" 
-            onClick={() => setStatusFilter("all")} 
+            onClick={() => {
+              setStatusFilter("all");
+              setLocationFilter("all");
+              setMateriereTypeFilter("all");
+            }} 
             className="mt-4"
           >
-            Réinitialiser le filtre
+            Réinitialiser les filtres
           </Button>
         </div>
       )}

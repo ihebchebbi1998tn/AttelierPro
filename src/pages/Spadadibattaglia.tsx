@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { RefreshCw, Eye, ShoppingCart, ArrowRight } from 'lucide-react';
 import { getProductImageUrl, getProductImages } from "@/utils/imageUtils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Product {
   id: number;
@@ -40,6 +42,8 @@ const Spadadibattaglia = () => {
   const [search, setSearch] = useState('');
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
   const [transferring, setTransferring] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const isMobile = useIsMobile();
 
   const loadProducts = async () => {
     setLoading(true);
@@ -142,6 +146,7 @@ const Spadadibattaglia = () => {
           description: `${selectedProducts.size} produit(s) transféré(s) vers la page Produits`,
         });
         setSelectedProducts(new Set());
+        setShowTransferModal(false);
       } else {
         toast({
           title: "Erreur de transfert",
@@ -170,7 +175,7 @@ const Spadadibattaglia = () => {
   );
 
   return (
-    <div className="space-y-4 md:space-y-6 p-4 md:p-6">
+    <div className="space-y-4 md:space-y-6 p-4 md:p-6 pb-24 md:pb-6">
       <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Spadadibattaglia</h1>
@@ -178,15 +183,14 @@ const Spadadibattaglia = () => {
         </div>
         
         <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:gap-2">
-          {selectedProducts.size > 0 && (
+          {!isMobile && selectedProducts.size > 0 && (
             <Button 
-              onClick={transferProducts} 
+              onClick={() => setShowTransferModal(true)} 
               variant="default" 
               size="sm" 
               className="w-full md:w-auto text-xs md:text-sm"
-              disabled={transferring}
             >
-              <ArrowRight className={`h-3 w-3 md:h-4 md:w-4 mr-2 ${transferring ? 'animate-pulse' : ''}`} />
+              <ArrowRight className="h-3 w-3 md:h-4 md:w-4 mr-2" />
               Transférer à Produits ({selectedProducts.size})
             </Button>
           )}
@@ -221,7 +225,7 @@ const Spadadibattaglia = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -335,6 +339,113 @@ const Spadadibattaglia = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Mobile Cards View */}
+      {isMobile && (
+        <div className="grid grid-cols-1 gap-4 md:hidden">
+          {filteredProducts.map((product) => {
+            const mainImage = getProductImageUrl(product.img_product, product.boutique_origin);
+            const allImages = getProductImages(product);
+            
+            return (
+              <Card key={product.id} className="overflow-hidden">
+                <CardContent className="p-2">
+                  <div className="flex gap-3">
+                    <Checkbox
+                      checked={selectedProducts.has(product.id)}
+                      onCheckedChange={() => handleSelectProduct(product.id)}
+                      className="h-5 w-5 mt-1"
+                    />
+                    <div 
+                      className="relative w-20 h-20 flex-shrink-0 cursor-pointer"
+                      onClick={() => navigate(`/spadadibattaglia/${product.id}`)}
+                    >
+                      {mainImage ? (
+                        <img 
+                          src={mainImage} 
+                          alt={product.nom_product}
+                          className="w-full h-full object-cover rounded-md"
+                          onError={(e) => {
+                            e.currentTarget.src = '/placeholder.svg';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
+                          <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0" onClick={() => navigate(`/spadadibattaglia/${product.id}`)}>
+                      <h3 className="font-semibold text-xs break-words line-clamp-3">{product.nom_product}</h3>
+                      <p className="text-xs text-muted-foreground mb-2">Ref: {product.reference_product}</p>
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        <Badge variant="secondary" className="text-xs">Spadadibattaglia</Badge>
+                        {product.type_product && (
+                          <Badge variant="outline" className="text-xs">{product.type_product}</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold text-primary">{product.price_product} TND</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Floating Transfer Button for Mobile */}
+      {isMobile && selectedProducts.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg z-50">
+          <Button 
+            onClick={() => setShowTransferModal(true)} 
+            className="w-full"
+            size="lg"
+          >
+            <ArrowRight className="h-5 w-5 mr-2" />
+            Transférer ({selectedProducts.size}) produit{selectedProducts.size > 1 ? 's' : ''}
+          </Button>
+        </div>
+      )}
+
+      {/* Transfer Confirmation Modal */}
+      <Dialog open={showTransferModal} onOpenChange={setShowTransferModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer le transfert</DialogTitle>
+            <DialogDescription>
+              Voulez-vous transférer {selectedProducts.size} produit{selectedProducts.size > 1 ? 's' : ''} vers la page Produits ?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowTransferModal(false)}
+              disabled={transferring}
+              className="w-full sm:w-auto"
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={transferProducts}
+              disabled={transferring}
+              className="w-full sm:w-auto"
+            >
+              {transferring ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Transfert en cours...
+                </>
+              ) : (
+                <>
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Transférer à Produits
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

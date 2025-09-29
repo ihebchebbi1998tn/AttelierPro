@@ -14,11 +14,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { RefreshCw, Settings, Play, Plus, Eye, Edit, ShoppingCart, Package, Ruler } from 'lucide-react';
 import { getProductImageUrl, getProductImages } from "@/utils/imageUtils";
 import MaterialsConfigurationModal from "@/components/MaterialsConfigurationModal";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Produits = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -300,31 +302,8 @@ const Produits = () => {
     <div className="space-y-4 md:space-y-6 p-4 md:p-6">
       <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Produits de Production</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Gestion des produits synchronisés depuis les boutiques</p>
-        </div>
-        
-        <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:gap-2">
-          <Button 
-            onClick={() => syncBoutique('luccibyey')} 
-            variant="outline" 
-            size="sm" 
-            className="w-full md:w-auto text-xs md:text-sm"
-            disabled={loading}
-          >
-            <RefreshCw className={`h-3 w-3 md:h-4 md:w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Sync Lucci By Ey
-          </Button>
-          <Button 
-            onClick={() => syncBoutique('spadadibattaglia')} 
-            variant="outline" 
-            size="sm" 
-            className="w-full md:w-auto text-xs md:text-sm"
-            disabled={loading}
-          >
-            <RefreshCw className={`h-3 w-3 md:h-4 md:w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Sync Spadadibattaglia
-          </Button>
+          <h1 className="text-2xl md:text-3xl font-bold">Produit a produire</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Produits sélectionnés pour être mis en production</p>
         </div>
       </div>
 
@@ -346,7 +325,7 @@ const Produits = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -461,6 +440,103 @@ const Produits = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Mobile Cards View */}
+      {isMobile && (
+        <div className="grid grid-cols-1 gap-4 md:hidden">
+          {filteredProducts.map((product) => {
+            const mainImage = getProductImageUrl(product.img_product, product.boutique_origin);
+            const allImages = getProductImages(product);
+            
+            return (
+              <Card key={product.id} className="overflow-hidden">
+                <CardContent className="p-2">
+                  <div className="flex gap-3">
+                    <div 
+                      className="relative w-20 h-20 flex-shrink-0 cursor-pointer"
+                      onClick={() => navigate(`/produits/${product.id}`)}
+                    >
+                      {mainImage ? (
+                        <img 
+                          src={mainImage} 
+                          alt={product.nom_product}
+                          className="w-full h-full object-cover rounded-md"
+                          onError={(e) => {
+                            e.currentTarget.src = '/placeholder.svg';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
+                          <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0" onClick={() => navigate(`/produits/${product.id}`)}>
+                      <h3 className="font-semibold text-xs break-words line-clamp-3">{product.nom_product}</h3>
+                      <p className="text-xs text-muted-foreground mb-2">Ref: {product.reference_product}</p>
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        <Badge 
+                          variant={product.boutique_origin === 'luccibyey' ? 'default' : 'secondary'} 
+                          className="text-xs"
+                        >
+                          {product.boutique_origin === 'luccibyey' ? 'Lucci By Ey' : 'Spada di Battaglia'}
+                        </Badge>
+                        {product.type_product && (
+                          <Badge variant="outline" className="text-xs">{product.type_product}</Badge>
+                        )}
+                        <Badge 
+                          variant={(product.materials_configured == 1 || product.materials_configured === "1") ? 'default' : 'destructive'} 
+                          className="text-xs"
+                        >
+                          {(product.materials_configured == 1 || product.materials_configured === "1") ? 'Configurés' : 'Non configurés'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-primary">{product.price_product} TND</p>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          {(product.materials_configured == 1 || product.materials_configured === "1") ? (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => handleStartProduction(product)}
+                              className="text-xs px-2 py-1"
+                            >
+                              <Play className="h-3 w-3 mr-1" />
+                              Production
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleConfigure(product)}
+                              className="text-xs px-2 py-1"
+                            >
+                              <Settings className="h-3 w-3 mr-1" />
+                              Config
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {loading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      )}
+      
+      {!loading && filteredProducts.length === 0 && (
+        <div className="text-center py-8 text-muted-foreground md:hidden">
+          <p>Aucun produit trouvé</p>
+        </div>
+      )}
 
       {/* Modals */}
 

@@ -283,51 +283,67 @@ const MaterialDetails = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 p-3 md:p-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-3 md:space-y-0 md:flex md:items-center md:justify-between">
         <div className="space-y-1">
           <Button 
             variant="ghost" 
             onClick={() => navigate('/stock')}
-            className="mb-2 -ml-2"
+            className="mb-2 -ml-2 text-xs md:text-sm h-8 md:h-10"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
             Retour au stock
           </Button>
-          <h1 className="text-2xl font-bold tracking-tight">{material.title}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-lg md:text-2xl font-bold tracking-tight">{material.title}</h1>
+          <p className="text-xs md:text-sm text-muted-foreground">
             Détails complets du matériau #{material.material_id}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate(`/material-audit/${material.material_id}`)}>
-            <History className="mr-2 h-4 w-4" />
-            Journal des transactions
+        <div className="flex flex-wrap gap-1.5 md:gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate(`/material-audit/${material.material_id}`)}
+            className="text-xs h-8 rounded-xl flex-1 sm:flex-initial"
+          >
+            <History className="mr-1 h-3 w-3" />
+            <span className="hidden sm:inline">Journal</span>
+            <span className="sm:hidden">Audit</span>
           </Button>
-          <Button variant="outline" onClick={() => navigate(`/edit-material/${material.material_id}`)}>
-            <Edit className="mr-2 h-4 w-4" />
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate(`/edit-material/${material.material_id}`)}
+            className="text-xs h-8 rounded-xl flex-1 sm:flex-initial"
+          >
+            <Edit className="mr-1 h-3 w-3" />
             Modifier
           </Button>
-          <Button variant="outline" onClick={handleDelete}>
-            <Trash2 className="mr-2 h-4 w-4" />
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleDelete}
+            className="text-xs h-8 rounded-xl text-destructive hover:text-destructive sm:w-auto w-full"
+          >
+            <Trash2 className="mr-1 h-3 w-3" />
             Supprimer
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
         {/* Material Information */}
         <Card className="modern-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package2 className="h-5 w-5" />
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+              <Package2 className="h-4 w-4 md:h-5 md:w-5" />
               Informations du matériau
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 md:space-y-4 p-4 md:p-6 pt-0">
             <div className="flex items-center justify-between">
-              <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted">
+              <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg overflow-hidden bg-muted">
                 <img 
                   src={material.image_url || materialPlaceholder}
                   alt={material.title}
@@ -338,67 +354,67 @@ const MaterialDetails = () => {
                   }}
                 />
               </div>
-              <Badge variant={getStatusBadgeVariant(material.status) as any} className="flex items-center gap-1">
+              <Badge variant={getStatusBadgeVariant(material.status) as any} className="flex items-center gap-1 text-xs">
                 {getStatusIcon(material.status)}
                 {getStatusLabel(material.status)}
               </Badge>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Référence</p>
-                <p className="font-medium">{material.reference || "Non définie"}</p>
+                <p className="text-xs md:text-sm font-medium text-muted-foreground">Référence</p>
+                <p className="font-medium text-sm md:text-base">{material.reference || "Non définie"}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Couleur</p>
+                <p className="text-xs md:text-sm font-medium text-muted-foreground">Couleur</p>
                 <div className="flex items-center gap-2">
                   {material.color && material.color !== "Non spécifiée" ? (
                     <>
                       <div 
-                        className="w-4 h-4 rounded-full border border-border shadow-sm"
+                        className="w-3 h-3 md:w-4 md:h-4 rounded-full border border-border shadow-sm"
                         style={{ backgroundColor: material.color }}
                         title={material.color}
                       />
-                      <p className="font-medium">{material.color}</p>
+                      <p className="font-medium text-sm md:text-base line-clamp-1">{material.color}</p>
                     </>
                   ) : (
-                    <p className="font-medium text-muted-foreground">Non spécifiée</p>
+                    <p className="font-medium text-sm md:text-base text-muted-foreground">Non spécifiée</p>
                   )}
                 </div>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Laize</p>
-                <p className="font-medium">{material.laize || "Non spécifiée"}</p>
+                <p className="text-xs md:text-sm font-medium text-muted-foreground">Laize</p>
+                <p className="font-medium text-sm md:text-base">{material.laize || "Non spécifiée"}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Prix unitaire</p>
-                <p className="font-medium">{material.price ? `${material.price.toFixed(2)} TND` : "Non défini"}</p>
+                <p className="text-xs md:text-sm font-medium text-muted-foreground">Prix unitaire</p>
+                <p className="font-medium text-sm md:text-base">{material.price ? `${material.price.toFixed(2)} TND` : "Non défini"}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Emplacement</p>
+                <p className="text-xs md:text-sm font-medium text-muted-foreground">Emplacement</p>
                 <Badge variant="outline" className="text-xs">
                   {material.location || "Non défini"}
                 </Badge>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Type de quantité</p>
-                <p className="font-medium">{material.quantity_type}</p>
+                <p className="text-xs md:text-sm font-medium text-muted-foreground">Type de quantité</p>
+                <p className="font-medium text-sm md:text-base">{material.quantity_type}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Fournisseur</p>
-                <p className="font-medium">{material.supplier_name || "Non spécifié"}</p>
+                <p className="text-xs md:text-sm font-medium text-muted-foreground">Fournisseur</p>
+                <p className="font-medium text-sm md:text-base line-clamp-1">{material.supplier_name || "Non spécifié"}</p>
               </div>
               
               {material.materiere_type === "extern" && material.extern_customer_id && (
                 <div className="col-span-2">
-                  <p className="text-sm font-medium text-muted-foreground">Client Sous-traitance</p>
+                  <p className="text-xs md:text-sm font-medium text-muted-foreground mb-1">Client Sous-traitance</p>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => navigate(`/clients-soustraitance/${material.extern_customer_id}`)}
-                    className="h-auto py-2 px-3 text-sm font-medium"
+                    className="h-auto py-1.5 md:py-2 px-2 md:px-3 text-xs md:text-sm font-medium w-full md:w-auto"
                   >
-                    <User className="mr-2 h-3 w-3" />
+                    <User className="mr-1 md:mr-2 h-3 w-3" />
                     {material.customer_name || "Client externe"}
                   </Button>
                 </div>
@@ -407,30 +423,30 @@ const MaterialDetails = () => {
 
             <Separator />
 
-            <div className="space-y-3">
-              <h4 className="font-medium">Niveaux de stock</h4>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div className="text-center p-3 rounded-lg bg-destructive/10">
-                  <p className="font-medium text-destructive">Critique</p>
-                  <p className="text-lg font-bold">{material.lowest_quantity_needed}</p>
+            <div className="space-y-2 md:space-y-3">
+              <h4 className="font-medium text-sm md:text-base">Niveaux de stock</h4>
+              <div className="grid grid-cols-3 gap-2 md:gap-4 text-xs md:text-sm">
+                <div className="text-center p-2 md:p-3 rounded-lg bg-destructive/10">
+                  <p className="font-medium text-destructive text-xs md:text-sm">Critique</p>
+                  <p className="text-base md:text-lg font-bold">{material.lowest_quantity_needed}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-warning/10">
-                  <p className="font-medium text-warning">Moyen</p>
-                  <p className="text-lg font-bold">{material.medium_quantity_needed}</p>
+                <div className="text-center p-2 md:p-3 rounded-lg bg-warning/10">
+                  <p className="font-medium text-warning text-xs md:text-sm">Moyen</p>
+                  <p className="text-base md:text-lg font-bold">{material.medium_quantity_needed}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-success/10">
-                  <p className="font-medium text-success">Optimal</p>
-                  <p className="text-lg font-bold">{material.good_quantity_needed}</p>
+                <div className="text-center p-2 md:p-3 rounded-lg bg-success/10">
+                  <p className="font-medium text-success text-xs md:text-sm">Optimal</p>
+                  <p className="text-base md:text-lg font-bold">{material.good_quantity_needed}</p>
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-xs md:text-sm">
                 <span>Stock actuel</span>
                 <span className="font-medium">{material.quantity_total} {material.quantity_type}</span>
               </div>
-              <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary">
+              <div className="relative h-2 md:h-3 w-full overflow-hidden rounded-full bg-secondary">
                 <div 
                   className={`h-full transition-all duration-300 ${
                     material.status === 'critical' ? 'bg-destructive' :
@@ -440,7 +456,7 @@ const MaterialDetails = () => {
                   style={{ width: `${Math.min(material.progress_percentage, 100)}%` }}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] md:text-xs text-muted-foreground">
                 {material.progress_percentage.toFixed(1)}% du niveau optimal
               </p>
             </div>
@@ -523,31 +539,31 @@ const MaterialDetails = () => {
         </Card>
 
         {/* Activity & Metadata */}
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {/* Transaction Summary */}
           <Card className="modern-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <History className="h-5 w-5" />
+            <CardHeader className="p-4 md:p-6">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <History className="h-4 w-4 md:h-5 md:w-5" />
                 Résumé des transactions
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 rounded-lg bg-success/10">
-                  <p className="text-sm font-medium text-success">Entrées</p>
-                  <p className="text-2xl font-bold">{material.total_entries}</p>
+            <CardContent className="space-y-3 md:space-y-4 p-4 md:p-6 pt-0">
+              <div className="grid grid-cols-2 gap-3 md:gap-4">
+                <div className="text-center p-3 md:p-4 rounded-lg bg-success/10">
+                  <p className="text-xs md:text-sm font-medium text-success">Entrées</p>
+                  <p className="text-xl md:text-2xl font-bold">{material.total_entries}</p>
                   {material.last_entry_date && (
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-[10px] md:text-xs text-muted-foreground mt-1 line-clamp-2">
                       Dernière: {formatDate(material.last_entry_date)}
                     </p>
                   )}
                 </div>
-                <div className="text-center p-4 rounded-lg bg-destructive/10">
-                  <p className="text-sm font-medium text-destructive">Sorties</p>
-                  <p className="text-2xl font-bold">{material.total_exits}</p>
+                <div className="text-center p-3 md:p-4 rounded-lg bg-destructive/10">
+                  <p className="text-xs md:text-sm font-medium text-destructive">Sorties</p>
+                  <p className="text-xl md:text-2xl font-bold">{material.total_exits}</p>
                   {material.last_exit_date && (
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-[10px] md:text-xs text-muted-foreground mt-1 line-clamp-2">
                       Dernière: {formatDate(material.last_exit_date)}
                     </p>
                   )}
@@ -555,11 +571,11 @@ const MaterialDetails = () => {
               </div>
               
               <Button 
-                className="w-full" 
+                className="w-full text-xs md:text-sm h-9 md:h-10" 
                 variant="outline"
                 onClick={() => navigate(`/material-audit/${material.material_id}`)}
               >
-                <History className="mr-2 h-4 w-4" />
+                <History className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
                 Voir toutes les transactions
               </Button>
             </CardContent>
@@ -567,49 +583,49 @@ const MaterialDetails = () => {
 
           {/* Metadata */}
           <Card className="modern-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
+            <CardHeader className="p-4 md:p-6">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Clock className="h-4 w-4 md:h-5 md:w-5" />
                 Informations système
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Date de création</p>
-                    <p className="text-sm text-muted-foreground">
+            <CardContent className="space-y-3 md:space-y-4 p-4 md:p-6 pt-0">
+              <div className="space-y-2 md:space-y-3">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <Calendar className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs md:text-sm font-medium">Date de création</p>
+                    <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">
                       {material.created_date ? formatDate(material.created_date) : 'Non disponible'}
                     </p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Créé par</p>
-                    <p className="text-sm text-muted-foreground">Administrateur</p>
+                <div className="flex items-center gap-2 md:gap-3">
+                  <User className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs md:text-sm font-medium">Créé par</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Administrateur</p>
                   </div>
                 </div>
 
                 <Separator />
 
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Dernière modification</p>
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <Calendar className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs md:text-sm font-medium">Dernière modification</p>
+                    <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">
                       {material.modified_date ? formatDate(material.modified_date) : 'Non disponible'}
                     </p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Modifié par</p>
-                    <p className="text-sm text-muted-foreground">Administrateur</p>
+                <div className="flex items-center gap-2 md:gap-3">
+                  <User className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs md:text-sm font-medium">Modifié par</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Administrateur</p>
                   </div>
                 </div>
               </div>

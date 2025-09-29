@@ -1900,52 +1900,54 @@ const BatchDetails = () => {
   const priority = getPriorityLevel(batch.status, duration);
 
   return (
-    <div className="space-y-6 p-4 md:p-6 bg-muted/20 min-h-screen">
+    <div className="space-y-4 md:space-y-6 p-3 md:p-6 bg-muted/20 min-h-screen">
       {/* Professional Header */}
       <div className="bg-background rounded-lg shadow-sm border">
-        <div className="p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={() => navigate('/productions')}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
+        <div className="p-3 md:p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 md:gap-4">
+            <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+              <Button variant="outline" size="sm" onClick={() => navigate('/productions')} className="w-full md:w-auto text-xs md:text-sm">
+                <ArrowLeft className="h-3 w-3 md:h-4 md:w-4 mr-2" />
                 Retour
               </Button>
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl md:text-3xl font-bold">{batch.batch_reference}</h1>
-                  <Badge 
-                    variant={getStatusBadgeVariant(batch.status)}
-                    className={`${getStatusColor(batch.status)} text-white font-medium px-3 py-1`}
-                  >
-                    <div className="flex items-center gap-1">
-                      {getStatusIcon(batch.status)}
-                      {getStatusLabel(batch.status)}
-                    </div>
-                  </Badge>
-                  {priority === 'high' && (
-                    <Badge variant="destructive" className="flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      Priorité Haute
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-2">
+                  <h1 className="text-lg md:text-2xl lg:text-3xl font-bold truncate">{batch.batch_reference}</h1>
+                  <div className="flex flex-wrap gap-1 md:gap-2">
+                    <Badge 
+                      variant={getStatusBadgeVariant(batch.status)}
+                      className={`${getStatusColor(batch.status)} text-white font-medium px-2 md:px-3 py-0.5 md:py-1 text-xs md:text-sm`}
+                    >
+                      <div className="flex items-center gap-1">
+                        {getStatusIcon(batch.status)}
+                        {getStatusLabel(batch.status)}
+                      </div>
                     </Badge>
-                  )}
+                    {priority === 'high' && (
+                      <Badge variant="destructive" className="flex items-center gap-1 text-xs md:text-sm">
+                        <AlertTriangle className="h-3 w-3" />
+                        Priorité Haute
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <p className="text-muted-foreground text-lg">{batch.nom_product}</p>
-                <p className="text-sm text-muted-foreground">Ref: {batch.reference_product}</p>
+                <p className="text-sm md:text-lg text-muted-foreground truncate">{batch.nom_product}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Ref: {batch.reference_product}</p>
               </div>
             </div>
             
             {/* Quick Actions */}
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setShowReportModal(true)}>
-                <FileText className="h-4 w-4 mr-2" />
+            <div className="flex gap-1 md:gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => setShowReportModal(true)} className="flex-1 md:flex-initial text-xs md:text-sm">
+                <FileText className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                 Rapport
               </Button>
               {batch.status !== 'cancelled' && batch.status !== 'termine' && (
                 <AlertDialog open={showCancelModal} onOpenChange={setShowCancelModal}>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                      <X className="h-4 w-4 mr-2" />
-                      Annuler Batch
+                    <Button variant="destructive" size="sm" className="flex-1 md:flex-initial text-xs md:text-sm">
+                      <X className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                      Annuler
                     </Button>
                   </AlertDialogTrigger>
                 </AlertDialog>
@@ -1956,55 +1958,55 @@ const BatchDetails = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-6">
         <Card className="bg-gradient-to-br from-primary/10 to-primary/20 border-primary/20">
-          <CardContent className="p-6">
+          <CardContent className="p-3 md:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-primary/80">Quantité</p>
-                <p className="text-3xl font-bold text-primary">{batch.quantity_to_produce}</p>
-                <p className="text-xs text-primary/70 mt-1">unités à produire</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs md:text-sm font-medium text-primary/80">Quantité</p>
+                <p className="text-xl md:text-3xl font-bold text-primary truncate">{batch.quantity_to_produce}</p>
+                <p className="text-xs text-primary/70 mt-0.5 md:mt-1">unités</p>
               </div>
-              <Package className="h-8 w-8 text-primary/70" />
+              <Package className="h-5 w-5 md:h-8 md:w-8 text-primary/70 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-primary/10 to-primary/20 border-primary/20">
-          <CardContent className="p-6">
+          <CardContent className="p-3 md:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-primary/80">Coût Total</p>
-                <p className="text-3xl font-bold text-primary">{Number(batch.total_materials_cost || 0).toFixed(2)}</p>
-                <p className="text-xs text-primary/70 mt-1">TND matériaux</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs md:text-sm font-medium text-primary/80">Coût Total</p>
+                <p className="text-xl md:text-3xl font-bold text-primary truncate">{Number(batch.total_materials_cost || 0).toFixed(2)}</p>
+                <p className="text-xs text-primary/70 mt-0.5 md:mt-1">TND</p>
               </div>
-              <DollarSign className="h-8 w-8 text-primary/70" />
+              <DollarSign className="h-5 w-5 md:h-8 md:w-8 text-primary/70 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-primary/10 to-primary/20 border-primary/20">
-          <CardContent className="p-6">
+          <CardContent className="p-3 md:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-primary/80">Progression</p>
-                <p className="text-3xl font-bold text-primary">{getProgressPercentage(batch.status)}%</p>
-                <p className="text-xs text-primary/70 mt-1">complété</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs md:text-sm font-medium text-primary/80">Progression</p>
+                <p className="text-xl md:text-3xl font-bold text-primary truncate">{getProgressPercentage(batch.status)}%</p>
+                <p className="text-xs text-primary/70 mt-0.5 md:mt-1">complété</p>
               </div>
-              <BarChart3 className="h-8 w-8 text-primary/70" />
+              <BarChart3 className="h-5 w-5 md:h-8 md:w-8 text-primary/70 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-primary/10 to-primary/20 border-primary/20">
-          <CardContent className="p-6">
+          <CardContent className="p-3 md:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-primary/80">Durée</p>
-                <p className="text-3xl font-bold text-primary">{duration || '-'}</p>
-                <p className="text-xs text-primary/70 mt-1">jours écoulés</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs md:text-sm font-medium text-primary/80">Durée</p>
+                <p className="text-xl md:text-3xl font-bold text-primary truncate">{duration || '-'}</p>
+                <p className="text-xs text-primary/70 mt-0.5 md:mt-1">jours</p>
               </div>
-              <Timer className="h-8 w-8 text-primary/70" />
+              <Timer className="h-5 w-5 md:h-8 md:w-8 text-primary/70 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
@@ -2025,7 +2027,7 @@ const BatchDetails = () => {
               <span className="font-medium">{getProgressPercentage(batch.status)}%</span>
             </div>
             <Progress value={getProgressPercentage(batch.status)} className="h-3" />
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-4 mt-4 md:mt-6">
               {['planifie', 'en_cours', 'termine', 'en_a_collecter', 'en_magasin'].map((status, index) => {
                 const isCurrentStatus = batch.status === status;
                 const isCompleted = getProgressPercentage(batch.status) >= getProgressPercentage(status);
@@ -2036,7 +2038,7 @@ const BatchDetails = () => {
                     key={status}
                     onClick={() => canUpdate ? handleStatusClick(status) : null}
                     disabled={!canUpdate}
-                    className={`group text-center p-2 rounded-lg transition-all duration-200 ${
+                    className={`group text-center p-1.5 md:p-2 rounded-lg transition-all duration-200 ${
                       canUpdate 
                         ? 'hover:bg-primary/10 hover:scale-105 cursor-pointer' 
                         : 'cursor-default'
@@ -2044,7 +2046,7 @@ const BatchDetails = () => {
                       isCurrentStatus ? 'bg-primary/20 ring-2 ring-primary/50' : ''
                     }`}
                   >
-                    <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center transition-all duration-200 ${
+                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full mx-auto mb-1 md:mb-2 flex items-center justify-center transition-all duration-200 ${
                       isCompleted
                         ? getStatusColor(status) + ' text-white shadow-lg' 
                         : 'bg-muted text-muted-foreground border-2 border-dashed border-muted-foreground/20'
@@ -2074,56 +2076,56 @@ const BatchDetails = () => {
       </Card>
 
       {/* Detailed Information Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
-          <TabsTrigger value="materials">Matériaux</TabsTrigger>
-          <TabsTrigger value="timeline">Chronologie</TabsTrigger>
+      <Tabs defaultValue="overview" className="space-y-4 md:space-y-6">
+        <TabsList className="grid w-full grid-cols-3 bg-muted p-1 gap-1">
+          <TabsTrigger value="overview" className="text-xs md:text-sm">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="materials" className="text-xs md:text-sm">Matériaux</TabsTrigger>
+          <TabsTrigger value="timeline" className="text-xs md:text-sm">Chronologie</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TabsContent value="overview" className="space-y-4 md:space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Product Information */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
+              <CardHeader className="pb-3 md:pb-4 px-3 md:px-6 pt-3 md:pt-6">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <Package className="h-4 w-4 md:h-5 md:w-5" />
                   Informations Produit
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Nom du produit</p>
+              <CardContent className="space-y-3 md:space-y-4 px-3 md:px-6 pb-3 md:pb-6">
+                <div className="grid grid-cols-2 gap-3 md:gap-4">
+                  <div className="min-w-0">
+                    <p className="text-xs md:text-sm text-muted-foreground">Nom du produit</p>
                     <p 
-                      className="font-semibold text-primary hover:text-primary/80 cursor-pointer transition-colors underline-offset-4 hover:underline"
+                      className="font-semibold text-sm md:text-base text-primary hover:text-primary/80 cursor-pointer transition-colors underline-offset-4 hover:underline truncate"
                       onClick={() => navigate(batch.product_type === 'soustraitance' ? `/soustraitance-products/${batch.product_id}` : `/produits/${batch.product_id}`)}
                     >
                       {batch.nom_product}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Référence</p>
+                  <div className="min-w-0">
+                    <p className="text-xs md:text-sm text-muted-foreground">Référence</p>
                     <p 
-                      className="font-semibold text-primary hover:text-primary/80 cursor-pointer transition-colors underline-offset-4 hover:underline"
+                      className="font-semibold text-sm md:text-base text-primary hover:text-primary/80 cursor-pointer transition-colors underline-offset-4 hover:underline truncate"
                       onClick={() => navigate(batch.product_type === 'soustraitance' ? `/soustraitance-products/${batch.product_id}` : `/produits/${batch.product_id}`)}
                     >
                       {batch.reference_product}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Boutique</p>
+                  <div className="min-w-0">
+                    <p className="text-xs md:text-sm text-muted-foreground">Boutique</p>
                     {batch.product_type === 'soustraitance' && batch.client_id ? (
                       <Badge 
                         variant="outline" 
-                        className="font-semibold cursor-pointer hover:bg-accent transition-colors"
+                        className="font-semibold cursor-pointer hover:bg-accent transition-colors text-xs md:text-sm"
                         onClick={() => navigate(`/clients-soustraitance/${batch.client_id}`)}
                       >
                         <MapPin className="h-3 w-3 mr-1" />
                         {batch.boutique_origin}
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="font-semibold">
+                      <Badge variant="outline" className="font-semibold text-xs md:text-sm">
                         <MapPin className="h-3 w-3 mr-1" />
                         {batch.product_type === 'soustraitance' 
                           ? batch.boutique_origin 
@@ -2132,9 +2134,9 @@ const BatchDetails = () => {
                       </Badge>
                     )}
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Quantité cible</p>
-                    <p className="font-semibold flex items-center gap-1">
+                  <div className="min-w-0">
+                    <p className="text-xs md:text-sm text-muted-foreground">Quantité cible</p>
+                    <p className="font-semibold text-sm md:text-base flex items-center gap-1 truncate">
                       <Weight className="h-4 w-4" />
                       {batch.quantity_to_produce} unités
                     </p>
@@ -2219,17 +2221,18 @@ const BatchDetails = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="materials" className="space-y-6">
+        <TabsContent value="materials" className="space-y-4 md:space-y-6">
           {batch.materials_used && batch.materials_used.length > 0 ? (
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
+              <CardHeader className="pb-3 md:pb-4 px-3 md:px-6 pt-3 md:pt-6">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <Package className="h-4 w-4 md:h-5 md:w-5" />
                   Matériaux Utilisés ({batch.materials_used.length})
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
@@ -2238,13 +2241,10 @@ const BatchDetails = () => {
                         <TableHead className="font-semibold">Quantité</TableHead>
                         <TableHead className="font-semibold">Unité</TableHead>
                         <TableHead className="font-semibold">Commentaire</TableHead>
-                        <TableHead className="font-semibold text-right hidden">Coût Unit.</TableHead>
-                        <TableHead className="font-semibold text-right hidden">Coût Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {batch.materials_used.map((material) => {
-                        const percentage = ((Number(material.total_cost || 0) / Number(batch.total_materials_cost || 1)) * 100);
                         return (
                           <TableRow key={material.id} className="hover:bg-muted/20">
                             <TableCell className="font-medium">{material.nom_matiere}</TableCell>
@@ -2260,17 +2260,39 @@ const BatchDetails = () => {
                             <TableCell className="text-sm text-muted-foreground">
                               {material.commentaire || '-'}
                             </TableCell>
-                            <TableCell className="text-right font-mono hidden">
-                              {Number(material.unit_cost || 0).toFixed(2)} TND
-                            </TableCell>
-                            <TableCell className="text-right font-mono font-semibold hidden">
-                              {Number(material.total_cost || 0).toFixed(2)} TND
-                            </TableCell>
                           </TableRow>
                         );
                       })}
                     </TableBody>
                   </Table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3 p-3">
+                  {batch.materials_used.map((material) => (
+                    <Card key={material.id} className="border shadow-sm">
+                      <CardContent className="p-3 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm truncate">{material.nom_matiere}</p>
+                            <p className="text-xs text-muted-foreground">{material.couleur || 'Non spécifiée'}</p>
+                          </div>
+                          <Badge variant="outline" className="text-xs flex-shrink-0">
+                            {material.quantity_type_name}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Quantité:</span>
+                          <span className="text-sm font-semibold">{material.quantity_used}</span>
+                        </div>
+                        {material.commentaire && (
+                          <div className="pt-1 border-t">
+                            <p className="text-xs text-muted-foreground">{material.commentaire}</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -2285,14 +2307,14 @@ const BatchDetails = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="timeline" className="space-y-6">
+        <TabsContent value="timeline" className="space-y-4 md:space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+            <CardHeader className="pb-3 md:pb-4 px-3 md:px-6 pt-3 md:pt-6">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Calendar className="h-4 w-4 md:h-5 md:w-5" />
                 Chronologie du Batch
               </CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs md:text-sm text-muted-foreground">
                 Historique complet des changements de statut
               </p>
             </CardHeader>

@@ -49,6 +49,39 @@ const LucciProductDetails = () => {
   const [selectedImages, setSelectedImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  const formatStockDisplay = (product: Product) => {
+    if (!product) return "0 pièce";
+
+    // Define all possible size fields
+    const sizeFields = [
+      'xs_size', 's_size', 'm_size', 'l_size', 'xl_size', 'xxl_size', '3xl_size', '4xl_size',
+      '30_size', '31_size', '32_size', '33_size', '34_size', '36_size', '38_size', '39_size',
+      '40_size', '41_size', '42_size', '43_size', '44_size', '45_size', '46_size', '47_size',
+      '48_size', '50_size', '52_size', '54_size', '56_size', '58_size', '60_size', '62_size',
+      '64_size', '66_size', '85_size', '90_size', '95_size', '100_size', '105_size', '110_size',
+      '115_size', '120_size', '125_size'
+    ];
+
+    // Check if any size has quantity > 0
+    const sizesWithStock = sizeFields
+      .map(field => ({
+        size: field.replace('_size', '').toUpperCase(),
+        quantity: parseInt(String(product[field] || '0'))
+      }))
+      .filter(item => item.quantity > 0);
+
+    // If we have size-specific stock, display it
+    if (sizesWithStock.length > 0) {
+      return sizesWithStock
+        .map(item => `${item.quantity} ${item.size}`)
+        .join(', ');
+    }
+
+    // Otherwise, display total quantity
+    const totalQty = parseInt(String(product.qnty_product || '0'));
+    return `${totalQty} pièce${totalQty > 1 ? 's' : ''}`;
+  };
+
   const loadProduct = async () => {
     if (!id) return;
     
@@ -125,29 +158,29 @@ const LucciProductDetails = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       {/* Header */}
       <div className="bg-card/80 backdrop-blur-sm border-b sticky top-0 z-10">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
               <Button 
                 variant="ghost" 
                 size="sm"
                 onClick={() => navigate('/lucci-by-ey')}
-                className="hover:bg-muted/50"
+                className="hover:bg-muted/50 flex-shrink-0"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Retour
+                <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Retour</span>
               </Button>
-              <div className="h-8 w-px bg-border" />
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">{product.nom_product}</h1>
-                <p className="text-sm text-muted-foreground">Ref: {product.reference_product}</p>
+              <div className="h-8 w-px bg-border hidden sm:block" />
+              <div className="min-w-0 flex-1">
+                <h1 className="text-base sm:text-2xl font-bold text-foreground truncate">{product.nom_product}</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Ref: {product.reference_product}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-3 sm:px-6 py-4 sm:py-8">
         {/* Main Product Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           {/* Images Section - Compact */}
@@ -236,9 +269,9 @@ const LucciProductDetails = () => {
                     <Label className="text-xs font-medium text-muted-foreground">PRIX</Label>
                     <p className="text-sm font-semibold text-primary">{product.price_product} TND</p>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs font-medium text-muted-foreground">STOCK</Label>
-                    <p className="text-sm font-medium">{product.qnty_product} pièces</p>
+                  <div className="space-y-1 col-span-2 md:col-span-1">
+                    <Label className="text-xs font-semibold text-muted-foreground">STOCK EN LIGNE ACTUEL</Label>
+                    <p className="text-base font-bold text-primary">{formatStockDisplay(product)}</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs font-medium text-muted-foreground">COULEUR</Label>

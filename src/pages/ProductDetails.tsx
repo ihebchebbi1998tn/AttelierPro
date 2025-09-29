@@ -859,57 +859,61 @@ const ProductDetails = () => {
   const images = getProductImages(product);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 pb-6 md:pb-0">
       {/* Header */}
       <div className="bg-card/80 backdrop-blur-sm border-b sticky top-0 z-10">
-        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3 sm:gap-4">
+        <div className="container mx-auto px-3 md:px-6 py-2 md:py-4">
+          <div className="flex flex-col gap-2 md:gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 md:gap-4">
               <Button 
                 variant="ghost" 
                 size="sm"
                 onClick={() => navigate('/produits')}
-                className="hover:bg-muted/50 flex-shrink-0"
+                className="hover:bg-muted/50 flex-shrink-0 h-8 w-8 md:h-9 md:w-auto p-0 md:px-4"
               >
-                <ArrowLeft className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Retour</span>
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden md:inline ml-2">Retour</span>
               </Button>
-              <div className="hidden sm:block h-8 w-px bg-border" />
+              <div className="hidden sm:block h-6 md:h-8 w-px bg-border" />
               <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">{product.nom_product}</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">Ref: {product.reference_product}</p>
+                <h1 className="text-sm md:text-2xl font-bold text-foreground truncate">{product.nom_product}</h1>
+                <p className="text-xs text-muted-foreground truncate">Ref: {product.reference_product}</p>
               </div>
             </div>
-            <div className="flex gap-2 sm:gap-3 flex-wrap">
+            <div className="flex gap-1 md:gap-3 flex-wrap">
               {(product.materials_configured !== 1 && product.materials_configured !== "1") && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleConfigureMaterials}
-                  className="flex items-center gap-2 flex-1 sm:flex-initial"
+                  className="flex items-center gap-1 md:gap-2 flex-1 sm:flex-initial text-xs h-8 md:h-9"
                 >
-                  <Settings className="h-4 w-4" />
-                  <span className="truncate">Configurer Matériaux</span>
+                  <Settings className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="truncate hidden md:inline">Configurer Matériaux</span>
+                  <span className="truncate md:hidden">Config</span>
                 </Button>
               )}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowReportModal(true)}
-                className="flex items-center gap-2 flex-1 sm:flex-initial"
+                className="flex items-center gap-1 md:gap-2 flex-1 sm:flex-initial text-xs h-8 md:h-9"
               >
-                <FileOutput className="h-4 w-4" />
+                <FileOutput className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="truncate">Rapport</span>
               </Button>
               <Button
                 onClick={handleStartProduction}
                 size="sm"
-                className="flex items-center gap-2 flex-1 sm:flex-initial"
+                className="flex items-center gap-1 md:gap-2 flex-1 sm:flex-initial text-xs h-8 md:h-9"
                 disabled={(product.materials_configured !== 1 && product.materials_configured !== "1")}
               >
-                <Play className="h-4 w-4" />
-                <span className="truncate">
+                <Play className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="truncate hidden md:inline">
                   {(product.materials_configured == 1 || product.materials_configured === "1") ? 'Démarrer Production' : 'Configuration requise'}
+                </span>
+                <span className="truncate md:hidden">
+                  {(product.materials_configured == 1 || product.materials_configured === "1") ? 'Production' : 'Config'}
                 </span>
               </Button>
             </div>
@@ -917,39 +921,39 @@ const ProductDetails = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="container mx-auto px-3 md:px-6 py-4 md:py-8">
         {/* Main Tabbed Content */}
         <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 bg-muted p-1">
-              <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Image className="h-4 w-4" />
+            <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 bg-muted p-1 gap-1">
+              <TabsTrigger value="overview" className="flex items-center gap-1 md:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm text-xs md:text-sm">
+                <Image className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Aperçu</span>
               </TabsTrigger>
-              <TabsTrigger value="materials" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Cog className="h-4 w-4" />
+              <TabsTrigger value="materials" className="flex items-center gap-1 md:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm text-xs md:text-sm">
+                <Cog className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Matériaux</span>
               </TabsTrigger>
-              <TabsTrigger value="sizes" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Ruler className="h-4 w-4" />
+              <TabsTrigger value="sizes" className="flex items-center gap-1 md:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm text-xs md:text-sm">
+                <Ruler className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Tailles</span>
               </TabsTrigger>
-              <TabsTrigger value="measurements" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Ruler className="h-4 w-4" />
+              <TabsTrigger value="measurements" className="flex items-center gap-1 md:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm text-xs md:text-sm">
+                <Ruler className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Mesures</span>
               </TabsTrigger>
-              <TabsTrigger value="stock" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Package className="h-4 w-4" />
+              <TabsTrigger value="stock" className="flex items-center gap-1 md:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm text-xs md:text-sm">
+                <Package className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Stock</span>
               </TabsTrigger>
-              <TabsTrigger value="attachments" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <FileText className="h-4 w-4" />
+              <TabsTrigger value="attachments" className="flex items-center gap-1 md:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm text-xs md:text-sm">
+                <FileText className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Fichiers</span>
               </TabsTrigger>
             </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
               {/* Images Section */}
               <div className="lg:col-span-1">
                 <Card className="overflow-hidden shadow-sm">
@@ -957,7 +961,7 @@ const ProductDetails = () => {
                     {images.length > 0 ? (
                       <div className="space-y-3">
                         {/* Main Image */}
-                        <div className="relative aspect-square bg-muted">
+                        <div className="relative aspect-square md:aspect-square bg-muted max-h-64 md:max-h-none">
                           <img 
                             src={images[0]} 
                             alt={product.nom_product}
@@ -970,10 +974,10 @@ const ProductDetails = () => {
                           <Button
                             variant="secondary"
                             size="sm"
-                            className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm text-xs sm:text-sm px-3 py-2 shadow-md"
+                            className="absolute top-2 right-2 md:top-3 md:right-3 bg-background/90 backdrop-blur-sm text-xs px-2 py-1 md:px-3 md:py-2 shadow-md"
                             onClick={() => handleViewImages(product)}
                           >
-                            <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            <Eye className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                             <span className="hidden sm:inline">Voir toutes</span> ({images.length})
                           </Button>
                         </div>
@@ -1015,10 +1019,10 @@ const ProductDetails = () => {
               {/* Basic Information */}
               <div className="lg:col-span-2">
                 <Card className="shadow-sm">
-                  <CardHeader className="pb-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <CardTitle className="text-xl">Informations Générales</CardTitle>
-                      <div className="flex gap-2 flex-wrap">
+                  <CardHeader className="pb-3 md:pb-4 px-3 md:px-6 pt-3 md:pt-6">
+                    <div className="flex flex-col gap-2 md:gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <CardTitle className="text-base md:text-xl">Informations Générales</CardTitle>
+                      <div className="flex gap-1 md:gap-2 flex-wrap">
                         <Badge variant={product.status_product === 'active' ? 'default' : 'secondary'} className="text-xs">
                           {product.status_product === 'active' ? '✓ Actif' : '○ Inactif'}
                         </Badge>
@@ -1028,8 +1032,8 @@ const ProductDetails = () => {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                       <div className="space-y-2">
                         <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Type</Label>
                         <p className="text-sm font-medium">{product.type_product || 'Non spécifié'}</p>
@@ -1107,14 +1111,14 @@ const ProductDetails = () => {
           </TabsContent>
 
           {/* Materials Tab */}
-          <TabsContent value="materials" className="space-y-6">
+          <TabsContent value="materials" className="space-y-4 md:space-y-6">
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <Label className="text-lg font-semibold">Configuration des Matériaux</Label>
-                    <div className="mt-2">
-                      <Badge variant={(product.materials_configured == 1 || product.materials_configured === "1") ? 'default' : 'destructive'}>
+              <CardContent className="p-3 md:p-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0 mb-3 md:mb-4">
+                  <div className="flex-1">
+                    <Label className="text-base md:text-lg font-semibold">Configuration des Matériaux</Label>
+                    <div className="mt-1 md:mt-2">
+                      <Badge variant={(product.materials_configured == 1 || product.materials_configured === "1") ? 'default' : 'destructive'} className="text-xs">
                         {(product.materials_configured == 1 || product.materials_configured === "1") ? 'Configurés' : 'Non configurés'}
                       </Badge>
                     </div>
@@ -1124,17 +1128,20 @@ const ProductDetails = () => {
                       size="sm"
                       variant="outline"
                       onClick={handleConfigureMaterials}
+                      className="w-full md:w-auto text-xs md:text-sm"
                     >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Modifier la configuration
+                      <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                      <span className="hidden md:inline">Modifier la configuration</span>
+                      <span className="md:hidden">Modifier</span>
                     </Button>
                   ) : (
                     <Button
                       size="sm"
                       onClick={handleConfigureMaterials}
+                      className="w-full md:w-auto text-xs md:text-sm"
                     >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Configurer maintenant
+                      <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                      Configurer
                     </Button>
                   )}
                 </div>
@@ -1165,27 +1172,27 @@ const ProductDetails = () => {
                                 setShowMaterialModal(true);
                               }}
                             >
-                              <CardContent className="p-4">
-                                <div className="flex items-center justify-between mb-3">
-                                  <div className="flex items-center gap-3">
-                                    <div>
-                                      <h4 className="font-semibold text-foreground">
+                              <CardContent className="p-3 md:p-4">
+                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+                                  <div className="flex items-start gap-2 md:gap-3 flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-semibold text-sm md:text-base text-foreground truncate">
                                         {material.material_name}
                                       </h4>
                                       <div className="flex items-center gap-2 mt-1">
                                         <span className="text-xs font-medium text-muted-foreground">Couleur:</span>
-                                        <span className="text-xs text-muted-foreground">{material.color || 'Non définie'}</span>
+                                        <span className="text-xs text-muted-foreground truncate">{material.color || 'Non définie'}</span>
                                       </div>
-                                      <p className="text-sm text-muted-foreground mt-1">
+                                      <p className="text-xs md:text-sm text-muted-foreground mt-1">
                                         {material.quantity_type_name}
                                       </p>
                                     </div>
                                   </div>
-                                  <div className="text-right">
-                                    <div className="text-sm font-medium">
+                                  <div className="text-left md:text-right flex-shrink-0">
+                                    <div className="text-xs md:text-sm font-medium">
                                       Requis: {formatNumber(totalQuantityNeeded)} {material.quantity_unit}
                                     </div>
-                                    <div className="text-sm text-muted-foreground">
+                                    <div className="text-xs md:text-sm text-muted-foreground">
                                       Stock: {formatNumber(material.material_stock)} {material.quantity_unit}
                                     </div>
                                   </div>
@@ -1201,8 +1208,8 @@ const ProductDetails = () => {
                                 </div>
 
                                 {/* Stock level indicator */}
-                                <div className="space-y-2">
-                                  <div className="flex items-center justify-between text-sm">
+                                <div className="space-y-1 md:space-y-2">
+                                  <div className="flex items-center justify-between text-xs md:text-sm">
                                     <span>Niveau de stock</span>
                                     <span className={`font-medium ${
                                       stockLevel === 'sufficient' ? 'text-green-600' : 
@@ -1230,14 +1237,14 @@ const ProductDetails = () => {
                       </div>
                     ) : (
                       <Card>
-                        <CardContent className="flex flex-col items-center justify-center py-12">
-                          <Cog className="h-12 w-12 text-muted-foreground mb-4" />
-                          <h3 className="text-lg font-semibold mb-2">Aucun matériau configuré</h3>
-                          <p className="text-muted-foreground text-center mb-4">
+                        <CardContent className="flex flex-col items-center justify-center py-8 md:py-12 px-3 md:px-6">
+                          <Cog className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground mb-3 md:mb-4" />
+                          <h3 className="text-sm md:text-lg font-semibold mb-2">Aucun matériau configuré</h3>
+                          <p className="text-xs md:text-sm text-muted-foreground text-center mb-3 md:mb-4">
                             Configurez les matériaux nécessaires pour ce produit
                           </p>
-                          <Button onClick={handleConfigureMaterials}>
-                            <Plus className="h-4 w-4 mr-2" />
+                          <Button onClick={handleConfigureMaterials} size="sm" className="text-xs md:text-sm">
+                            <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                             Configurer les matériaux
                           </Button>
                         </CardContent>
@@ -1246,14 +1253,14 @@ const ProductDetails = () => {
                   </div>
                 ) : (
                   <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                      <Cog className="h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">Matériaux non configurés</h3>
-                      <p className="text-muted-foreground text-center mb-4">
+                    <CardContent className="flex flex-col items-center justify-center py-8 md:py-12 px-3 md:px-6">
+                      <Cog className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground mb-3 md:mb-4" />
+                      <h3 className="text-sm md:text-lg font-semibold mb-2">Matériaux non configurés</h3>
+                      <p className="text-xs md:text-sm text-muted-foreground text-center mb-3 md:mb-4">
                         Ce produit n'a pas encore de matériaux configurés. Configurez-les pour pouvoir démarrer la production.
                       </p>
-                      <Button onClick={handleConfigureMaterials}>
-                        <Plus className="h-4 w-4 mr-2" />
+                      <Button onClick={handleConfigureMaterials} size="sm" className="text-xs md:text-sm">
+                        <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                         Configurer maintenant
                       </Button>
                     </CardContent>
@@ -1264,15 +1271,15 @@ const ProductDetails = () => {
           </TabsContent>
 
           {/* Sizes & Measurements Tab */}
-          <TabsContent value="sizes" className="space-y-6">
+          <TabsContent value="sizes" className="space-y-4 md:space-y-6">
             {/* Size Configuration */}
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <Label className="text-lg font-semibold">Configuration des Tailles</Label>
-                    <div className="mt-2 flex items-center gap-2">
-                      <Badge variant={sizeConfigured ? 'default' : 'destructive'}>
+              <CardContent className="p-3 md:p-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0 mb-3 md:mb-4">
+                  <div className="flex-1">
+                    <Label className="text-base md:text-lg font-semibold">Configuration des Tailles</Label>
+                    <div className="mt-1 md:mt-2 flex items-center gap-1 md:gap-2 flex-wrap">
+                      <Badge variant={sizeConfigured ? 'default' : 'destructive'} className="text-xs">
                         {sizeConfigured ? 'Configurées' : 'Non configurées'}
                       </Badge>
                       {sizeConfigured && Object.keys(configuredSizes).length === 0 && (
@@ -1285,20 +1292,22 @@ const ProductDetails = () => {
                   <Button
                     onClick={handleConfigureSizes}
                     variant={sizeConfigured ? "outline" : "default"}
+                    size="sm"
+                    className="w-full md:w-auto text-xs md:text-sm"
                   >
-                    <Settings className="h-4 w-4 mr-2" />
-                    {sizeConfigured ? 'Modifier les tailles' : 'Configurer les tailles'}
+                    <Settings className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                    {sizeConfigured ? 'Modifier' : 'Configurer'}
                   </Button>
                 </div>
                 
                 {sizeConfigured && Object.keys(configuredSizes).length > 0 && (
-                  <div className="space-y-4">
+                  <div className="space-y-3 md:space-y-4">
                     <div>
-                      <Label className="text-sm font-medium mb-2 block">Tailles configurées:</Label>
-                      <div className="flex flex-wrap gap-2">
+                      <Label className="text-xs md:text-sm font-medium mb-2 block">Tailles configurées:</Label>
+                      <div className="flex flex-wrap gap-1 md:gap-2">
                         {Object.entries(configuredSizes).map(([sizeType, sizes]: [string, any]) => 
                           sizes.map((size: any, index: number) => (
-                            <Badge key={`${sizeType}-${size.size_value}`} variant="outline" className="text-sm">
+                            <Badge key={`${sizeType}-${size.size_value}`} variant="outline" className="text-xs md:text-sm">
                               {size.size_value}
                             </Badge>
                           ))
@@ -1309,10 +1318,10 @@ const ProductDetails = () => {
                 )}
 
                 {!sizeConfigured && (
-                  <div className="text-center py-8">
-                    <Ruler className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Aucune taille configurée</h3>
-                    <p className="text-muted-foreground mb-4">
+                  <div className="text-center py-6 md:py-8">
+                    <Ruler className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground mx-auto mb-3 md:mb-4" />
+                    <h3 className="text-sm md:text-lg font-semibold mb-2">Aucune taille configurée</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground mb-3 md:mb-4">
                       Configurez les tailles disponibles pour ce produit
                     </p>
                   </div>
@@ -1333,14 +1342,14 @@ const ProductDetails = () => {
 
             {(!sizeConfigured || Object.keys(configuredSizes).length === 0) && (
               <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Ruler className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Barème de mesure indisponible</h3>
-                  <p className="text-muted-foreground text-center mb-4">
+                <CardContent className="flex flex-col items-center justify-center py-8 md:py-12 px-3 md:px-6">
+                  <Ruler className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground mb-3 md:mb-4" />
+                  <h3 className="text-sm md:text-lg font-semibold mb-2">Barème de mesure indisponible</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground text-center mb-3 md:mb-4">
                     Le barème de mesure sera disponible une fois les tailles configurées
                   </p>
-                  <Button onClick={handleConfigureSizes}>
-                    <Settings className="h-4 w-4 mr-2" />
+                  <Button onClick={handleConfigureSizes} size="sm" className="text-xs md:text-sm">
+                    <Settings className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                     Configurer les tailles
                   </Button>
                 </CardContent>
@@ -1349,25 +1358,25 @@ const ProductDetails = () => {
           </TabsContent>
 
           {/* Stock Tab */}
-          <TabsContent value="stock" className="space-y-6">
+          <TabsContent value="stock" className="space-y-4 md:space-y-6">
             {/* Auto Replenishment */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Réapprovisionnement Automatique</CardTitle>
+              <CardHeader className="pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
+                <CardTitle className="text-base md:text-lg">Réapprovisionnement Automatique</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+                <div className="space-y-3 md:space-y-4">
                   <div className="flex items-center gap-2">
-                    <Badge variant={product.auto_replenishment ? 'default' : 'outline'}>
+                    <Badge variant={product.auto_replenishment ? 'default' : 'outline'} className="text-xs">
                       {product.auto_replenishment ? 'Activé' : 'Désactivé'}
                     </Badge>
                   </div>
                   {product.auto_replenishment && (
-                    <div className="space-y-3">
+                    <div className="space-y-2 md:space-y-3">
                       {product.auto_replenishment_quantity_sizes ? (
                         <div>
-                          <Label className="text-sm font-medium">Quantités par taille:</Label>
-                          <div className="flex flex-wrap gap-2 mt-2">
+                          <Label className="text-xs md:text-sm font-medium">Quantités par taille:</Label>
+                          <div className="flex flex-wrap gap-1 md:gap-2 mt-1 md:mt-2">
                             {(() => {
                               try {
                                 const sizeQuantities = JSON.parse(product.auto_replenishment_quantity_sizes);
@@ -1384,8 +1393,8 @@ const ProductDetails = () => {
                         </div>
                       ) : (
                         <div>
-                          <Label className="text-sm font-medium">Quantité totale:</Label>
-                          <Badge variant="secondary" className="text-sm ml-2">
+                          <Label className="text-xs md:text-sm font-medium">Quantité totale:</Label>
+                          <Badge variant="secondary" className="text-xs md:text-sm ml-2">
                             {product.auto_replenishment_quantity} pièces
                           </Badge>
                         </div>
@@ -1399,11 +1408,11 @@ const ProductDetails = () => {
             {/* Stock Details */}
             {(product.sizes_data || (product.qnty_product && parseInt(String(product.qnty_product)) > 0)) && (
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Stock en Ligne Actuel</CardTitle>
+                <CardHeader className="pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
+                  <CardTitle className="text-base md:text-lg">Stock en Ligne Actuel</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
+                <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+                  <div className="flex flex-wrap gap-1 md:gap-2">
                     {(() => {
                       try {
                         const stockData = JSON.parse(product.sizes_data || '{}');
@@ -1412,27 +1421,27 @@ const ProductDetails = () => {
                         
                         if (sizeEntries.length > 0) {
                           return sizeEntries.map(([size, quantity]) => (
-                            <Badge key={size} variant="outline" className="text-sm">
+                            <Badge key={size} variant="outline" className="text-xs md:text-sm">
                               {size}: {quantity as string}
                             </Badge>
                           ));
                         } else if (product.qnty_product && parseInt(String(product.qnty_product)) > 0) {
                           return (
-                            <Badge variant="outline" className="text-sm">
+                            <Badge variant="outline" className="text-xs md:text-sm">
                               {String(product.qnty_product)} pièces (total)
                             </Badge>
                           );
                         }
-                        return <span className="text-sm text-muted-foreground">Aucun stock</span>;
+                        return <span className="text-xs md:text-sm text-muted-foreground">Aucun stock</span>;
                       } catch (e) {
                         if (product.qnty_product && parseInt(String(product.qnty_product)) > 0) {
                           return (
-                            <Badge variant="outline" className="text-sm">
+                            <Badge variant="outline" className="text-xs md:text-sm">
                               {String(product.qnty_product)} pièces (total)
                             </Badge>
                           );
                         }
-                        return <span className="text-sm text-muted-foreground">Données invalides</span>;
+                        return <span className="text-xs md:text-sm text-muted-foreground">Données invalides</span>;
                       }
                     })()}
                   </div>

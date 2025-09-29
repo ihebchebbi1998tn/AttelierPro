@@ -185,85 +185,86 @@ const SoustraitanceProductFilesUpload = ({ productId, files, onFilesUpdate }: So
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Fichiers Produit</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 md:p-6">
+        <CardTitle className="text-xs md:text-sm font-medium">Fichiers Produit</CardTitle>
         <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter Fichier
+            <Button variant="outline" size="sm" className="h-8 md:h-9 text-xs md:text-sm">
+              <Plus className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+              <span className="hidden sm:inline ml-1 md:ml-0">Ajouter Fichier</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Upload className="h-5 w-5" />
+              <DialogTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Upload className="h-4 w-4 md:h-5 md:w-5" />
                 Ajouter un Fichier
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <Label htmlFor="file" className="text-sm font-medium">
+            <div className="space-y-4 md:space-y-6">
+              <div className="space-y-2 md:space-y-3">
+                <Label htmlFor="file" className="text-xs md:text-sm font-medium">
                   Fichier (PNG, JPG, PDF - Max 10MB)
                 </Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-gray-400 transition-colors">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 md:p-6 hover:border-gray-400 transition-colors">
                   <Input
                     id="file"
                     ref={fileInputRef}
                     type="file"
                     accept=".png,.jpg,.jpeg,.pdf"
                     onChange={handleFileSelect}
-                    className="cursor-pointer"
+                    className="cursor-pointer text-xs md:text-sm"
                   />
                   {selectedFile ? (
-                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">
+                    <div className="mt-3 md:mt-4 p-2 md:p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2 md:gap-3">
+                        <span className="text-xl md:text-2xl">
                           {isImageFile(selectedFile.type, selectedFile.name) ? '🖼️' : getFileIcon(selectedFile.type)}
                         </span>
-                        <div>
-                          <p className="font-medium text-sm text-gray-900">{selectedFile.name}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-xs md:text-sm text-gray-900 truncate">{selectedFile.name}</p>
                           <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center text-gray-500 mt-4">
-                      <Upload className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Cliquez pour sélectionner un fichier</p>
+                    <div className="text-center text-gray-500 mt-3 md:mt-4">
+                      <Upload className="h-6 w-6 md:h-8 md:w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-xs md:text-sm">Cliquez pour sélectionner un fichier</p>
                     </div>
                   )}
                 </div>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-medium">Description (optionnel)</Label>
+                <Label htmlFor="description" className="text-xs md:text-sm font-medium">Description (optionnel)</Label>
                 <Textarea
                   id="description"
                   placeholder="Ajoutez une description pour ce fichier..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="min-h-[80px]"
+                  className="min-h-[60px] md:min-h-[80px] text-xs md:text-sm"
                 />
               </div>
               
-              <div className="flex justify-end gap-3 pt-4 border-t">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 md:gap-3 pt-4 border-t">
                 <Button 
                   variant="outline" 
                   onClick={() => setShowUploadDialog(false)}
                   disabled={isUploading}
+                  className="w-full sm:w-auto h-9 md:h-10 text-xs md:text-sm"
                 >
                   Annuler
                 </Button>
                 <Button 
                   onClick={handleFileUpload} 
                   disabled={!selectedFile || isUploading}
-                  className="min-w-[100px]"
+                  className="w-full sm:w-auto min-w-[100px] h-9 md:h-10 text-xs md:text-sm"
                 >
                   {isUploading ? (
                     <div className="flex items-center gap-2">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent"></div>
-                      Upload...
+                      <div className="h-3 w-3 md:h-4 md:w-4 animate-spin rounded-full border-2 border-background border-t-transparent"></div>
+                      <span className="text-xs md:text-sm">Upload...</span>
                     </div>
                   ) : (
                     'Ajouter'
@@ -274,26 +275,26 @@ const SoustraitanceProductFilesUpload = ({ productId, files, onFilesUpdate }: So
           </DialogContent>
         </Dialog>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 md:p-6">
         {files.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">
-            <Paperclip className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p>Aucun fichier ajouté</p>
+          <div className="text-center text-gray-500 py-6 md:py-8">
+            <Paperclip className="h-10 w-10 md:h-12 md:w-12 mx-auto mb-2 opacity-50" />
+            <p className="text-sm md:text-base">Aucun fichier ajouté</p>
           </div>
         ) : (
-          <div className="max-h-80 overflow-y-auto pr-2">
-            <div className="space-y-3">
+          <div className="max-h-80 overflow-y-auto pr-1 md:pr-2">
+            <div className="space-y-2 md:space-y-3">
               {files.map((file) => (
               <div key={file.file_id} className="border rounded-lg hover:bg-gray-50/50 transition-colors">
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4 flex-1 min-w-0">
+                <div className="p-3 md:p-4">
+                  <div className="flex items-start gap-2 md:gap-4">
+                    <div className="flex items-start gap-2 md:gap-4 flex-1 min-w-0">
                       {isImageFile(file.file_type, file.original_filename) ? (
                         <div className="flex-shrink-0">
                           <img 
                             src={getCorrectFileUrl(file)} 
                             alt={file.original_filename}
-                            className="w-16 h-16 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                            className="w-12 h-12 md:w-16 md:h-16 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
                             onClick={() => {
                               setSelectedImageUrl(getCorrectFileUrl(file));
                               setSelectedImageName(file.original_filename);
@@ -305,38 +306,40 @@ const SoustraitanceProductFilesUpload = ({ productId, files, onFilesUpdate }: So
                           />
                         </div>
                       ) : (
-                        <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <span className="text-3xl">{getFileIcon(file.file_type)}</span>
+                        <div className="flex-shrink-0 w-12 h-12 md:w-16 md:h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <span className="text-2xl md:text-3xl">{getFileIcon(file.file_type)}</span>
                         </div>
                       )}
                       
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm text-gray-900 truncate">{file.original_filename}</p>
+                        <p className="font-medium text-xs md:text-sm text-gray-900 truncate">{file.original_filename}</p>
                         <p className="text-xs text-gray-500 mt-1">
                           {formatFileSize(file.file_size)} • {file.file_type.toUpperCase()}
                         </p>
                         {file.description && (
-                          <p className="text-xs text-gray-600 mt-2 line-clamp-2">{file.description}</p>
+                          <p className="text-xs text-gray-600 mt-1 md:mt-2 line-clamp-2">{file.description}</p>
                         )}
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex flex-col sm:flex-row items-center gap-1 md:gap-2 flex-shrink-0">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => window.open(getCorrectFileUrl(file), '_blank')}
-                        className="h-8 w-8 p-0"
+                        className="h-7 w-7 md:h-8 md:w-8 p-0"
+                        title="Télécharger"
                       >
-                        <Download className="h-4 w-4" />
+                        <Download className="h-3 w-3 md:h-4 md:w-4" />
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => setFileToDelete(file.file_id)}
-                        className="h-8 w-8 p-0"
+                        className="h-7 w-7 md:h-8 md:w-8 p-0"
+                        title="Supprimer"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
                       </Button>
                     </div>
                   </div>
@@ -350,16 +353,19 @@ const SoustraitanceProductFilesUpload = ({ productId, files, onFilesUpdate }: So
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!fileToDelete} onOpenChange={() => setFileToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[95vw] max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-base md:text-lg">Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs md:text-sm">
               Êtes-vous sûr de vouloir supprimer ce fichier ? Cette action ne peut pas être annulée.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={() => fileToDelete && handleDeleteFile(fileToDelete)}>
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto h-9 md:h-10 text-xs md:text-sm">Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => fileToDelete && handleDeleteFile(fileToDelete)}
+              className="w-full sm:w-auto h-9 md:h-10 text-xs md:text-sm"
+            >
               Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -368,33 +374,34 @@ const SoustraitanceProductFilesUpload = ({ productId, files, onFilesUpdate }: So
 
       {/* Image Preview Modal */}
       <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
-        <DialogContent className="max-w-4xl w-full p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-2">
-            <DialogTitle className="truncate">{selectedImageName}</DialogTitle>
+        <DialogContent className="w-[95vw] max-w-4xl p-0 overflow-hidden max-h-[90vh]">
+          <DialogHeader className="p-4 md:p-6 pb-2">
+            <DialogTitle className="truncate text-sm md:text-base">{selectedImageName}</DialogTitle>
           </DialogHeader>
-          <div className="px-6 pb-6">
+          <div className="px-4 md:px-6 pb-4 md:pb-6 overflow-y-auto">
             <div className="relative w-full">
               <img 
                 src={selectedImageUrl} 
                 alt={selectedImageName}
-                className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+                className="w-full h-auto max-h-[50vh] md:max-h-[70vh] object-contain rounded-lg"
                 onError={(e) => {
                   e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMjggMTI4SDM4NFYzODRIMTI4VjEyOFoiIHN0cm9rZT0iIzlDQTNBRiIgc3Ryb2tlLXdpZHRoPSI4IiBmaWxsPSJub25lIi8+CjxjaXJjbGUgY3g9IjE5MiIgY3k9IjE5MiIgcj0iMTYiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTEyOCAyODhMMTkyIDIyNEwyNTYgMjg4TDMyMCAyMjRMMzg0IDI4OFYzODRIMTI4VjI4OFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+Cg==';
                 }}
               />
             </div>
-            <div className="mt-4 flex justify-between items-center">
+            <div className="mt-3 md:mt-4 flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-2">
               <Button
                 variant="outline"
                 onClick={() => window.open(selectedImageUrl, '_blank')}
-                className="flex items-center gap-2"
+                className="flex items-center justify-center gap-2 h-9 md:h-10 text-xs md:text-sm"
               >
-                <Download className="h-4 w-4" />
+                <Download className="h-3 w-3 md:h-4 md:w-4" />
                 Télécharger
               </Button>
               <Button
                 variant="outline"
                 onClick={() => setShowImageModal(false)}
+                className="h-9 md:h-10 text-xs md:text-sm"
               >
                 Fermer
               </Button>

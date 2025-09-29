@@ -38,7 +38,7 @@ interface MaterialItem {
   lowest_quantity_needed: number;
   medium_quantity_needed: number;
   good_quantity_needed: number;
-  location?: "Usine" | "Lucci By Ey";
+  location?: "Usine" | "Lucci By Ey" | "Spada";
   category_id?: number;
   category_name?: string;
   status: "critical" | "warning" | "good";
@@ -194,9 +194,12 @@ const Stock = () => {
       if (selectedLocation === 'lucci') {
         filtered = filtered.filter(item => item.location === 'Lucci By Ey');
       } else if (selectedLocation === 'spada') {
-        filtered = filtered.filter(item => item.location === 'Usine');
+        filtered = filtered.filter(item => item.location === 'Spada');
       } else if (selectedLocation === 'extern') {
-        filtered = filtered.filter(item => item.materiere_type === 'extern');
+        filtered = filtered.filter(item => 
+          item.location !== 'Lucci By Ey' && 
+          item.location !== 'Spada'
+        );
       }
     }
 
@@ -388,7 +391,9 @@ const Stock = () => {
   const criticalCount = stockItems.filter(item => item.status === "critical").length;
   const warningCount = stockItems.filter(item => item.status === "warning").length;
   const goodCount = stockItems.filter(item => item.status === "good").length;
-  const externCount = stockItems.filter(item => item.materiere_type === "extern").length;
+  const externCount = stockItems.filter(item => 
+    item.location !== 'Lucci By Ey' && item.location !== 'Spada'
+  ).length;
   
   // Get unique categories for filter
   const categoriesMap = new Map();
@@ -552,40 +557,40 @@ const Stock = () => {
         <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
           {/* Header */}
           <div className="bg-card/80 backdrop-blur-sm border-b sticky top-0 z-10">
-            <div className="container mx-auto px-6 py-6">
+            <div className="container mx-auto px-3 md:px-6 py-3 md:py-6">
               <div className="text-center">
-                <h1 className="text-3xl font-bold text-foreground mb-2">Gestion des Matières par Emplacement</h1>
-                <p className="text-muted-foreground">Sélectionnez un emplacement pour gérer les matières</p>
+                <h1 className="text-xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">Gestion des Matières par Emplacement</h1>
+                <p className="text-xs md:text-base text-muted-foreground">Sélectionnez un emplacement pour gérer les matières</p>
               </div>
             </div>
           </div>
 
           {/* Location Selection Cards */}
-          <div className="container mx-auto px-6 py-12">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          <div className="container mx-auto px-3 md:px-6 py-6 md:py-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 max-w-6xl mx-auto">
               {/* Lucci By Ey */}
               <Card 
                 className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02] overflow-hidden"
                 onClick={() => setSelectedLocation('lucci')}
               >
                 <CardHeader className="p-0">
-                  <div className="relative h-48 overflow-hidden bg-white flex items-center justify-center">
+                  <div className="relative h-32 md:h-48 overflow-hidden bg-white flex items-center justify-center">
                     <img 
                       src="/lucci-by-ey-logo.png"
                       alt="Lucci By Ey"
-                      className="max-h-32 w-auto object-contain p-6 transition-transform duration-300 group-hover:scale-110"
+                      className="max-h-20 md:max-h-32 w-auto object-contain p-3 md:p-6 transition-transform duration-300 group-hover:scale-110"
                       onError={(e) => {
                         e.currentTarget.src = '/placeholder.svg';
                       }}
                     />
                   </div>
                 </CardHeader>
-                <CardContent className="p-4">
-                  <CardTitle className="text-lg font-bold text-center group-hover:text-primary transition-colors">
+                <CardContent className="p-3 md:p-4">
+                  <CardTitle className="text-base md:text-lg font-bold text-center group-hover:text-primary transition-colors">
                     Lucci By Ey
                   </CardTitle>
                   <div className="text-center mt-2">
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="text-xs">
                       {stockItems.filter(item => item.location === 'Lucci By Ey').length} matières
                     </Badge>
                   </div>
@@ -598,24 +603,24 @@ const Stock = () => {
                 onClick={() => setSelectedLocation('spada')}
               >
                 <CardHeader className="p-0">
-                  <div className="relative h-48 overflow-hidden bg-white flex items-center justify-center">
+                  <div className="relative h-32 md:h-48 overflow-hidden bg-white flex items-center justify-center">
                     <img 
                       src="/spada-di-battaglia-logo.png"
                       alt="Spada di Battaglia"
-                      className="max-h-32 w-auto object-contain p-6 transition-transform duration-300 group-hover:scale-110"
+                      className="max-h-20 md:max-h-32 w-auto object-contain p-3 md:p-6 transition-transform duration-300 group-hover:scale-110"
                       onError={(e) => {
                         e.currentTarget.src = '/placeholder.svg';
                       }}
                     />
                   </div>
                 </CardHeader>
-                <CardContent className="p-4">
-                  <CardTitle className="text-lg font-bold text-center group-hover:text-primary transition-colors">
+                <CardContent className="p-3 md:p-4">
+                  <CardTitle className="text-base md:text-lg font-bold text-center group-hover:text-primary transition-colors">
                     Spada di Battaglia
                   </CardTitle>
-                  <div className="text-center mt-2">
-                    <Badge variant="secondary">
-                      {stockItems.filter(item => item.location === 'Usine').length} matières
+                   <div className="text-center mt-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {stockItems.filter(item => item.location === 'Spada').length} matières
                     </Badge>
                   </div>
                 </CardContent>
@@ -627,19 +632,19 @@ const Stock = () => {
                 onClick={() => setSelectedLocation('extern')}
               >
                 <CardHeader className="p-0">
-                  <div className="relative h-48 overflow-hidden bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
+                  <div className="relative h-32 md:h-48 overflow-hidden bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
                     <div className="text-center">
-                      <Package2 className="h-16 w-16 text-white mx-auto mb-2" />
-                      <div className="text-white font-bold text-xl">EXTERN</div>
+                      <Package2 className="h-10 w-10 md:h-16 md:w-16 text-white mx-auto mb-1 md:mb-2" />
+                      <div className="text-white font-bold text-base md:text-xl">EXTERN</div>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-4">
-                  <CardTitle className="text-lg font-bold text-center group-hover:text-primary transition-colors">
+                <CardContent className="p-3 md:p-4">
+                  <CardTitle className="text-base md:text-lg font-bold text-center group-hover:text-primary transition-colors">
                     Matières Externes
                   </CardTitle>
                   <div className="text-center mt-2">
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="text-xs">
                       {externCount} matières
                     </Badge>
                   </div>
@@ -651,15 +656,15 @@ const Stock = () => {
                 className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02] overflow-hidden border-dashed border-2"
                 onClick={() => setSelectedLocation('all')}
               >
-                <CardContent className="p-6 flex flex-col items-center justify-center h-full">
-                  <div className="text-center space-y-3">
-                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                      <Eye className="h-8 w-8 text-primary" />
+                <CardContent className="p-4 md:p-6 flex flex-col items-center justify-center h-full">
+                  <div className="text-center space-y-2 md:space-y-3">
+                    <div className="h-12 w-12 md:h-16 md:w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                      <Eye className="h-6 w-6 md:h-8 md:w-8 text-primary" />
                     </div>
-                    <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">
+                    <CardTitle className="text-base md:text-lg font-bold group-hover:text-primary transition-colors">
                       Tout Voir
                     </CardTitle>
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="text-xs">
                       {stockItems.length} matières total
                     </Badge>
                   </div>
@@ -670,62 +675,68 @@ const Stock = () => {
         </div>
       ) : (
         // Stock Management Interface
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6 p-3 md:p-0">
           {/* Back Button and Header */}
           <div className="actions-container">
             <div className="page-header">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
                 <Button 
                   variant="outline" 
+                  size="sm"
                   onClick={() => setSelectedLocation(null)}
-                  className="rounded-xl"
+                  className="rounded-xl w-full md:w-auto text-xs md:text-sm"
                 >
-                  ← Retour aux emplacements
+                  ← Retour
                 </Button>
-                <div>
-                  <h1 className="page-title">
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-lg md:text-3xl font-bold truncate">
                     {selectedLocation === 'lucci' ? 'Lucci By Ey' :
                      selectedLocation === 'spada' ? 'Spada di battaglia' :
                      selectedLocation === 'extern' ? 'Matières Externes' :
                      'Toutes les Matières'}
                   </h1>
-                  <p className="page-description">
-                    Surveillance en temps réel des niveaux de stock avec alertes intelligentes
+                  <p className="text-xs md:text-base text-muted-foreground truncate">
+                    Surveillance en temps réel des niveaux de stock
                   </p>
                 </div>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-1 md:gap-2">
               <Button 
                 onClick={() => navigate('/categories')} 
                 variant="outline" 
-                className="rounded-xl"
+                size="sm"
+                className="rounded-xl flex-1 sm:flex-initial text-xs sm:text-sm h-9"
               >
-                <Tag className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Catégories</span>
-                <span className="sm:hidden">Cat</span>
+                <Tag className="mr-1 h-4 w-4" />
+                <span>Catégories</span>
               </Button>
               <Button 
                 onClick={() => navigate('/global-stock-view')} 
                 variant="outline" 
-                className="rounded-xl"
+                size="sm"
+                className="rounded-xl flex-1 sm:flex-initial text-xs sm:text-sm h-9"
               >
-                <BarChart3 className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Vue Globale</span>
-                <span className="sm:hidden">Vue</span>
-              </Button>
-              <Button onClick={handleRefresh} disabled={refreshing} variant="outline" className="rounded-xl">
-                <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Actualiser</span>
-                <span className="sm:hidden">Maj</span>
+                <BarChart3 className="mr-1 h-4 w-4" />
+                <span>Vue Globale</span>
               </Button>
               <Button 
-                className="rounded-xl" 
+                onClick={handleRefresh} 
+                disabled={refreshing} 
+                variant="outline" 
+                size="sm"
+                className="hidden sm:flex rounded-xl text-xs sm:text-sm h-9"
+              >
+                <RefreshCw className={`mr-1 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <span>Actualiser</span>
+              </Button>
+              <Button 
+                className="rounded-xl flex-1 sm:flex-initial text-xs sm:text-sm h-9" 
+                size="sm"
                 onClick={() => navigate('/add-material')}
               >
-                <Package2 className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Ajouter une matière</span>
-                <span className="sm:hidden">Ajouter</span>
+                <Package2 className="mr-1 h-4 w-4" />
+                <span>Ajouter</span>
               </Button>
             </div>
           </div>
@@ -733,80 +744,88 @@ const Stock = () => {
           {/* Stats Cards */}
           <div className="grid-stats">
             <Card 
-              className={`border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 ${
-                statusFilter === "all" ? "ring-2 ring-primary-foreground" : ""
+              className={`border-0 shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 ${
+                statusFilter === "all" 
+                  ? "bg-green-600 hover:bg-green-700 ring-2 ring-green-400" 
+                  : "bg-primary hover:shadow-xl hover:bg-primary/90"
               }`}
               onClick={() => setStatusFilter("all")}
             >
-              <CardContent className="p-4 sm:p-6">
+              <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-primary-foreground/70">Total Matières</p>
-                    <p className="text-2xl font-bold text-primary-foreground">{filteredItems.length}</p>
-                    <p className="text-xs text-primary-foreground/70">Dans cette section</p>
+                  <div className="space-y-0.5 sm:space-y-1">
+                    <p className="text-xs sm:text-sm font-medium text-primary-foreground/70">Total Matières</p>
+                    <p className="text-xl sm:text-2xl font-bold text-primary-foreground">{filteredItems.length}</p>
+                    <p className="text-[10px] sm:text-xs text-primary-foreground/70">Dans cette section</p>
                   </div>
-                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
-                    <Package2 className="h-5 w-5 text-primary-foreground" />
+                  <div className="h-8 w-8 sm:h-12 sm:w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
+                    <Package2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card 
-              className={`border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 ${
-                statusFilter === "critical" ? "ring-2 ring-primary-foreground" : ""
+              className={`border-0 shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 ${
+                statusFilter === "critical" 
+                  ? "bg-green-600 hover:bg-green-700 ring-2 ring-green-400" 
+                  : "bg-primary hover:shadow-xl hover:bg-primary/90"
               }`}
               onClick={() => setStatusFilter("critical")}
             >
-              <CardContent className="p-4 sm:p-6">
+              <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-primary-foreground/70">Stock Critique</p>
-                    <p className="text-2xl font-bold text-primary-foreground">{filteredItems.filter(item => item.status === "critical").length}</p>
-                    <p className="text-xs text-primary-foreground/70">Réapprovisionnement urgent</p>
+                  <div className="space-y-0.5 sm:space-y-1">
+                    <p className="text-xs sm:text-sm font-medium text-primary-foreground/70">Stock Critique</p>
+                    <p className="text-xl sm:text-2xl font-bold text-primary-foreground">{filteredItems.filter(item => item.status === "critical").length}</p>
+                    <p className="text-[10px] sm:text-xs text-primary-foreground/70">Réapprovisionnement urgent</p>
                   </div>
-                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
-                    <AlertCircle className="h-5 w-5 text-primary-foreground" />
+                  <div className="h-8 w-8 sm:h-12 sm:w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
+                    <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card 
-              className={`border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 ${
-                statusFilter === "warning" ? "ring-2 ring-primary-foreground" : ""
+              className={`border-0 shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 ${
+                statusFilter === "warning" 
+                  ? "bg-green-600 hover:bg-green-700 ring-2 ring-green-400" 
+                  : "bg-primary hover:shadow-xl hover:bg-primary/90"
               }`}
               onClick={() => setStatusFilter("warning")}
             >
-              <CardContent className="p-4 sm:p-6">
+              <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-primary-foreground/70">Stock Faible</p>
-                    <p className="text-2xl font-bold text-primary-foreground">{filteredItems.filter(item => item.status === "warning").length}</p>
-                    <p className="text-xs text-primary-foreground/70">À surveiller</p>
+                  <div className="space-y-0.5 sm:space-y-1">
+                    <p className="text-xs sm:text-sm font-medium text-primary-foreground/70">Stock Faible</p>
+                    <p className="text-xl sm:text-2xl font-bold text-primary-foreground">{filteredItems.filter(item => item.status === "warning").length}</p>
+                    <p className="text-[10px] sm:text-xs text-primary-foreground/70">À surveiller</p>
                   </div>
-                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
-                    <AlertTriangle className="h-5 w-5 text-primary-foreground" />
+                  <div className="h-8 w-8 sm:h-12 sm:w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
+                    <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card 
-              className={`border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 ${
-                statusFilter === "good" ? "ring-2 ring-primary-foreground" : ""
+              className={`border-0 shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 ${
+                statusFilter === "good" 
+                  ? "bg-green-600 hover:bg-green-700 ring-2 ring-green-400" 
+                  : "bg-primary hover:shadow-xl hover:bg-primary/90"
               }`}
               onClick={() => setStatusFilter("good")}
             >
-              <CardContent className="p-4 sm:p-6">
+              <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-primary-foreground/70">Stock Bon</p>
-                    <p className="text-2xl font-bold text-primary-foreground">{filteredItems.filter(item => item.status === "good").length}</p>
-                    <p className="text-xs text-primary-foreground/70">Niveau optimal</p>
+                  <div className="space-y-0.5 sm:space-y-1">
+                    <p className="text-xs sm:text-sm font-medium text-primary-foreground/70">Stock Bon</p>
+                    <p className="text-xl sm:text-2xl font-bold text-primary-foreground">{filteredItems.filter(item => item.status === "good").length}</p>
+                    <p className="text-[10px] sm:text-xs text-primary-foreground/70">Niveau optimal</p>
                   </div>
-                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
-                    <CheckCircle className="h-5 w-5 text-primary-foreground" />
+                  <div className="h-8 w-8 sm:h-12 sm:w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -815,21 +834,21 @@ const Stock = () => {
 
           {/* Search and Filters */}
           <Card className="modern-card">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row gap-4">
+            <CardContent className="p-3 md:p-6">
+              <div className="flex flex-col gap-3 md:gap-4">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-3 w-3 md:h-4 md:w-4" />
                   <Input
                     placeholder="Rechercher une matière..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 rounded-xl"
+                    className="pl-9 md:pl-10 rounded-xl text-xs md:text-sm h-9 md:h-10"
                   />
                 </div>
 
-                <div className="flex flex-wrap gap-2 sm:gap-3">
+                <div className="flex flex-wrap gap-2">
                   <Select value={materiereTypeFilter} onValueChange={setMateriereTypeFilter}>
-                    <SelectTrigger className="w-[140px] rounded-xl">
+                    <SelectTrigger className="w-[110px] md:w-[140px] rounded-xl text-xs md:text-sm h-9 md:h-10">
                       <SelectValue placeholder="Type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -841,11 +860,11 @@ const Stock = () => {
 
                   {categories.length > 0 && (
                     <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="w-[150px] rounded-xl">
+                      <SelectTrigger className="w-[120px] md:w-[150px] rounded-xl text-xs md:text-sm h-9 md:h-10">
                         <SelectValue placeholder="Catégorie" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Toutes Categories</SelectItem>
+                        <SelectItem value="all">Toutes</SelectItem>
                         {categories.map((category) => (
                           <SelectItem key={category.id} value={category.id?.toString() || ''}>
                             {category.name}
@@ -856,7 +875,7 @@ const Stock = () => {
                   )}
 
                   <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-[120px] rounded-xl">
+                    <SelectTrigger className="w-[100px] md:w-[120px] rounded-xl text-xs md:text-sm h-9 md:h-10">
                       <SelectValue placeholder="Trier" />
                     </SelectTrigger>
                     <SelectContent>
@@ -875,7 +894,7 @@ const Stock = () => {
                         setMateriereTypeFilter("all");
                         clearCategoryFilter();
                       }}
-                      className="rounded-xl"
+                      className="rounded-xl text-xs h-9"
                     >
                       <Filter className="mr-1 h-3 w-3" />
                       Effacer
