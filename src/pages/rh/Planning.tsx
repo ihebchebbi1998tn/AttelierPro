@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   Calendar, 
   Clock, 
@@ -75,6 +76,7 @@ const Planning = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showWeeklyCreator, setShowWeeklyCreator] = useState(false);
   const [selectedEmployeeForPlanning, setSelectedEmployeeForPlanning] = useState<Employee | null>(null);
+  const isMobile = useIsMobile();
   const { toast } = useToast();
 
   const [newTemplate, setNewTemplate] = useState<CreateShiftTemplateData>({
@@ -333,17 +335,19 @@ const Planning = () => {
   // Employee List View
   if (!selectedEmployee) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="container mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Planning & Horaires</h1>
-            <p className="text-muted-foreground mt-2">
-              Sélectionnez un employé pour voir son planning
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+              {isMobile ? "Planning" : "Planning & Horaires"}
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
+              {isMobile ? "Sélectionner un employé" : "Sélectionnez un employé pour voir son planning"}
             </p>
           </div>
-          <Button onClick={() => setShowWeeklyCreator(true)}>
-            <CalendarPlus className="h-4 w-4 mr-2" />
-            Créer Planning Rapide
+          <Button onClick={() => setShowWeeklyCreator(true)} size={isMobile ? "sm" : "default"} className="w-full sm:w-auto">
+            <CalendarPlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">{isMobile ? "Planning" : "Créer Planning Rapide"}</span>
           </Button>
         </div>
 
@@ -353,35 +357,35 @@ const Planning = () => {
             <span className="ml-2">Chargement des employés...</span>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
             {employees.map((employee) => (
               <Card 
                 key={employee.id} 
                 className="cursor-pointer hover:shadow-md transition-shadow bg-primary text-primary-foreground"
                 onClick={() => handleSelectEmployee(employee)}
               >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg text-primary-foreground">
+                <CardHeader className="p-3 sm:p-4 pb-2">
+                  <CardTitle className="text-sm sm:text-base md:text-lg text-primary-foreground">
                     {employee.prenom} {employee.nom}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm text-primary-foreground/80">
+                <CardContent className="p-3 sm:p-4 pt-0">
+                  <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-primary-foreground/80">
                     {employee.region && (
                       <div className="flex items-center">
-                        <MapPin className="h-3 w-3 mr-1" />
+                        <MapPin className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
                         {employee.region}
                       </div>
                     )}
                     {employee.telephone && (
                       <div className="flex items-center">
-                        <Phone className="h-3 w-3 mr-1" />
+                        <Phone className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
                         {employee.telephone}
                       </div>
                     )}
                     <Badge 
                       variant={employee.actif ? "default" : "destructive"}
-                      className="bg-primary-foreground text-primary"
+                      className="bg-primary-foreground text-primary text-xs"
                     >
                       {employee.actif ? "Actif" : "Inactif"}
                     </Badge>

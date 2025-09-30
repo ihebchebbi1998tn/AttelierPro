@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Eye, Package } from 'lucide-react';
+import { Search, Eye, Package, Clock, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
 import { fetchSurMesureOrders, markSurMesureOrderAsSeen } from '../utils/surMesureService';
 import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface SurMesureOrder {
   id: number;
@@ -63,6 +64,7 @@ const statusLabels = {
 
 const Commandes = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -116,39 +118,39 @@ const Commandes = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-2 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="page-header">
-        <h1 className="page-title">Commandes sur Mesure</h1>
-        <p className="page-description">
+      <div className="text-center sm:text-left">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Commandes sur Mesure</h1>
+        <p className="text-xs sm:text-sm md:text-base text-muted-foreground mt-1">
           Gérez les commandes sur mesure et suivez leur progression
         </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
         <Card className="border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">Total Commandes</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-primary-foreground/10 flex items-center justify-center">
-              <Package className="h-4 w-4 text-primary-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 sm:p-4 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">Total</CardTitle>
+            <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-primary-foreground/10 flex items-center justify-center">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4 text-primary-foreground" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">{orders.length}</div>
-            <p className="text-xs text-primary-foreground/70">Commandes sur mesure</p>
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-lg sm:text-2xl font-bold text-primary-foreground">{orders.length}</div>
+            <p className="text-xs text-primary-foreground/70">Commandes</p>
           </CardContent>
         </Card>
 
         <Card className="border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">En cours</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-primary-foreground/10 flex items-center justify-center">
-              <Package className="h-4 w-4 text-primary-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 sm:p-4 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">En cours</CardTitle>
+            <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-primary-foreground/10 flex items-center justify-center">
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-primary-foreground" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-lg sm:text-2xl font-bold text-primary-foreground">
               {orders.filter((o: SurMesureOrder) => o.status === 'in_progress').length}
             </div>
             <p className="text-xs text-primary-foreground/70">En production</p>
@@ -156,54 +158,54 @@ const Commandes = () => {
         </Card>
 
         <Card className="border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">Prét magasin</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-primary-foreground/10 flex items-center justify-center">
-              <Package className="h-4 w-4 text-primary-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 sm:p-4 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">Prêt</CardTitle>
+            <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-primary-foreground/10 flex items-center justify-center">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4 text-primary-foreground" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-lg sm:text-2xl font-bold text-primary-foreground">
               {orders.filter((o: SurMesureOrder) => o.status === 'ready_for_pickup').length}
             </div>
-            <p className="text-xs text-primary-foreground/70">Prêt pour magasin</p>
+            <p className="text-xs text-primary-foreground/70">Magasin</p>
           </CardContent>
         </Card>
 
         <Card className="border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">Terminées</CardTitle>
-            <div className="h-8 w-8 rounded-full bg-primary-foreground/10 flex items-center justify-center">
-              <Package className="h-4 w-4 text-primary-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 sm:p-4 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">Terminées</CardTitle>
+            <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-primary-foreground/10 flex items-center justify-center">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4 text-primary-foreground" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-lg sm:text-2xl font-bold text-primary-foreground">
               {orders.filter((o: SurMesureOrder) => o.status === 'completed').length}
             </div>
-            <p className="text-xs text-primary-foreground/70">Commandes finalisées</p>
+            <p className="text-xs text-primary-foreground/70">Finalisées</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filtres</CardTitle>
+        <CardHeader className="p-3 sm:p-4 pb-3 sm:pb-4">
+          <CardTitle className="text-base sm:text-lg">Filtres</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <CardContent className="p-3 sm:p-4 pt-0 space-y-3 sm:space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Rechercher par nom, email, produit..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 text-sm"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-48">
+              <SelectTrigger className="w-full sm:w-48 text-sm">
                 <SelectValue placeholder="Filtrer par statut" />
               </SelectTrigger>
               <SelectContent className="bg-background border shadow-lg z-50">
@@ -224,13 +226,13 @@ const Commandes = () => {
 
       {/* Orders List */}
       <Card>
-        <CardHeader>
-          <CardTitle>Commandes Sur Mesure</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-3 sm:p-4 pb-3 sm:pb-4">
+          <CardTitle className="text-base sm:text-lg">Commandes Sur Mesure</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Liste des commandes sur mesure et leur statut
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-4 pt-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -241,64 +243,131 @@ const Commandes = () => {
               <p className="text-muted-foreground">Aucune commande sur mesure trouvée</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Client</th>
-                    <th className="text-left p-2">Produit</th>
-                    <th className="text-left p-2">Date prête</th>
-                    <th className="text-left p-2">Statut</th>
-                    <th className="text-left p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <>
+              {/* Desktop Table View */}
+              {!isMobile && (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Client</th>
+                        <th className="text-left p-2">Produit</th>
+                        <th className="text-left p-2">Date prête</th>
+                        <th className="text-left p-2">Statut</th>
+                        <th className="text-left p-2">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredOrders.map((order: SurMesureOrder) => (
+                        <tr 
+                          key={order.id} 
+                          className={`border-b cursor-pointer transition-colors ${getRowHighlight(order)}`}
+                          onClick={() => handleViewOrder(order)}
+                        >
+                          <td className="p-2">
+                            <div>
+                              <div className="font-medium">
+                                {order.client_name} {order.client_vorname}
+                              </div>
+                              <div className="text-sm text-muted-foreground">{order.client_email}</div>
+                            </div>
+                          </td>
+                          <td className="p-2">
+                            <div className="font-medium">{order.product_name}</div>
+                          </td>
+                          <td className="p-2">
+                            <div className="text-sm">
+                              {new Date(order.ready_date).toLocaleDateString('fr-FR')}
+                            </div>
+                          </td>
+                          <td className="p-2">
+                            <Badge className={`${statusColors[order.status]} text-white`}>
+                              {statusLabels[order.status]}
+                            </Badge>
+                          </td>
+                          <td className="p-2">
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewOrder(order);
+                                }}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Mobile Card View */}
+              {isMobile && (
+                <div className="space-y-3">
                   {filteredOrders.map((order: SurMesureOrder) => (
-                    <tr 
+                    <Card 
                       key={order.id} 
-                      className={`border-b cursor-pointer transition-colors ${getRowHighlight(order)}`}
+                      className={`cursor-pointer transition-all hover:shadow-md ${
+                        order.is_seen === '0' ? 'bg-yellow-50 border-l-4 border-yellow-400' : ''
+                      }`}
                       onClick={() => handleViewOrder(order)}
                     >
-                      <td className="p-2">
-                        <div>
-                          <div className="font-medium">
-                            {order.client_name} {order.client_vorname}
+                      <CardContent className="p-3">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <h3 className="font-semibold text-sm truncate">
+                                  {order.client_name} {order.client_vorname}
+                                </h3>
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate">{order.client_email}</p>
+                            </div>
+                            <Badge className={`${statusColors[order.status]} text-white text-xs px-2 py-1 flex-shrink-0`}>
+                              {statusLabels[order.status]}
+                            </Badge>
                           </div>
-                          <div className="text-sm text-muted-foreground">{order.client_email}</div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="text-sm font-medium truncate">{order.product_name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="text-xs text-muted-foreground">
+                                Prêt le {new Date(order.ready_date).toLocaleDateString('fr-FR')}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-end pt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewOrder(order);
+                              }}
+                              className="text-xs px-3 py-1"
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              Voir
+                            </Button>
+                          </div>
                         </div>
-                      </td>
-                      <td className="p-2">
-                        <div className="font-medium">{order.product_name}</div>
-                      </td>
-                      <td className="p-2">
-                        <div className="text-sm">
-                          {new Date(order.ready_date).toLocaleDateString('fr-FR')}
-                        </div>
-                      </td>
-                      <td className="p-2">
-                        <Badge className={`${statusColors[order.status]} text-white`}>
-                          {statusLabels[order.status]}
-                        </Badge>
-                      </td>
-                      <td className="p-2">
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleViewOrder(order);
-                            }}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
+                      </CardContent>
+                    </Card>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

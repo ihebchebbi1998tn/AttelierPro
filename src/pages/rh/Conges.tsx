@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   Calendar, 
   Plus, 
@@ -56,6 +57,7 @@ const Conges = () => {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   
   const [newHoliday, setNewHoliday] = useState<CreateHolidayData>({
@@ -220,19 +222,21 @@ const Conges = () => {
   const stats = getStatusStats();
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Congés & Absences</h1>
-          <p className="text-muted-foreground mt-2">
-            Gérer les demandes de congés et absences des employés
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+            {isMobile ? "Congés" : "Congés & Absences"}
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
+            {isMobile ? "Gérer les congés" : "Gérer les demandes de congés et absences des employés"}
           </p>
         </div>
         <Dialog open={isAddingHoliday} onOpenChange={setIsAddingHoliday}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle Demande
+            <Button size={isMobile ? "sm" : "default"} className="w-full sm:w-auto">
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="text-xs sm:text-sm">{isMobile ? "Demande" : "Nouvelle Demande"}</span>
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -320,48 +324,48 @@ const Conges = () => {
       </div>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         <Card className="modern-card bg-primary text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">
-              Total Demandes
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">
+              {isMobile ? "Total" : "Total Demandes"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">{stats.total}</div>
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">{stats.total}</div>
           </CardContent>
         </Card>
         
         <Card className="modern-card bg-primary text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">
-              En Attente
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">
+              {isMobile ? "Attente" : "En Attente"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">{stats.pending}</div>
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">{stats.pending}</div>
           </CardContent>
         </Card>
 
         <Card className="modern-card bg-primary text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">
               Approuvées
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">{stats.approved}</div>
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">{stats.approved}</div>
           </CardContent>
         </Card>
 
         <Card className="modern-card bg-primary text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">
               Rejetées
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">{stats.rejected}</div>
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">{stats.rejected}</div>
           </CardContent>
         </Card>
       </div>

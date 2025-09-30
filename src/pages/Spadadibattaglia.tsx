@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { RefreshCw, Eye, ShoppingCart, ArrowRight } from 'lucide-react';
 import { getProductImageUrl, getProductImages } from "@/utils/imageUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import ProductSizeQuantityModal from "@/components/ProductSizeQuantityModal";
 
 interface Product {
   id: number;
@@ -43,6 +44,7 @@ const Spadadibattaglia = () => {
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
   const [transferring, setTransferring] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showQuantityModal, setShowQuantityModal] = useState(false);
   const isMobile = useIsMobile();
 
   const loadProducts = async () => {
@@ -120,49 +122,18 @@ const Spadadibattaglia = () => {
     }
   };
 
+  const handleTransferComplete = () => {
+    setSelectedProducts(new Set());
+    setShowQuantityModal(false);
+    setShowTransferModal(false);
+  };
+
   const transferProducts = async () => {
     if (selectedProducts.size === 0) return;
     
-    setTransferring(true);
-    try {
-      const productsToTransfer = products.filter(p => selectedProducts.has(p.id));
-      
-      const response = await fetch('https://luccibyey.com.tn/production/api/transfer_products.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          products: productsToTransfer,
-          boutique: 'spadadibattaglia'
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        toast({
-          title: "Transfert réussi",
-          description: `${selectedProducts.size} produit(s) transféré(s) vers la page Produits`,
-        });
-        setSelectedProducts(new Set());
-        setShowTransferModal(false);
-      } else {
-        toast({
-          title: "Erreur de transfert",
-          description: data.message || "Erreur lors du transfert",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Erreur lors du transfert des produits",
-        variant: "destructive",
-      });
-    } finally {
-      setTransferring(false);
-    }
+    // Open the quantity selection modal instead of direct transfer
+    setShowTransferModal(false);
+    setShowQuantityModal(true);
   };
 
   useEffect(() => {
@@ -175,22 +146,22 @@ const Spadadibattaglia = () => {
   );
 
   return (
-    <div className="space-y-4 md:space-y-6 p-4 md:p-6 pb-24 md:pb-6">
-      <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-2 sm:p-4 md:p-6 pb-20 md:pb-6">
+      <div className="flex flex-col space-y-3 sm:space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Spadadibattaglia</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Gestion des produits Spadadibattaglia</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Spadadibattaglia</h1>
+          <p className="text-xs sm:text-sm md:text-base text-muted-foreground">Gestion des produits Spadadibattaglia</p>
         </div>
         
-        <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:gap-2">
+        <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:gap-2">
           {!isMobile && selectedProducts.size > 0 && (
             <Button 
-              onClick={() => setShowTransferModal(true)} 
+              onClick={() => setShowQuantityModal(true)} 
               variant="default" 
               size="sm" 
-              className="w-full md:w-auto text-xs md:text-sm"
+              className="w-full sm:w-auto text-xs sm:text-sm"
             >
-              <ArrowRight className="h-3 w-3 md:h-4 md:w-4 mr-2" />
+              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
               Transférer à Produits ({selectedProducts.size})
             </Button>
           )}
@@ -198,33 +169,30 @@ const Spadadibattaglia = () => {
             onClick={syncProducts} 
             variant="outline" 
             size="sm" 
-            className="w-full md:w-auto text-xs md:text-sm"
+            className="w-full sm:w-auto text-xs sm:text-sm"
             disabled={loading}
           >
-            <RefreshCw className={`h-3 w-3 md:h-4 md:w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Synchroniser
           </Button>
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="pb-4">
-          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
-            <CardTitle className="text-lg md:text-xl">Liste des Produits ({products.length})</CardTitle>
+      <Card className="mt-4 sm:mt-6">
+        <CardHeader className="p-3 sm:p-4 pb-3 sm:pb-4">
+          <div className="flex flex-col space-y-3 sm:space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+            <CardTitle className="text-base sm:text-lg md:text-xl">Liste des Produits ({products.length})</CardTitle>
             <div className="flex gap-2">
               <Input
                 placeholder="Rechercher..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full md:w-64"
+                className="w-full sm:w-48 md:w-64 text-sm"
               />
-              <Button onClick={loadProducts} variant="outline" size="sm" disabled={loading}>
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-4 pt-0">
           <div className="overflow-x-auto hidden md:block">
             <Table>
               <TableHeader>
@@ -282,11 +250,6 @@ const Spadadibattaglia = () => {
                                   e.currentTarget.src = '/placeholder.svg';
                                 }}
                               />
-                              {allImages.length > 1 && (
-                                <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                  {allImages.length}
-                                </div>
-                              )}
                             </>
                           ) : (
                             <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
@@ -342,22 +305,22 @@ const Spadadibattaglia = () => {
 
       {/* Mobile Cards View */}
       {isMobile && (
-        <div className="grid grid-cols-1 gap-4 md:hidden">
+        <div className="grid grid-cols-1 gap-3 mt-4">
           {filteredProducts.map((product) => {
             const mainImage = getProductImageUrl(product.img_product, product.boutique_origin);
             const allImages = getProductImages(product);
             
             return (
               <Card key={product.id} className="overflow-hidden">
-                <CardContent className="p-2">
+                <CardContent className="p-3">
                   <div className="flex gap-3">
                     <Checkbox
                       checked={selectedProducts.has(product.id)}
                       onCheckedChange={() => handleSelectProduct(product.id)}
-                      className="h-5 w-5 mt-1"
+                      className="h-4 w-4 mt-1 flex-shrink-0"
                     />
                     <div 
-                      className="relative w-20 h-20 flex-shrink-0 cursor-pointer"
+                      className="relative w-16 h-16 flex-shrink-0 cursor-pointer"
                       onClick={() => navigate(`/spadadibattaglia/${product.id}`)}
                     >
                       {mainImage ? (
@@ -376,12 +339,12 @@ const Spadadibattaglia = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0" onClick={() => navigate(`/spadadibattaglia/${product.id}`)}>
-                      <h3 className="font-semibold text-xs break-words line-clamp-3">{product.nom_product}</h3>
+                      <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-1">{product.nom_product}</h3>
                       <p className="text-xs text-muted-foreground mb-2">Ref: {product.reference_product}</p>
                       <div className="flex flex-wrap gap-1 mb-2">
-                        <Badge variant="secondary" className="text-xs">Spadadibattaglia</Badge>
+                        <Badge variant="secondary" className="text-xs px-2 py-0.5">Spadadibattaglia</Badge>
                         {product.type_product && (
-                          <Badge variant="outline" className="text-xs">{product.type_product}</Badge>
+                          <Badge variant="outline" className="text-xs px-2 py-0.5">{product.type_product}</Badge>
                         )}
                       </div>
                       <p className="text-sm font-semibold text-primary">{product.price_product} TND</p>
@@ -396,13 +359,13 @@ const Spadadibattaglia = () => {
 
       {/* Floating Transfer Button for Mobile */}
       {isMobile && selectedProducts.size > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg z-50">
+        <div className="fixed bottom-4 left-4 right-4 z-50">
           <Button 
-            onClick={() => setShowTransferModal(true)} 
-            className="w-full"
+            onClick={() => setShowQuantityModal(true)} 
+            className="w-full shadow-lg"
             size="lg"
           >
-            <ArrowRight className="h-5 w-5 mr-2" />
+            <ArrowRight className="h-4 w-4 mr-2" />
             Transférer ({selectedProducts.size}) produit{selectedProducts.size > 1 ? 's' : ''}
           </Button>
         </div>
@@ -446,6 +409,15 @@ const Spadadibattaglia = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Size Quantity Selection Modal */}
+      <ProductSizeQuantityModal
+        open={showQuantityModal}
+        onOpenChange={setShowQuantityModal}
+        selectedProducts={products.filter(p => selectedProducts.has(p.id))}
+        boutique="spadadibattaglia"
+        onTransferComplete={handleTransferComplete}
+      />
     </div>
   );
 };

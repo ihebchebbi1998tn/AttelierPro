@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Eye, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Eye, Settings, ChevronLeft, ChevronRight, Send } from 'lucide-react';
 import { getProductImageUrl, getProductImages } from "@/utils/imageUtils";
 import SizeBreakdown from "@/components/SizeBreakdown";
+import ProductSizeQuantityModal from "@/components/ProductSizeQuantityModal";
 
 interface Product {
   id: number;
@@ -48,6 +49,7 @@ const SpadaProductDetails = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showTransferModal, setShowTransferModal] = useState(false);
 
   const formatStockDisplay = (product: Product) => {
     if (!product) return "0 pièce";
@@ -123,6 +125,18 @@ const SpadaProductDetails = () => {
     setCurrentImageIndex((prev) => (prev - 1 + selectedImages.length) % selectedImages.length);
   };
 
+  const handleTransferProduct = () => {
+    setShowTransferModal(true);
+  };
+
+  const handleTransferComplete = () => {
+    toast({
+      title: "Transfert réussi",
+      description: "Le produit a été transféré vers la production avec succès",
+    });
+    setShowTransferModal(false);
+  };
+
   useEffect(() => {
     loadProduct();
   }, [id]);
@@ -158,31 +172,40 @@ const SpadaProductDetails = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       {/* Header */}
       <div className="bg-card/80 backdrop-blur-sm border-b sticky top-0 z-10">
-        <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => navigate('/spadadibattaglia')}
-                className="hover:bg-muted/50 flex-shrink-0"
-              >
-                <ArrowLeft className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Retour</span>
-              </Button>
-              <div className="h-8 w-px bg-border hidden sm:block" />
-              <div className="min-w-0 flex-1">
-                <h1 className="text-base sm:text-2xl font-bold text-foreground truncate">{product.nom_product}</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">Ref: {product.reference_product}</p>
-              </div>
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/spadadibattaglia')}
+              className="hover:bg-muted/50 flex-shrink-0 p-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">{product.nom_product}</h1>
+              <p className="text-xs text-muted-foreground truncate">Ref: {product.reference_product}</p>
             </div>
+          </div>
+          
+          {/* Transfer Button on new line */}
+          <div className="mt-3 pt-3 border-t">
+            <Button 
+              onClick={handleTransferProduct}
+              className="w-full sm:w-auto"
+              size="sm"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Transférer vers la production
+            </Button>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-3 sm:px-6 py-4 sm:py-8">
+      <div className="container mx-auto px-4 py-4 sm:py-6">
         {/* Main Product Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
           {/* Images Section - Compact */}
           <div className="lg:col-span-1">
             <Card className="overflow-hidden">
@@ -211,10 +234,10 @@ const SpadaProductDetails = () => {
                       </Button>
                     </div>
                     
-                    {/* Thumbnail Grid */}
+                    {/* Thumbnail Grid - Mobile Optimized */}
                     {images.length > 1 && (
-                      <div className="grid grid-cols-4 gap-2 p-3">
-                        {images.slice(1, 5).map((imageUrl, index) => (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 p-3">
+                        {images.slice(1, 4).map((imageUrl, index) => (
                           <div 
                             key={index + 1}
                             className="aspect-square cursor-pointer rounded overflow-hidden group"
@@ -242,8 +265,8 @@ const SpadaProductDetails = () => {
             </Card>
           </div>
 
-          {/* Product Information - Two Column Layout */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* Product Information - Mobile Optimized */}
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Basic Information */}
             <Card>
               <CardHeader className="pb-4">
@@ -259,8 +282,8 @@ const SpadaProductDetails = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <CardContent className="p-4 sm:p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   <div className="space-y-1">
                     <Label className="text-xs font-medium text-muted-foreground">TYPE</Label>
                     <p className="text-sm font-medium">{product.type_product || 'Non spécifié'}</p>
@@ -269,9 +292,56 @@ const SpadaProductDetails = () => {
                     <Label className="text-xs font-medium text-muted-foreground">PRIX</Label>
                     <p className="text-sm font-semibold text-primary">{product.price_product} TND</p>
                   </div>
-                  <div className="space-y-1 col-span-2 md:col-span-1">
+                  <div className="space-y-1 sm:col-span-2 lg:col-span-3">
                     <Label className="text-xs font-semibold text-muted-foreground">STOCK EN LIGNE ACTUEL</Label>
-                    <p className="text-base font-bold text-primary">{formatStockDisplay(product)}</p>
+                    <div className="bg-muted/30 rounded-lg p-2 sm:p-3 border">
+                      {(() => {
+                        const sizeFields = [
+                          'xs_size', 's_size', 'm_size', 'l_size', 'xl_size', 'xxl_size', '3xl_size', '4xl_size',
+                          '30_size', '31_size', '32_size', '33_size', '34_size', '36_size', '38_size', '39_size',
+                          '40_size', '41_size', '42_size', '43_size', '44_size', '45_size', '46_size', '47_size',
+                          '48_size', '50_size', '52_size', '54_size', '56_size', '58_size', '60_size', '62_size',
+                          '64_size', '66_size', '85_size', '90_size', '95_size', '100_size', '105_size', '110_size',
+                          '115_size', '120_size', '125_size'
+                        ];
+                        
+                        const sizesWithStock = sizeFields
+                          .map(field => ({
+                            size: field.replace('_size', '').toUpperCase(),
+                            quantity: parseInt(String(product[field] || '0'))
+                          }))
+                          .filter(item => item.quantity > 0);
+
+                        if (sizesWithStock.length > 0) {
+                          return (
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                {sizesWithStock.map((item, index) => (
+                                  <div key={index} className="flex items-center justify-between bg-background rounded p-2 border">
+                                    <span className="text-xs font-medium text-muted-foreground">Taille {item.size}</span>
+                                    <Badge variant="default" className="text-xs font-bold">
+                                      {item.quantity}
+                                    </Badge>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="text-xs text-muted-foreground text-center pt-1 border-t">
+                                Total: {product.qnty_product} pièces
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          const totalQty = parseInt(String(product.qnty_product || '0'));
+                          return (
+                            <div className="text-center py-2">
+                              <Badge variant="secondary" className="text-sm px-3 py-2">
+                                {totalQty} pièce{totalQty > 1 ? 's' : ''} (sans détail par taille)
+                              </Badge>
+                            </div>
+                          );
+                        }
+                      })()}
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs font-medium text-muted-foreground">COULEUR</Label>
@@ -295,10 +365,10 @@ const SpadaProductDetails = () => {
 
             {/* Auto Replenishment */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Réapprovisionnement Automatique</CardTitle>
+              <CardHeader className="pb-3 p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Réapprovisionnement Automatique</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 sm:p-6 pt-0">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Badge variant={Number(product.AutoReapprovisionnement) === 1 ? 'default' : 'outline'}>
@@ -319,31 +389,18 @@ const SpadaProductDetails = () => {
               </CardContent>
             </Card>
 
-            {/* Stock Details */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Stock en Ligne Actuel</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="text-sm">
-                    {product.qnty_product} pièces (total)
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
 
         {/* Description */}
         {product.description_product && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Description</CardTitle>
+          <Card className="mt-6">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-xl">Description</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6 pt-0">
               <div 
-                className="prose prose-sm max-w-none text-foreground"
+                className="prose prose-sm max-w-none text-foreground text-sm sm:text-base"
                 dangerouslySetInnerHTML={{ __html: product.description_product }}
               />
             </CardContent>
@@ -352,9 +409,9 @@ const SpadaProductDetails = () => {
 
         {/* Additional Information */}
         {product.createdate_product && (
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center text-sm text-muted-foreground">
+          <Card className="mt-4">
+            <CardContent className="p-4 text-center">
+              <div className="text-xs sm:text-sm text-muted-foreground">
                 Produit créé le {new Date(product.createdate_product).toLocaleDateString('fr-FR')}
               </div>
             </CardContent>
@@ -365,14 +422,14 @@ const SpadaProductDetails = () => {
       {/* Image Gallery Modal */}
       {showImageModal && (
         <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
-          <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] p-0">
             <div className="relative">
               {selectedImages.length > 0 && (
                 <>
                   <img 
                     src={selectedImages[currentImageIndex]} 
                     alt={`Image ${currentImageIndex + 1}`}
-                    className="w-full max-h-[80vh] object-contain"
+                    className="w-full max-h-[70vh] sm:max-h-[80vh] object-contain"
                     onError={(e) => {
                       e.currentTarget.src = '/placeholder.svg';
                     }}
@@ -382,7 +439,7 @@ const SpadaProductDetails = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="absolute left-2 top-1/2 transform -translate-y-1/2"
+                        className="absolute left-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 sm:h-10 sm:w-10"
                         onClick={() => setCurrentImageIndex(prev => 
                           prev === 0 ? selectedImages.length - 1 : prev - 1
                         )}
@@ -392,14 +449,14 @@ const SpadaProductDetails = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 sm:h-10 sm:w-10"
                         onClick={() => setCurrentImageIndex(prev => 
                           prev === selectedImages.length - 1 ? 0 : prev + 1
                         )}
                       >
                         →
                       </Button>
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-2 py-1 rounded text-sm">
+                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded text-xs sm:text-sm">
                         {currentImageIndex + 1} / {selectedImages.length}
                       </div>
                     </>
@@ -410,6 +467,15 @@ const SpadaProductDetails = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Transfer Modal */}
+      <ProductSizeQuantityModal
+        open={showTransferModal}
+        onOpenChange={setShowTransferModal}
+        selectedProducts={product ? [product] : []}
+        boutique="spadadibattaglia"
+        onTransferComplete={handleTransferComplete}
+      />
     </div>
   );
 };

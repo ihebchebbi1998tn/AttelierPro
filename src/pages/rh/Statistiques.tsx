@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   BarChart3, 
   Users, 
@@ -36,6 +37,7 @@ const Statistiques = () => {
   const [statistics, setStatistics] = useState<RHStatistics | null>(null);
   const [monthlyHours, setMonthlyHours] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
   const { toast } = useToast();
 
   // Load statistics on component mount
@@ -123,20 +125,24 @@ const Statistiques = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Statistiques RH</h1>
-          <p className="text-muted-foreground mt-2">
-            Tableaux de bord et indicateurs de performance RH
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+            {isMobile ? "Stats RH" : "Statistiques RH"}
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
+            {isMobile ? "Indicateurs RH" : "Tableaux de bord et indicateurs de performance RH"}
           </p>
         </div>
       </div>
 
       {/* Filtres */}
       <Card>
-        <CardHeader>
-          <CardTitle>Période d'analyse</CardTitle>
+        <CardHeader className="p-3 sm:p-4 md:p-6">
+          <CardTitle className="text-sm sm:text-base md:text-lg">
+            {isMobile ? "Période" : "Période d'analyse"}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

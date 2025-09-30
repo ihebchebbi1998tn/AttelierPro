@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   Banknote, 
   Plus, 
@@ -61,6 +62,7 @@ const Salaires = () => {
   const [salaries, setSalaries] = useState<Salary[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   
   const [newSalary, setNewSalary] = useState<CreateSalaryData>({
@@ -250,19 +252,21 @@ const Salaires = () => {
   const stats = getStats();
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Gestion des Salaires</h1>
-          <p className="text-muted-foreground mt-2">
-            Gérer les salaires et historique des rémunérations
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+            {isMobile ? "Salaires" : "Gestion des Salaires"}
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
+            {isMobile ? "Gérer les salaires" : "Gérer les salaires et historique des rémunérations"}
           </p>
         </div>
         <Dialog open={isAddingSalary} onOpenChange={setIsAddingSalary}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau Salaire
+            <Button size={isMobile ? "sm" : "default"} className="w-full sm:w-auto">
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="text-xs sm:text-sm">{isMobile ? "Salaire" : "Nouveau Salaire"}</span>
             </Button>
           </DialogTrigger>
           <DialogContent>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -69,6 +70,7 @@ const Employes = () => {
   const [selectedEmployeeForPlanning, setSelectedEmployeeForPlanning] = useState<Employee | null>(null);
   const [showSalaryModal, setShowSalaryModal] = useState(false);
   const [selectedEmployeeForSalary, setSelectedEmployeeForSalary] = useState<Employee | null>(null);
+  const isMobile = useIsMobile();
   const { toast } = useToast();
 
   const [newEmployee, setNewEmployee] = useState<CreateEmployeeData>({
@@ -247,19 +249,21 @@ const Employes = () => {
 
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Gestion des Employés</h1>
-          <p className="text-muted-foreground mt-2">
-            Gérer la liste des employés et leurs informations
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+            {isMobile ? "Employés" : "Gestion des Employés"}
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
+            {isMobile ? "Gérer les employés" : "Gérer la liste des employés et leurs informations"}
           </p>
         </div>
         <Dialog open={isAddingEmployee} onOpenChange={setIsAddingEmployee}>
           <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Nouvel Employé
+            <Button size={isMobile ? "sm" : "default"} className="w-full sm:w-auto">
+              <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="text-xs sm:text-sm">{isMobile ? "Employé" : "Nouvel Employé"}</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
@@ -350,52 +354,52 @@ const Employes = () => {
       </div>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         <Card className="modern-card bg-primary text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">
-              Total Employés
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">
+              {isMobile ? "Total" : "Total Employés"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">{employees.length}</div>
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">{employees.length}</div>
           </CardContent>
         </Card>
         
         <Card className="modern-card bg-primary text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">
               Actifs
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">
               {employees.filter(e => e.actif).length}
             </div>
           </CardContent>
         </Card>
 
         <Card className="modern-card bg-primary text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">
               Inactifs
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">
               {employees.filter(e => !e.actif).length}
             </div>
           </CardContent>
         </Card>
 
         <Card className="modern-card bg-primary text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">
               Régions
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">
               {new Set(employees.map(e => e.region).filter(Boolean)).size}
             </div>
           </CardContent>
@@ -404,23 +408,25 @@ const Employes = () => {
 
       {/* Filtres */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filtres et Recherche</CardTitle>
+        <CardHeader className="p-3 sm:p-4 md:p-6">
+          <CardTitle className="text-sm sm:text-base md:text-lg">
+            {isMobile ? "Filtres" : "Filtres et Recherche"}
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4">
             <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2 top-2.5 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher par nom ou prénom..."
+                placeholder={isMobile ? "Rechercher..." : "Rechercher par nom ou prénom..."}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
+                className="pl-6 sm:pl-8 text-xs sm:text-sm"
               />
             </div>
             
             <Select value={regionFilter} onValueChange={setRegionFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="text-xs sm:text-sm">
                 <SelectValue placeholder="Toutes les régions" />
               </SelectTrigger>
               <SelectContent>
@@ -432,7 +438,7 @@ const Employes = () => {
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="text-xs sm:text-sm">
                 <SelectValue placeholder="Tous les statuts" />
               </SelectTrigger>
               <SelectContent>
@@ -442,8 +448,8 @@ const Employes = () => {
               </SelectContent>
             </Select>
 
-            <div className="text-sm text-muted-foreground flex items-center">
-              Résultats: {filteredEmployees.length}
+            <div className="text-xs sm:text-sm text-muted-foreground flex items-center">
+              <span className="truncate">Résultats: {filteredEmployees.length}</span>
             </div>
           </div>
         </CardContent>

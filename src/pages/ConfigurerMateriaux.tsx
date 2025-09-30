@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,7 @@ const ConfigurerMateriaux = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   const [tempConfig, setTempConfig] = useState<{
     quantity_type_id: number;
     sizeQuantities: {
@@ -180,6 +181,52 @@ const ConfigurerMateriaux = () => {
       setLoading(false);
     }
   };
+
+  // Auto-save function with debouncing
+  const autoSave = useCallback(async (materialsToSave: ProductMaterial[]) => {
+    if (materialsToSave.length === 0) return;
+
+    // Validate quantities
+    const invalidMaterials = materialsToSave.filter(sm => sm.quantity_needed <= 0);
+    if (invalidMaterials.length > 0) return;
+
+    try {
+      const response = await fetch('https://luccibyey.com.tn/production/api/production_product_materials.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'configure_product_materials',
+          product_id: productId,
+          materials: materialsToSave
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "Auto-sauvegarde",
+          description: "Configuration sauvegardée automatiquement",
+        });
+      }
+    } catch (error) {
+      console.error('Auto-save error:', error);
+    }
+  }, [productId, toast]);
+
+  // Debounced auto-save trigger
+  const triggerAutoSave = useCallback((materials: ProductMaterial[]) => {
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      autoSave(materials);
+    }, 1500); // Auto-save after 1.5 seconds of inactivity
+    
+    setAutoSaveTimeout(timeout);
+  }, [autoSave, autoSaveTimeout]);
   const openMaterialConfig = (material: Material) => {
     setSelectedMaterial(material);
 
@@ -257,9 +304,16 @@ const ConfigurerMateriaux = () => {
 
     // Replace any existing configuration for this material
     const withoutCurrent = selectedMaterials.filter(sm => sm.material_id !== selectedMaterial.id);
-    setSelectedMaterials([...withoutCurrent, ...newMaterials]);
+    const updated = [...withoutCurrent, ...newMaterials];
+    setSelectedMaterials(updated);
+    triggerAutoSave(updated);
     setShowConfigModal(false);
     setSelectedMaterial(null);
+    
+    toast({
+      title: "Matériau configuré",
+      description: "La configuration sera sauvegardée automatiquement",
+    });
   };
   const applyToAllSizes = () => {
     const firstSize = Object.keys(tempConfig.sizeQuantities)[0];
@@ -284,35 +338,11 @@ const ConfigurerMateriaux = () => {
       }
     });
   };
-  const removeSelectedMaterial = (materialId: number) => {
+  const removeSelectedMaterial = async (materialId: number) => {
     const updated = selectedMaterials.filter(sm => sm.material_id !== materialId);
     setSelectedMaterials(updated);
-    toast({
-      title: "Succès",
-      description: "Matériau retiré de la configuration"
-    });
-  };
-  const saveConfiguration = async () => {
-    if (selectedMaterials.length === 0) {
-      toast({
-        title: "Validation",
-        description: "Veuillez sélectionner au moins un matériau",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate quantities
-    const invalidMaterials = selectedMaterials.filter(sm => sm.quantity_needed <= 0);
-    if (invalidMaterials.length > 0) {
-      toast({
-        title: "Validation",
-        description: "Toutes les quantités doivent être supérieures à 0",
-        variant: "destructive"
-      });
-      return;
-    }
-    setSaving(true);
+    
+    // Immediate save for deletions instead of waiting for auto-save
     try {
       const response = await fetch('https://luccibyey.com.tn/production/api/production_product_materials.php', {
         method: 'POST',
@@ -322,34 +352,31 @@ const ConfigurerMateriaux = () => {
         body: JSON.stringify({
           action: 'configure_product_materials',
           product_id: productId,
-          materials: selectedMaterials
+          materials: updated
         })
       });
+
       const data = await response.json();
       if (data.success) {
         toast({
-          title: "Succès",
-          description: "Configuration des matériaux sauvegardée avec succès"
-        });
-        navigate(`/produits/${productId}`, {
-          state: {
-            refresh: true
-          }
+          title: "Matériau supprimé",
+          description: "Le matériau a été retiré et sauvegardé avec succès"
         });
       } else {
-        throw new Error(data.message || 'Erreur lors de la sauvegarde');
+        throw new Error(data.message);
       }
     } catch (error) {
-      console.error('Error saving configuration:', error);
+      console.error('Error removing material:', error);
+      // Revert the state if the API call failed
+      setSelectedMaterials(selectedMaterials);
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Impossible de sauvegarder la configuration",
+        description: "Impossible de supprimer le matériau",
         variant: "destructive"
       });
-    } finally {
-      setSaving(false);
     }
   };
+  // Remove the manual save function since we have auto-save
   const getStockStatus = (currentStock: number, minStock: number, maxStock: number) => {
     // Align with backend logic in production/api/matieres.php
     // critical: qty <= min, warning: qty < max, good: qty >= max
@@ -549,12 +576,12 @@ const ConfigurerMateriaux = () => {
               </CardContent>
             </Card>
             
-            {/* Save Button */}
+            {/* Auto-save indicator */}
             {distinctSelectedCount > 0 && <div className="flex justify-end">
-                <Button onClick={saveConfiguration} disabled={saving} className="px-8">
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? 'Sauvegarde...' : `Sauvegarder ${distinctSelectedCount} matériau${distinctSelectedCount > 1 ? 'x' : ''}`}
-                </Button>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Check className="h-4 w-4 text-green-500" />
+                  {distinctSelectedCount} matériau{distinctSelectedCount > 1 ? 'x' : ''} configuré{distinctSelectedCount > 1 ? 's' : ''} - Auto-sauvegarde activée
+                </div>
               </div>}
           </div>
 

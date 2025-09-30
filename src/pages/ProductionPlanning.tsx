@@ -99,13 +99,24 @@ const ProductionPlanning = () => {
         const apiNoSizes = !!data.data.has_no_sizes || !!(data.data.configured_sizes?.no_sizes?.includes('none'));
         setHasNoSizes(apiNoSizes);
         
-        // Initialize planned quantities
+        // Initialize planned quantities from existing production_quantities
         const initialQuantities: { [size: string]: number } = {};
+        
+        // Try to parse existing production quantities
+        let existingQuantities: { [size: string]: number } = {};
+        if (data.data.product.production_quantities) {
+          try {
+            existingQuantities = JSON.parse(data.data.product.production_quantities);
+          } catch (e) {
+            console.warn('Failed to parse production_quantities:', e);
+          }
+        }
+        
         if (apiNoSizes) {
-          initialQuantities['none'] = 0; // UI key for no sizes
+          initialQuantities['none'] = existingQuantities['none'] || 0;
         } else {
           Object.values(data.data.configured_sizes || {}).flat().forEach((size: string) => {
-            initialQuantities[String(size)] = 0;
+            initialQuantities[String(size)] = existingQuantities[String(size)] || 0;
           });
         }
         setPlannedQuantities(initialQuantities);

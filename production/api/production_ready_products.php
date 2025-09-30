@@ -59,7 +59,7 @@ try {
                 $search = isset($_GET['search']) ? $_GET['search'] : '';
                 $boutique = isset($_GET['boutique']) ? $_GET['boutique'] : '';
                 
-                $whereClause = "WHERE 1=1";
+                $whereClause = "WHERE 1=1 AND is_in_production = 0";
                 $params = [];
                 
                 if ($search) {

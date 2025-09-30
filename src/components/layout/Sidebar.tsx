@@ -118,6 +118,7 @@ export function AppSidebar({ currentUser, onLogout, isMobile }: AppSidebarProps)
   const location = useLocation();
   const navigate = useNavigate();
   const [showRHPassword, setShowRHPassword] = useState(false);
+  const { setOpenMobile } = useSidebar();
 
   const filteredItems = sidebarItems.filter(item => 
     !item.roles || item.roles.includes(currentUser?.role || "")
@@ -128,6 +129,10 @@ export function AppSidebar({ currentUser, onLogout, isMobile }: AppSidebarProps)
     const rhAccess = sessionStorage.getItem("rh_access");
     if (rhAccess === "granted") {
       navigate("/rh");
+      // Close sidebar on mobile after navigation
+      if (isMobile) {
+        setOpenMobile(false);
+      }
     } else {
       setShowRHPassword(true);
     }
@@ -136,10 +141,21 @@ export function AppSidebar({ currentUser, onLogout, isMobile }: AppSidebarProps)
   const handleRHPasswordSuccess = () => {
     setShowRHPassword(false);
     navigate("/rh");
+    // Close sidebar on mobile after navigation
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
 
   const handleRHPasswordCancel = () => {
     setShowRHPassword(false);
+  };
+
+  const handleNavigation = (href: string) => {
+    // Close sidebar on mobile when navigation item is clicked
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
 
   const getNavClassName = (href: string) => {
@@ -204,6 +220,7 @@ export function AppSidebar({ currentUser, onLogout, isMobile }: AppSidebarProps)
                       <Link
                         to={item.href}
                         className={getNavClassName(item.href)}
+                        onClick={() => handleNavigation(item.href)}
                       >
                         <item.icon className="h-5 w-5 shrink-0" />
                         <span className="truncate font-medium">{item.title}</span>

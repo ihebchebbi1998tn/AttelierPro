@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, X, Package, Save } from 'lucide-react';
+import { Plus, X, Package, Save, Check } from 'lucide-react';
 
 interface Material {
   id: number;
@@ -50,6 +50,7 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
   const [existingMaterials, setExistingMaterials] = useState<ProductMaterial[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -103,6 +104,53 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
     }
   };
 
+  // Auto-save function with debouncing
+  const autoSave = useCallback(async (materialsToSave: ProductMaterial[]) => {
+    const validMaterials = materialsToSave.filter(pm => 
+      pm.material_id > 0 && pm.quantity_needed > 0
+    );
+
+    if (validMaterials.length === 0) return;
+
+    try {
+      const response = await fetch('https://luccibyey.com.tn/production/api/production_product_materials.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'configure_product_materials',
+          product_id: product.id,
+          materials: validMaterials
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "Auto-sauvegarde",
+          description: "Configuration sauvegardée automatiquement",
+        });
+        onSave?.();
+      }
+    } catch (error) {
+      console.error('Auto-save error:', error);
+    }
+  }, [product?.id, onSave, toast]);
+
+  // Debounced auto-save trigger
+  const triggerAutoSave = useCallback((materials: ProductMaterial[]) => {
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      autoSave(materials);
+    }, 1500); // Auto-save after 1.5 seconds of inactivity
+    
+    setAutoSaveTimeout(timeout);
+  }, [autoSave, autoSaveTimeout]);
+
   const addMaterial = () => {
     const newMaterial: ProductMaterial = {
       material_id: 0,
@@ -112,18 +160,26 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
       notes: '',
       commentaire: ''
     };
-    setProductMaterials([...productMaterials, newMaterial]);
+    const updated = [...productMaterials, newMaterial];
+    setProductMaterials(updated);
+    triggerAutoSave(updated);
   };
 
   const updateMaterial = (index: number, field: keyof ProductMaterial, value: any) => {
     const updated = [...productMaterials];
     updated[index] = { ...updated[index], [field]: value };
     setProductMaterials(updated);
+    triggerAutoSave(updated);
   };
 
   const removeMaterial = (index: number) => {
     const updated = productMaterials.filter((_, i) => i !== index);
     setProductMaterials(updated);
+    triggerAutoSave(updated);
+    toast({
+      title: "Matériau supprimé",
+      description: "Le matériau a été retiré et la configuration sera sauvegardée automatiquement",
+    });
   };
 
   const saveMaterialsConfiguration = async () => {

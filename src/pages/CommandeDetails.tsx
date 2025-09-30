@@ -69,6 +69,7 @@ import { DynamicTriesSection } from '@/components/admin/DynamicTriesSection';
 import { SurMesureMaterials } from '@/components/SurMesureMaterials';
 import { SurMesureReportModal } from '@/components/admin/SurMesureReportModal';
 import { measurementService } from '@/utils/measurementService';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const statusColors = {
   new: 'bg-blue-500',
@@ -102,6 +103,7 @@ const CommandeDetails = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [isEditing, setIsEditing] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [newComment, setNewComment] = useState('');
@@ -838,45 +840,61 @@ const CommandeDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      <div className="container mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+        <div className="flex flex-col gap-3 sm:gap-4">
+          <div className="flex items-center justify-between">
             <Button
               variant="outline"
               onClick={() => navigate('/commandes')}
-              className="self-start sm:self-auto"
+              size={isMobile ? "sm" : "default"}
+              className="flex-shrink-0"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Retour
+              <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              {isMobile ? "Retour" : "Retour aux commandes"}
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Commande #{order.id}</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Créée le {format(new Date(order.created_at), "PPP", { locale: fr })}
-              </p>
-            </div>
+            {!isMobile && (
+              <Button 
+                onClick={() => setShowReportModal(true)}
+                variant="outline"
+                className="border-primary text-primary hover:bg-primary/10"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Rapport
+              </Button>
+            )}
           </div>
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="space-y-1">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">
+              Commande #{order.id}
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Créée le {format(new Date(order.created_at), isMobile ? "dd/MM/yyyy" : "PPP", { locale: fr })}
+            </p>
+          </div>
+          {isMobile && (
             <Button 
               onClick={() => setShowReportModal(true)}
               variant="outline"
-              className="border-blue-500 text-blue-600 hover:bg-blue-50"
+              size="sm"
+              className="border-primary text-primary hover:bg-primary/10 w-full"
             >
               <FileText className="w-4 h-4 mr-2" />
-              Rapport
+              Générer le rapport
             </Button>
-          </div>
+          )}
         </div>
 
         {/* Status Card */}
-        <Card className="border-l-4 border-l-blue-500">
-          <CardHeader className="pb-3">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <CardTitle className="text-lg">Changer le statut</CardTitle>
+        <Card className="border-l-4 border-l-primary shadow-sm">
+          <CardHeader className="p-3 sm:p-4 pb-2 sm:pb-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <CardTitle className="text-sm sm:text-base md:text-lg font-semibold">
+                {isMobile ? "Statut" : "Changer le statut"}
+              </CardTitle>
               <Select onValueChange={handleStatusChange} value={order.status}>
-                <SelectTrigger className="w-full sm:w-64">
+                <SelectTrigger className="w-full sm:w-48 text-sm">
                   <SelectValue>
                     {statusLabels[order.status] || "Sélectionner un statut"}
                   </SelectValue>
@@ -891,12 +909,14 @@ const CommandeDetails = () => {
               </Select>
             </div>
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex items-center space-x-3">
-              <Badge className={`${statusColors[order.status]} text-white`}>
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Badge className={`${statusColors[order.status]} text-white text-xs px-2 py-1`}>
                 {statusLabels[order.status]}
               </Badge>
-              <span className="text-sm text-muted-foreground">Statut actuel</span>
+              {!isMobile && (
+                <span className="text-xs sm:text-sm text-muted-foreground">Statut actuel</span>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -937,25 +957,44 @@ const CommandeDetails = () => {
 
         {/* Main Content with Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 gap-1 mb-6 bg-muted p-1 rounded-md">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm">Aperçu</TabsTrigger>
-            <TabsTrigger value="dates" className="text-xs sm:text-sm">Dates d'essayage</TabsTrigger>
-            <TabsTrigger value="measurements" className="text-xs sm:text-sm">Mesures</TabsTrigger>
-            <TabsTrigger value="options" className="text-xs sm:text-sm">Finitions</TabsTrigger>
-            <TabsTrigger value="matiere" className="text-xs sm:text-sm">Matiere</TabsTrigger>
-            <TabsTrigger value="media" className="text-xs sm:text-sm">Médias</TabsTrigger>
-            <TabsTrigger value="comments" className="text-xs sm:text-sm">Commentaires</TabsTrigger>
+          <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-7'} gap-1 mb-3 sm:mb-4 md:mb-6 bg-muted p-1 rounded-md overflow-x-auto`}>
+            <TabsTrigger value="overview" className="text-xs whitespace-nowrap px-2 py-1">
+              {isMobile ? "Info" : "Aperçu"}
+            </TabsTrigger>
+            <TabsTrigger value="dates" className="text-xs whitespace-nowrap px-2 py-1">
+              {isMobile ? "Dates" : "Dates d'essayage"}
+            </TabsTrigger>
+            {!isMobile && (
+              <>
+                <TabsTrigger value="measurements" className="text-xs whitespace-nowrap px-2 py-1">Mesures</TabsTrigger>
+                <TabsTrigger value="options" className="text-xs whitespace-nowrap px-2 py-1">Finitions</TabsTrigger>
+                <TabsTrigger value="matiere" className="text-xs whitespace-nowrap px-2 py-1">Matiere</TabsTrigger>
+                <TabsTrigger value="media" className="text-xs whitespace-nowrap px-2 py-1">Médias</TabsTrigger>
+                <TabsTrigger value="comments" className="text-xs whitespace-nowrap px-2 py-1">Commentaires</TabsTrigger>
+              </>
+            )}
           </TabsList>
+          
+          {/* Mobile additional tabs - shown as a second row */}
+          {isMobile && (
+            <TabsList className="grid w-full grid-cols-5 gap-1 mb-3 bg-muted p-1 rounded-md">
+              <TabsTrigger value="measurements" className="text-xs whitespace-nowrap px-1 py-1">Mesures</TabsTrigger>
+              <TabsTrigger value="options" className="text-xs whitespace-nowrap px-1 py-1">Finitions</TabsTrigger>
+              <TabsTrigger value="matiere" className="text-xs whitespace-nowrap px-1 py-1">Matiere</TabsTrigger>
+              <TabsTrigger value="media" className="text-xs whitespace-nowrap px-1 py-1">Médias</TabsTrigger>
+              <TabsTrigger value="comments" className="text-xs whitespace-nowrap px-1 py-1">Messages</TabsTrigger>
+            </TabsList>
+          )}
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6 mt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+          <TabsContent value="overview" className="space-y-3 sm:space-y-4 md:space-y-6 mt-3 sm:mt-4 md:mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
               {/* Client Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center text-lg">
-                    <User className="w-5 h-5 mr-2" />
-                    Informations Client
+              <Card className="shadow-sm">
+                <CardHeader className="p-3 sm:p-4 pb-2 sm:pb-3">
+                  <CardTitle className="flex items-center text-sm sm:text-base md:text-lg font-semibold">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-primary" />
+                    {isMobile ? "Client" : "Informations Client"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -1614,42 +1653,42 @@ const CommandeDetails = () => {
 
         {/* Image Modal */}
         <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle>
+          <DialogContent className={`${isMobile ? 'max-w-[95vw] h-[90vh]' : 'max-w-4xl'} p-2 sm:p-4`}>
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-sm sm:text-base">
                 Image {currentImageIndex + 1} sur {order?.images?.length || 0}
               </DialogTitle>
             </DialogHeader>
             {order?.images && order.images[currentImageIndex] && (
-              <div className="relative">
+              <div className="relative flex-1 min-h-0">
                 <img
                   src={getSurMesureMediaUrl(order.images[currentImageIndex].path)}
                   alt="Image de la commande"
-                  className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+                  className={`w-full h-auto ${isMobile ? 'max-h-[75vh]' : 'max-h-[70vh]'} object-contain rounded-lg`}
                 />
                 {order.images.length > 1 && (
                   <>
                     <Button
                       variant="outline"
-                      size="sm"
-                      className="absolute left-2 top-1/2 -translate-y-1/2"
+                      size={isMobile ? "sm" : "sm"}
+                      className={`absolute ${isMobile ? 'left-1 w-8 h-8' : 'left-2'} top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm`}
                       onClick={handlePrevImage}
                     >
-                      <ChevronLeft className="w-4 h-4" />
+                      <ChevronLeft className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                     </Button>
                     <Button
                       variant="outline"
-                      size="sm"
-                      className="absolute right-2 top-1/2 -translate-y-1/2"
+                      size={isMobile ? "sm" : "sm"}
+                      className={`absolute ${isMobile ? 'right-1 w-8 h-8' : 'right-2'} top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm`}
                       onClick={handleNextImage}
                     >
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                     </Button>
                   </>
                 )}
                 {order.images[currentImageIndex].commentaire && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/75 text-white p-3 rounded-b-lg">
-                    <p className="text-sm">{order.images[currentImageIndex].commentaire}</p>
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/75 text-white p-2 sm:p-3 rounded-b-lg">
+                    <p className="text-xs sm:text-sm">{order.images[currentImageIndex].commentaire}</p>
                   </div>
                 )}
               </div>

@@ -104,10 +104,36 @@ const Produits = () => {
     }
   };
 
-  const handleStartProduction = (product) => {
+  const handleStartProduction = async (product) => {
     if ((product.materials_configured == 1 || product.materials_configured === "1")) {
-      // Navigate directly to production if materials are configured
-      navigate('/productions', { state: { selectedProduct: product } });
+      try {
+        // Remove product from products list when production starts
+        const response = await fetch('https://luccibyey.com.tn/production/api/remove_from_products_on_production.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            product_id: product.id
+          })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          // Navigate to production after successful removal
+          navigate('/productions', { state: { selectedProduct: product } });
+          // Refresh products list to remove the product
+          loadProducts();
+        } else {
+          throw new Error(data.message);
+        }
+      } catch (error) {
+        toast({
+          title: "Erreur",
+          description: "Erreur lors du démarrage de la production",
+          variant: "destructive",
+        });
+      }
     } else {
       // Show materials configuration modal
       setSelectedProduct(product);
@@ -302,8 +328,8 @@ const Produits = () => {
     <div className="space-y-4 md:space-y-6 p-4 md:p-6">
       <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Produit a produire</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Produits sélectionnés pour être mis en production</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Produits à Produire</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Liste d'attente - Produits sélectionnés pour être mis en production</p>
         </div>
       </div>
 
@@ -333,6 +359,7 @@ const Produits = () => {
                   <TableHead className="text-xs md:text-sm">Référence</TableHead>
                   <TableHead className="text-xs md:text-sm">Nom</TableHead>
                   <TableHead className="text-xs md:text-sm hidden md:table-cell">Type</TableHead>
+                  <TableHead className="text-xs md:text-sm hidden lg:table-cell">Quantités</TableHead>
                   <TableHead className="text-xs md:text-sm hidden lg:table-cell">Matériaux</TableHead>
                   <TableHead className="text-xs md:text-sm">Boutique</TableHead>
                   <TableHead className="text-xs md:text-sm hidden md:table-cell">Prix</TableHead>
@@ -368,11 +395,7 @@ const Produits = () => {
                                   e.currentTarget.src = '/placeholder.svg';
                                 }}
                               />
-                              {allImages.length > 1 && (
-                                <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                  {allImages.length}
-                                </div>
-                              )}
+                              
                             </>
                           ) : (
                             <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
@@ -385,6 +408,15 @@ const Produits = () => {
                       <TableCell className="max-w-[150px] md:max-w-none truncate">{product.nom_product}</TableCell>
                       <TableCell className="hidden md:table-cell">
                         <Badge variant="outline" className="text-xs">{product.type_product}</Badge>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {product.production_quantities ? (
+                          <Badge variant="default" className="text-xs">
+                            {Object.values(JSON.parse(product.production_quantities) as Record<string, number>).reduce((sum: number, qty: number) => sum + (qty || 0), 0)} pièces
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">Non défini</Badge>
+                        )}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         <Badge 
@@ -430,8 +462,8 @@ const Produits = () => {
                 })}
                 {filteredProducts.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      {loading ? 'Chargement...' : 'Aucun produit trouvé'}
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      {loading ? 'Chargement...' : 'Aucun produit en attente de production'}
                     </TableCell>
                   </TableRow>
                 )}
