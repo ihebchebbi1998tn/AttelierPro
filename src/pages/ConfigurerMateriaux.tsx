@@ -21,6 +21,7 @@ interface Material {
   couleur?: string;
   description: string;
   quantity_type_id: number;
+  location?: string;
 }
 interface QuantityType {
   id: number;
@@ -121,7 +122,8 @@ const ConfigurerMateriaux = () => {
           prix_unitaire: parseFloat(m.prix_unitaire),
           couleur: m.couleur,
           description: m.description,
-          quantity_type_id: parseInt(m.quantity_type_id)
+          quantity_type_id: parseInt(m.quantity_type_id),
+          location: m.location
         }));
         setMaterials(normalizedMaterials);
       }
@@ -447,7 +449,13 @@ const ConfigurerMateriaux = () => {
   const isSelected = (materialId: number) => {
     return selectedMaterials.some(sm => sm.material_id === materialId);
   };
-  const filteredMaterials = materials.filter(material => material.nom.toLowerCase().includes(searchTerm.toLowerCase()) || material.reference.toLowerCase().includes(searchTerm.toLowerCase()) || material.description.toLowerCase().includes(searchTerm.toLowerCase()) || material.category_name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredMaterials = materials.filter(material => 
+    (material.nom || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (material.reference || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (material.description || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (material.category_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (material.location || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
   const distinctSelectedCount = new Set(selectedMaterials.map(sm => sm.material_id)).size;
   if (loading) {
     return <div className="flex items-center justify-center py-12">
@@ -510,14 +518,17 @@ const ConfigurerMateriaux = () => {
                              </div>}
                          </div>
                          
-                         <div className="flex flex-wrap gap-1 mb-3">
-                           <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                             {material.category_name}
-                           </Badge>
-                           {material.couleur && <Badge variant="outline" className="text-xs px-2 py-0.5">
-                               {material.couleur}
-                             </Badge>}
-                         </div>
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                              {material.category_name}
+                            </Badge>
+                            {material.couleur && <Badge variant="outline" className="text-xs px-2 py-0.5">
+                                {material.couleur}
+                              </Badge>}
+                            {material.location && <Badge variant="outline" className="text-xs px-2 py-0.5">
+                                📍 {material.location}
+                              </Badge>}
+                          </div>
                          
                           {/* Stock Progress Bar with Status */}
                           <div className="space-y-2">

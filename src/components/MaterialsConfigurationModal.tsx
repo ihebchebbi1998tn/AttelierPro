@@ -18,6 +18,7 @@ interface Material {
   quantite_stock: number;
   prix_unitaire: number;
   couleur?: string;
+  location?: string;
 }
 
 interface QuantityType {
@@ -331,16 +332,17 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
                                    <SelectValue placeholder="Sélectionner" />
                                  </SelectTrigger>
                                  <SelectContent>
-                                   {materials.map((material) => (
-                                     <SelectItem key={material.id} value={material.id.toString()}>
-                                       <div className="flex flex-col">
-                                         <span className="font-medium">{material.nom}</span>
-                                         <span className="text-xs text-muted-foreground">
-                                           {material.reference} • Stock: {material.quantite_stock}
-                                         </span>
-                                       </div>
-                                     </SelectItem>
-                                   ))}
+                                    {materials.map((material) => (
+                                      <SelectItem key={material.id} value={material.id.toString()}>
+                                        <div className="flex flex-col">
+                                          <span className="font-medium">{material.nom}</span>
+                                          <span className="text-xs text-muted-foreground">
+                                            {material.reference} • Stock: {material.quantite_stock}
+                                            {material.location && ` • 📍 ${material.location}`}
+                                          </span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
                                  </SelectContent>
                                </Select>
                              </div>
