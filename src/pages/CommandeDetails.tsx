@@ -1228,7 +1228,9 @@ const CommandeDetails = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {Object.entries(measurements).map(([name, value], index) => (
+                          {Object.entries(measurements)
+                            .filter(([name, value]) => name.trim() !== '' && (value === 0 || value))
+                            .map(([name, value], index) => (
                             <tr key={name} className={`border-b ${index % 2 === 0 ? 'bg-muted/30' : 'bg-background'}`}>
                               <td className="py-3 px-4 font-medium">{name}</td>
                               <td className="text-right py-3 px-4">
@@ -1322,7 +1324,9 @@ const CommandeDetails = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {Object.entries(order?.measurements || {}).map(([name, value], index) => (
+                        {Object.entries(order?.measurements || {})
+                          .filter(([name, value]) => name.trim() !== '' && (value === 0 || value))
+                          .map(([name, value], index) => (
                           <tr key={name} className={`border-b ${index % 2 === 0 ? 'bg-muted/30' : 'bg-background'}`}>
                             <td className="py-3 px-4 font-medium">{name}</td>
                             <td className="text-right py-3 px-4">
