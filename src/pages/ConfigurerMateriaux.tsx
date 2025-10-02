@@ -449,13 +449,32 @@ const ConfigurerMateriaux = () => {
   const isSelected = (materialId: number) => {
     return selectedMaterials.some(sm => sm.material_id === materialId);
   };
-  const filteredMaterials = materials.filter(material => 
-    (material.nom || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (material.reference || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (material.description || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (material.category_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (material.location || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMaterials = materials.filter(material => {
+    // Filter by search term
+    const matchesSearch = (material.nom || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+      (material.reference || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+      (material.description || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+      (material.category_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (material.location || '').toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (!matchesSearch) return false;
+
+    // Filter by location based on product boutique origin
+    const location = (material.location || '').toLowerCase().trim();
+    
+    // "Les deux" materials are available for both boutiques
+    if (location === "les deux") return true;
+    
+    // Filter by boutique - case insensitive comparison
+    if (product?.boutique_origin === "luccibyey") {
+      return location === "lucci by ey";
+    } else if (product?.boutique_origin === "spadadibattaglia") {
+      return location === "spada";
+    }
+    
+    // If no boutique origin or unknown boutique, show all materials
+    return true;
+  });
   const distinctSelectedCount = new Set(selectedMaterials.map(sm => sm.material_id)).size;
   if (loading) {
     return <div className="flex items-center justify-center py-12">
