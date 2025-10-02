@@ -67,6 +67,7 @@ const ConfigurerMateriaux = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [locationFilter, setLocationFilter] = useState<string>('all');
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -449,15 +450,29 @@ const ConfigurerMateriaux = () => {
   const isSelected = (materialId: number) => {
     return selectedMaterials.some(sm => sm.material_id === materialId);
   };
+  // Get unique locations from materials
+  const availableLocations = Array.from(new Set(
+    materials
+      .map(m => m.location?.trim())
+      .filter(loc => loc && loc.length > 0)
+  )).sort();
+
   const filteredMaterials = materials.filter(material => {
-    // Filter by search term
+    // Filter by search term - search across all relevant fields
     const matchesSearch = (material.nom || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
       (material.reference || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
       (material.description || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
       (material.category_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (material.couleur || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (material.location || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     if (!matchesSearch) return false;
+
+    // Filter by location dropdown selection
+    if (locationFilter !== 'all') {
+      const materialLocation = (material.location || '').trim();
+      if (materialLocation !== locationFilter) return false;
+    }
 
     // Filter by location based on product boutique origin
     const location = (material.location || '').toLowerCase().trim();
@@ -510,10 +525,35 @@ const ConfigurerMateriaux = () => {
                 Cliquez sur un matériau pour l'ajouter à la configuration
               </p>
               
-              {/* Search Input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input placeholder="Rechercher un matériau..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+              {/* Search and Filter Controls */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Search Input */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input 
+                    placeholder="Rechercher (nom, référence, couleur, location...)" 
+                    value={searchTerm} 
+                    onChange={e => setSearchTerm(e.target.value)} 
+                    className="pl-10" 
+                  />
+                </div>
+                
+                {/* Location Filter */}
+                <div className="w-full sm:w-48">
+                  <Select value={locationFilter} onValueChange={setLocationFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Toutes les locations" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Toutes les locations</SelectItem>
+                      {availableLocations.map(location => (
+                        <SelectItem key={location} value={location || ''}>
+                          📍 {location}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-4">
