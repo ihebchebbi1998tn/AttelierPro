@@ -213,7 +213,7 @@ const EmployeeQuickActions: React.FC<EmployeeQuickActionsProps> = ({
                 Ajouter Congé
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
               <DialogHeader>
                 <DialogTitle>Nouveau Congé</DialogTitle>
                 <DialogDescription>
@@ -257,7 +257,7 @@ const EmployeeQuickActions: React.FC<EmployeeQuickActionsProps> = ({
                 Gérer Salaire
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
               <DialogHeader>
                 <DialogTitle>Nouveau Salaire</DialogTitle>
                 <DialogDescription>

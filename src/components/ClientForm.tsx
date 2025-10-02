@@ -65,7 +65,7 @@ const ClientForm = ({ isOpen, onClose, onSubmit, client, isEditing = false }: Cl
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Modifier le client" : "Ajouter un nouveau client"}

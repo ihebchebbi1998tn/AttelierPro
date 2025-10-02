@@ -226,7 +226,7 @@ const CategoryManagement = () => {
                 Nouvelle catégorie
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
               <DialogHeader>
                 <DialogTitle>
                   {editingCategory ? "Modifier la catégorie" : "Nouvelle catégorie"}

@@ -377,7 +377,7 @@ const ProductSizeQuantityModal = ({
   if (isMobile) {
     return (<>
       <Drawer open={computedOpen} onOpenChange={handleOpenChange}>
-        <DrawerContent className="max-h-[95vh]">
+        <DrawerContent className="max-h-[95vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DrawerHeader className="text-left">
             <DrawerTitle className="text-lg">Configuration des Quantités</DrawerTitle>
             <p className="text-sm text-muted-foreground">
@@ -397,7 +397,7 @@ const ProductSizeQuantityModal = ({
 
       {/* Success Modal for Mobile */}
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
           <div className="flex flex-col items-center text-center space-y-4 py-6">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
               <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -444,7 +444,7 @@ const ProductSizeQuantityModal = ({
       <DialogContent 
         className="max-w-4xl max-h-[90vh] overflow-y-auto"
         onEscapeKeyDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        onOpenAutoFocus={(e) => { console.log('[QtyModal] onOpenAutoFocus'); }}
+        onOpenAutoFocus={(e) => { e.preventDefault(); }}
         onCloseAutoFocus={(e) => { console.log('[QtyModal] onCloseAutoFocus'); }}
         onPointerDownOutside={(e) => { console.log('[QtyModal] onPointerDownOutside'); }}
         onInteractOutside={(e) => { console.log('[QtyModal] onInteractOutside'); }}
@@ -468,7 +468,7 @@ const ProductSizeQuantityModal = ({
 
     {/* Success Modal */}
     <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
         <div className="flex flex-col items-center text-center space-y-4 py-6">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

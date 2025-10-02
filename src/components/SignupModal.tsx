@@ -63,7 +63,7 @@ const SignupModal = ({ open, onOpenChange, onSuccess }: SignupModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="text-2xl text-center font-semibold">Inscription</DialogTitle>
           <p className="text-center text-muted-foreground text-sm">

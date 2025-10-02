@@ -173,7 +173,7 @@ const BatchAttachmentUpload = ({ batchId, attachments, onAttachmentsUpdate }: Ba
               Ajouter Fichier
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Ajouter une Pièce Jointe</DialogTitle>
             </DialogHeader>

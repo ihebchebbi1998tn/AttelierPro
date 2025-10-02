@@ -349,7 +349,7 @@ const ImageCapture = ({
 
       {/* Camera Modal */}
       <Dialog open={isCameraOpen} onOpenChange={() => stopCamera()}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Prendre une photo</DialogTitle>
           </DialogHeader>

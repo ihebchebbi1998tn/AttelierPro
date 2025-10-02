@@ -211,7 +211,7 @@ const ProductionSpecificationsModal: React.FC<ProductionSpecificationsModalProps
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={handleDialogOpenChange}>
-        <DrawerContent className="max-h-[95vh]">
+        <DrawerContent className="max-h-[95vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DrawerHeader className="text-left">
             <DrawerTitle className="flex items-center text-base">
               <ClipboardList className="w-5 h-5 mr-2" />
@@ -236,7 +236,7 @@ const ProductionSpecificationsModal: React.FC<ProductionSpecificationsModalProps
       <DialogContent 
         className="max-w-3xl max-h-[90vh] overflow-y-auto"
         onEscapeKeyDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        onOpenAutoFocus={(e) => { console.log('[SpecsModal] onOpenAutoFocus'); }}
+        onOpenAutoFocus={(e) => { e.preventDefault(); }}
         onCloseAutoFocus={(e) => { console.log('[SpecsModal] onCloseAutoFocus'); }}
         onPointerDownOutside={(e) => { console.log('[SpecsModal] onPointerDownOutside'); }}
         onInteractOutside={(e) => { console.log('[SpecsModal] onInteractOutside'); }}

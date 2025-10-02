@@ -59,7 +59,6 @@ export const RHPasswordProtection = ({ isOpen, onSuccess, onCancel }: RHPassword
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="pr-10 text-center"
-              autoFocus
             />
             <Button
               type="button"

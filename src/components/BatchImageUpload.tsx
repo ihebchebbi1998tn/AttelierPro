@@ -151,7 +151,7 @@ const BatchImageUpload = ({ batchId, images, productImages = [], soustraitancePr
               Ajouter Image
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Ajouter une Image</DialogTitle>
             </DialogHeader>
@@ -379,7 +379,7 @@ const BatchImageUpload = ({ batchId, images, productImages = [], soustraitancePr
       
       {/* Image viewer dialog */}
       <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>
               {selectedImageData?.original_filename ? 

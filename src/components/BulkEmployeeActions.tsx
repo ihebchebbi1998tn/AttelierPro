@@ -262,7 +262,7 @@ const BulkEmployeeActions: React.FC<BulkEmployeeActionsProps> = ({
             Importer
           </Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Importer des employés</DialogTitle>
             <DialogDescription>

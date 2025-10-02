@@ -274,7 +274,7 @@ const ProductAttachments: React.FC<ProductAttachmentsProps> = ({ productId }) =>
                 Ajouter un fichier
               </Button>
             </DialogTrigger>
-            <DialogContent className="mx-4 sm:mx-0 max-w-lg">
+            <DialogContent className="mx-4 sm:mx-0 max-w-lg" onOpenAutoFocus={(e) => e.preventDefault()}>
               <DialogHeader>
                 <DialogTitle className="text-xl font-semibold">Ajouter un fichier technique</DialogTitle>
               </DialogHeader>
@@ -501,7 +501,7 @@ const ProductAttachments: React.FC<ProductAttachmentsProps> = ({ productId }) =>
       {/* File Preview Modal */}
       {previewAttachment && (
         <Dialog open={!!previewAttachment} onOpenChange={() => setPreviewAttachment(null)}>
-          <DialogContent className="mx-4 sm:mx-0 max-w-6xl max-h-[95vh] p-0">
+          <DialogContent className="mx-4 sm:mx-0 max-w-6xl max-h-[95vh] p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader className="p-4 pb-2 border-b">
               <DialogTitle className="flex items-center justify-between text-sm sm:text-base">
                 <div className="flex items-center gap-2 min-w-0 flex-1">

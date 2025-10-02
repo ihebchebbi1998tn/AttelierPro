@@ -627,7 +627,7 @@ const ConfigurerMateriaux = () => {
 
           {/* Material Configuration Modal */}
           <Dialog open={showConfigModal} onOpenChange={setShowConfigModal}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <Package className="h-5 w-5" />

@@ -287,7 +287,7 @@ const QuantityTypesModal = ({ open, onOpenChange, onQuantityTypesUpdate }: Quant
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-4xl h-[90vh] max-h-[800px] flex flex-col p-0">
+      <DialogContent className="w-[95vw] max-w-4xl h-[90vh] max-h-[800px] flex flex-col p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <span>Types de Quantité</span>
