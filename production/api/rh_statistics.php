@@ -37,6 +37,16 @@ try {
             $stmt->execute();
             $stats['pending_holidays'] = $stmt->fetch()['total'];
             
+            // Employees on holiday today (approved holidays for today's date)
+            $stmt = $db->prepare("
+                SELECT COUNT(DISTINCT employee_id) as total 
+                FROM production_holidays 
+                WHERE status = 'approved' 
+                AND date = CURDATE()
+            ");
+            $stmt->execute();
+            $stats['on_holiday_today'] = $stmt->fetch()['total'];
+            
             // Regions count
             $stmt = $db->prepare("SELECT COUNT(DISTINCT region) as total FROM production_employees WHERE region IS NOT NULL");
             $stmt->execute();

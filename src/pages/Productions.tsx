@@ -174,7 +174,12 @@ const Productions = () => {
     }
   };
 
-  const getBoutiqueColor = (boutique: string) => {
+  const getBoutiqueColor = (boutique: string | null | undefined) => {
+    // Handle null or undefined boutique
+    if (!boutique) {
+      return 'bg-gray-500';
+    }
+
     // Predefined colors for main boutiques
     const boutiqueColors: { [key: string]: string } = {
       'luccibyey': 'bg-blue-500',
@@ -356,12 +361,12 @@ const Productions = () => {
                       </div>
                       
                       <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
+                      <div>
                           <span className="text-muted-foreground">Boutique:</span>
                           <p className="font-medium">
                             {batch.product_type === 'soustraitance' 
-                              ? batch.boutique_origin 
-                              : (batch.boutique_origin === 'luccibyey' ? 'Lucci By Ey' : 'Spada di Battaglia')
+                              ? (batch.boutique_origin || 'N/A')
+                              : (batch.boutique_origin === 'luccibyey' ? 'Lucci By Ey' : batch.boutique_origin === 'spadadibattaglia' ? 'Spada di Battaglia' : (batch.boutique_origin || 'N/A'))
                             }
                           </p>
                         </div>
@@ -454,8 +459,8 @@ const Productions = () => {
                     <TableCell>
                       <Badge className={`text-white ${getBoutiqueColor(batch.boutique_origin)}`}>
                         {batch.product_type === 'soustraitance' 
-                          ? batch.boutique_origin 
-                          : (batch.boutique_origin === 'luccibyey' ? 'Lucci By Ey' : 'Spada di Battaglia')
+                          ? (batch.boutique_origin || 'N/A')
+                          : (batch.boutique_origin === 'luccibyey' ? 'Lucci By Ey' : batch.boutique_origin === 'spadadibattaglia' ? 'Spada di Battaglia' : (batch.boutique_origin || 'N/A'))
                         }
                       </Badge>
                     </TableCell>

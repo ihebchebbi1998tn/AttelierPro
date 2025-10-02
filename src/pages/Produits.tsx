@@ -319,16 +319,6 @@ const Produits = () => {
 
   useEffect(() => {
     loadProducts();
-    // Auto-sync both boutiques when component mounts
-    const autoSync = async () => {
-      try {
-        await syncBoutique('luccibyey');
-        await syncBoutique('spadadibattaglia');
-      } catch (error) {
-        console.error('Auto-sync failed:', error);
-      }
-    };
-    autoSync();
   }, [location.state?.refresh]);
 
   // Remove the window focus listener as we're using location state instead

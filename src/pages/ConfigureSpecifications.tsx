@@ -6,11 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, ClipboardList, CheckCircle2, Settings } from "lucide-react";
+import { CheckCircle2, Settings, Search } from "lucide-react";
 import SpecificationTemplateManager from "@/components/SpecificationTemplateManager";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // Specifications screen (replaces the modal) and performs the transfer API call
 // Navigation state from ConfigureQuantities: { product, quantities }
@@ -20,6 +20,16 @@ interface SpecTemplate {
   name: string;
   input_type: "input" | "select" | "checkbox";
   options?: string[];
+}
+
+interface Material {
+  id: number;
+  nom: string;
+  location?: string;
+  reference?: string;
+  categorie?: string;
+  couleur?: string;
+  laize?: string;
 }
 
 export default function ConfigureSpecifications() {
@@ -32,15 +42,18 @@ export default function ConfigureSpecifications() {
   const quantities: Record<string, number> = state?.quantities || {};
   const [specs, setSpecs] = useState<Record<string, string>>({});
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [transferredProductId, setTransferredProductId] = useState<number | null>(null);
   const [showTemplateManager, setShowTemplateManager] = useState(false);
   const [templates, setTemplates] = useState<SpecTemplate[]>([]);
-  const [selectedCheckboxes, setSelectedCheckboxes] = useState<Record<string, string[]>>({});
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [materialSearchOpen, setMaterialSearchOpen] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     document.title = `Spécifications | ${product?.nom_product ?? "Produit"}`;
     const meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute("content", `Définir les spécifications de production pour ${product?.nom_product ?? "le produit"}.`);
     fetchTemplates();
+    fetchMaterials();
   }, [product]);
 
   const fetchTemplates = async () => {
@@ -55,39 +68,38 @@ export default function ConfigureSpecifications() {
     }
   };
 
-  const total = useMemo(() => Object.values(quantities).reduce((s, v) => s + (v || 0), 0), [quantities]);
-
-  const [newFieldName, setNewFieldName] = useState("");
-  const [newFieldValue, setNewFieldValue] = useState("");
-
-  const handleAddField = () => {
-    if (!newFieldName.trim()) {
-      toast({ title: "Erreur", description: "Le nom du champ est requis", variant: "destructive" });
-      return;
+  const fetchMaterials = async () => {
+    try {
+      const resp = await fetch("https://luccibyey.com.tn/production/api/matieres.php");
+      const data = await resp.json();
+      if (data.success) {
+        setMaterials(data.matieres || []);
+      }
+    } catch (e) {
+      console.error("Error loading materials:", e);
     }
-    setSpecs((prev) => ({ ...prev, [newFieldName.trim()]: newFieldValue.trim() }));
-    setNewFieldName("");
-    setNewFieldValue("");
   };
 
-  const handleRemoveField = (fieldName: string) => {
-    const updated = { ...specs };
-    delete updated[fieldName];
-    setSpecs(updated);
+  // Filter materials based on boutique location
+  const getFilteredMaterials = () => {
+    let locationFilter = "";
+    if (boutique?.toLowerCase().includes("luccibyey")) {
+      locationFilter = "Lucci By Ey";
+    } else if (boutique?.toLowerCase().includes("spadadibattaglia") || boutique?.toLowerCase().includes("spada")) {
+      locationFilter = "Spada";
+    }
+
+    if (!locationFilter) return materials;
+    
+    return materials.filter((m) => 
+      m.location?.toLowerCase().includes(locationFilter.toLowerCase())
+    );
   };
+
+  const total = useMemo(() => Object.values(quantities).reduce((s, v) => s + (v || 0), 0), [quantities]);
 
   const handleUpdateValue = (fieldName: string, value: string) => {
     setSpecs((prev) => ({ ...prev, [fieldName]: value }));
-  };
-
-  const handleCheckboxToggle = (fieldName: string, option: string) => {
-    const current = selectedCheckboxes[fieldName] || [];
-    const updated = current.includes(option)
-      ? current.filter((o) => o !== option)
-      : [...current, option];
-    
-    setSelectedCheckboxes((prev) => ({ ...prev, [fieldName]: updated }));
-    setSpecs((prev) => ({ ...prev, [fieldName]: updated.join(", ") }));
   };
 
   const handleTemplateManagerClose = () => {
@@ -118,6 +130,13 @@ export default function ConfigureSpecifications() {
       );
       const data = await resp.json();
       if (data.success) {
+        // Get all products from production_ready_products that match this external_product_id
+        const fetchResp = await fetch(`https://luccibyey.com.tn/production/api/production_ready_products.php?search=${product.reference_product}&boutique=${boutique}`);
+        const fetchData = await fetchResp.json();
+        if (fetchData.success && fetchData.data && fetchData.data.length > 0) {
+          const transferredProduct = fetchData.data[0];
+          setTransferredProductId(transferredProduct.id);
+        }
         setShowSuccessModal(true);
       } else {
         toast({ title: "Erreur de transfert", description: data.message || "Erreur lors du transfert", variant: "destructive" });
@@ -129,7 +148,11 @@ export default function ConfigureSpecifications() {
 
   const handleSuccessClose = () => {
     setShowSuccessModal(false);
-    navigate("/boutiques");
+    if (transferredProductId) {
+      navigate(`/produits/${transferredProductId}`);
+    } else {
+      navigate("/produits");
+    }
   };
 
   if (!product) {
@@ -171,84 +194,91 @@ export default function ConfigureSpecifications() {
             <CardTitle className="text-sm sm:text-base break-words">Définir les spécifications</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6">
-            {/* Template-based specifications */}
+            {/* Simple specification inputs */}
             {templates.length > 0 && (
-              <div className="space-y-3">
-                <Label className="text-xs sm:text-sm font-semibold">Spécifications pré-configurées</Label>
+              <div className="space-y-2">
+                <Label className="text-xs sm:text-sm font-medium">Spécifications</Label>
                 {templates.map((template) => {
                   const templateValue = specs[template.name] || "";
-                  const isAdded = template.name in specs;
+                  const isMaterialSpec = template.name.toLowerCase().includes("matériau") || template.name.toLowerCase().includes("tissue");
+                  const filteredMaterials = getFilteredMaterials();
 
                   return (
-                    <div key={template.id} className="border rounded-lg p-2.5 sm:p-3 bg-card w-full">
-                      <div className="flex items-start justify-between mb-2 gap-2">
-                        <Label className="font-semibold text-xs sm:text-sm break-words flex-1 min-w-0">
-                          {template.name}
-                        </Label>
-                        {isAdded && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              handleRemoveField(template.name);
-                              setSelectedCheckboxes((prev) => {
-                                const updated = { ...prev };
-                                delete updated[template.name];
-                                return updated;
-                              });
-                            }}
-                            className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive flex-shrink-0"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
+                    <div key={template.id} className="space-y-1">
+                      <Label className="text-xs font-normal text-muted-foreground">
+                        {template.name}
+                      </Label>
+                      
+                      {/* Material selector */}
+                      {isMaterialSpec ? (
+                        <Popover 
+                          open={materialSearchOpen[template.name] || false}
+                          onOpenChange={(open) => setMaterialSearchOpen((prev) => ({ ...prev, [template.name]: open }))}
+                        >
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className="w-full justify-start text-xs sm:text-sm h-9"
+                            >
+                              <span className="flex-1 text-left truncate">
+                                {templateValue || "Sélectionner un matériau..."}
+                              </span>
+                              <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[300px] p-0" align="start">
+                            <Command>
+                              <CommandInput placeholder="Rechercher..." className="h-9" />
+                              <CommandEmpty>Aucun matériau trouvé.</CommandEmpty>
+                              <CommandGroup className="max-h-64 overflow-auto">
+                                {filteredMaterials.map((material) => {
+                                  const displayParts = [
+                                    material.nom,
+                                    material.couleur && `Couleur: ${material.couleur}`,
+                                    material.location && `📍 ${material.location}`
+                                  ].filter(Boolean);
+                                  const displayValue = displayParts.join(" • ");
 
-                      {template.input_type === "input" && (
+                                  return (
+                                    <CommandItem
+                                      key={material.id}
+                                      value={material.nom}
+                                      onSelect={() => {
+                                        handleUpdateValue(template.name, displayValue);
+                                        setMaterialSearchOpen((prev) => ({ ...prev, [template.name]: false }));
+                                      }}
+                                      className="cursor-pointer"
+                                    >
+                                      <div className="flex flex-col w-full">
+                                        <span className="font-medium text-sm">{material.nom}</span>
+                                        <div className="flex flex-wrap gap-1 mt-1 text-xs text-muted-foreground">
+                                          {material.couleur && (
+                                            <Badge variant="secondary" className="text-xs">
+                                              {material.couleur}
+                                            </Badge>
+                                          )}
+                                          {material.location && (
+                                            <Badge variant="outline" className="text-xs">
+                                              📍 {material.location}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </CommandItem>
+                                  );
+                                })}
+                              </CommandGroup>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                      ) : (
                         <Input
                           value={templateValue}
                           onChange={(e) => handleUpdateValue(template.name, e.target.value)}
-                          className="text-xs sm:text-sm h-9 w-full"
-                          placeholder="Entrez la valeur..."
+                          className="text-xs sm:text-sm h-9"
+                          placeholder={`Entrer ${template.name.toLowerCase()}...`}
                         />
-                      )}
-
-                      {template.input_type === "select" && template.options && (
-                        <Select
-                          value={templateValue}
-                          onValueChange={(val) => handleUpdateValue(template.name, val)}
-                        >
-                          <SelectTrigger className="text-xs sm:text-sm h-9 w-full">
-                            <SelectValue placeholder="Sélectionnez..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {template.options.map((opt, i) => (
-                              <SelectItem key={i} value={opt} className="text-xs sm:text-sm">
-                                {opt}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-
-                      {template.input_type === "checkbox" && template.options && (
-                        <div className="space-y-2">
-                          {template.options.map((opt, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                              <Checkbox
-                                id={`${template.name}-${i}`}
-                                checked={(selectedCheckboxes[template.name] || []).includes(opt)}
-                                onCheckedChange={() => handleCheckboxToggle(template.name, opt)}
-                              />
-                              <label
-                                htmlFor={`${template.name}-${i}`}
-                                className="text-xs sm:text-sm cursor-pointer flex-1"
-                              >
-                                {opt}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
                       )}
                     </div>
                   );
@@ -256,88 +286,14 @@ export default function ConfigureSpecifications() {
               </div>
             )}
 
-            {/* Manual specification addition */}
-            <div className="border-2 border-dashed border-border rounded-lg p-2.5 sm:p-3 bg-muted/30">
-              <Label className="text-xs sm:text-sm font-semibold mb-2 block">Ajouter une spécification personnalisée</Label>
-              <div className="grid grid-cols-1 gap-2 sm:gap-3 w-full">
-                <div className="w-full">
-                  <Label className="text-xs mb-1 block">Nom de la spécification</Label>
-                  <Input
-                    placeholder="Ex: Matériau..."
-                    value={newFieldName}
-                    onChange={(e) => setNewFieldName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && newFieldName.trim()) {
-                        e.preventDefault();
-                        handleAddField();
-                      }
-                    }}
-                    autoComplete="off"
-                    className="text-xs sm:text-sm h-9 w-full"
-                  />
-                </div>
-                <div className="w-full">
-                  <Label className="text-xs mb-1 block">Valeur</Label>
-                  <div className="flex gap-1.5 w-full">
-                    <Input
-                      placeholder="Ex: Coton 100%..."
-                      value={newFieldValue}
-                      onChange={(e) => setNewFieldValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && newFieldName.trim()) {
-                          e.preventDefault();
-                          handleAddField();
-                        }
-                      }}
-                      autoComplete="off"
-                      className="text-xs sm:text-sm h-9 flex-1 min-w-0"
-                    />
-                    <Button onClick={handleAddField} size="sm" disabled={!newFieldName.trim()} className="h-9 w-9 flex-shrink-0 p-0">
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Custom added specifications */}
-            {Object.entries(specs).filter(([name]) => !templates.some((t) => t.name === name)).length > 0 && (
-              <div className="space-y-2 sm:space-y-3 w-full">
-                <Label className="text-xs sm:text-sm font-semibold">Spécifications personnalisées</Label>
-                {Object.entries(specs)
-                  .filter(([name]) => !templates.some((t) => t.name === name))
-                  .map(([fieldName, fieldValue]) => (
-                    <div key={fieldName} className="border rounded-lg p-2.5 sm:p-3 bg-card w-full">
-                      <div className="flex items-start justify-between mb-1.5 gap-2">
-                        <Label className="font-semibold text-xs sm:text-sm break-words flex-1 min-w-0 pr-1">{fieldName}</Label>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveField(fieldName)}
-                          className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive flex-shrink-0"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      <Input
-                        value={fieldValue}
-                        onChange={(e) => handleUpdateValue(fieldName, e.target.value)}
-                        className="text-xs sm:text-sm h-9 w-full"
-                        placeholder="Entrez la valeur..."
-                      />
-                    </div>
-                  ))}
-              </div>
-            )}
-
-            <div className="flex flex-col gap-2.5 pt-2 w-full">
+            <div className="flex flex-col gap-2.5 pt-4 w-full">
               <Badge variant="secondary" className="text-xs sm:text-sm w-fit">Total: {total} pièces</Badge>
               <div className="flex gap-2 w-full">
                 <Button variant="outline" onClick={() => navigate(-1)} className="flex-1 text-xs sm:text-sm h-9 min-w-0">
                   Retour
                 </Button>
                 <Button onClick={performTransfer} className="flex-1 text-xs sm:text-sm h-9 min-w-0">
-                  Envoyer
+                  Transférer
                 </Button>
               </div>
             </div>

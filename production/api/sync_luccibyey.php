@@ -30,6 +30,11 @@ try {
     $db->beginTransaction();
     
     foreach ($products as $product) {
+        // Skip products with auto replenishment enabled
+        if (isset($product['AutoReapprovisionnement']) && $product['AutoReapprovisionnement'] == 1) {
+            continue;
+        }
+        
         // Préparer les données du produit
         $externalId = $product['id_product'];
         $reference = $product['reference_product'];
