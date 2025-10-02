@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 
-  Calendar, 
+  Calendar as CalendarIcon, 
   Plus, 
   Check, 
   X, 
@@ -16,7 +16,10 @@ import {
   Plane,
   AlertCircle,
   Loader2,
-  Trash2
+  Trash2,
+  ArrowLeft,
+  Heart,
+  Briefcase
 } from "lucide-react";
 import {
   Table,
@@ -47,6 +50,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { employeeService, holidayService, Employee, Holiday, CreateHolidayData } from "@/utils/rhService";
 
 const Conges = () => {
@@ -60,11 +68,18 @@ const Conges = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   
-  const [newHoliday, setNewHoliday] = useState<CreateHolidayData>({
+  const [newHoliday, setNewHoliday] = useState<CreateHolidayData & { 
+    start_date?: Date; 
+    end_date?: Date;
+    leave_type?: string;
+  }>({
     employee_id: 0,
     date: "",
     half_day: "FULL",
-    motif: ""
+    motif: "",
+    start_date: undefined,
+    end_date: undefined,
+    leave_type: "annual"
   });
 
   // Load data on component mount
@@ -114,7 +129,7 @@ const Conges = () => {
   };
 
   const handleAddHoliday = async () => {
-    if (!newHoliday.employee_id || !newHoliday.date || !newHoliday.motif) {
+    if (!newHoliday.employee_id || (!newHoliday.start_date && !newHoliday.date) || !newHoliday.motif) {
       toast({
         title: "Erreur",
         description: "Employé, date et motif sont obligatoires",
@@ -125,22 +140,55 @@ const Conges = () => {
 
     try {
       setSubmitting(true);
-      const result = await holidayService.create(newHoliday);
       
-      if (result.success) {
-        toast({
-          title: "Succès",
-          description: result.message || "Demande de congé créée avec succès"
-        });
-        setNewHoliday({
-          employee_id: 0,
-          date: "",
-          half_day: "FULL",
-          motif: ""
-        });
-        setIsAddingHoliday(false);
-        loadHolidays();
+      // If date range is selected, create multiple entries
+      if (newHoliday.start_date && newHoliday.end_date) {
+        const startDate = new Date(newHoliday.start_date);
+        const endDate = new Date(newHoliday.end_date);
+        const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Create entry for each day in the range
+        for (let i = 0; i <= daysDiff; i++) {
+          const currentDate = new Date(startDate);
+          currentDate.setDate(startDate.getDate() + i);
+          
+          const holidayData: CreateHolidayData = {
+            employee_id: newHoliday.employee_id,
+            date: currentDate.toISOString().split('T')[0],
+            half_day: newHoliday.half_day,
+            motif: `${newHoliday.leave_type ? `[${newHoliday.leave_type}] ` : ''}${newHoliday.motif}`
+          };
+          
+          await holidayService.create(holidayData);
+        }
+      } else {
+        // Single date entry
+        const holidayData: CreateHolidayData = {
+          employee_id: newHoliday.employee_id,
+          date: newHoliday.start_date ? newHoliday.start_date.toISOString().split('T')[0] : newHoliday.date,
+          half_day: newHoliday.half_day,
+          motif: `${newHoliday.leave_type ? `[${newHoliday.leave_type}] ` : ''}${newHoliday.motif}`
+        };
+        
+        await holidayService.create(holidayData);
       }
+      
+      toast({
+        title: "Succès",
+        description: "Demande de congé créée avec succès"
+      });
+      
+      setNewHoliday({
+        employee_id: 0,
+        date: "",
+        half_day: "FULL",
+        motif: "",
+        start_date: undefined,
+        end_date: undefined,
+        leave_type: "annual"
+      });
+      setIsAddingHoliday(false);
+      loadHolidays();
     } catch (error) {
       toast({
         title: "Erreur",
@@ -204,6 +252,34 @@ const Conges = () => {
     FULL: "Journée complète"
   };
 
+  const leaveTypeLabels = {
+    annual: "Congé annuel",
+    sick: "Congé maladie",
+    special: "Congé spécial",
+    unpaid: "Congé sans solde",
+    maternity: "Congé maternité",
+    paternity: "Congé paternité"
+  };
+
+  const getEmployeeName = (holiday: Holiday) => {
+    if (holiday.employee_name) return holiday.employee_name;
+    if (holiday.prenom && holiday.nom) return `${holiday.prenom} ${holiday.nom}`;
+    return `Employé ${holiday.employee_id}`;
+  };
+
+  const getLeaveTypeFromMotif = (motif: string) => {
+    const match = motif.match(/^\[(annual|sick|special|unpaid|maternity|paternity)\]/);
+    if (match && match[1]) {
+      return leaveTypeLabels[match[1] as keyof typeof leaveTypeLabels] || match[1];
+    }
+    return null;
+  };
+
+  const getCleanMotif = (motif: string) => {
+    // Remove the leave type prefix if it exists
+    return motif.replace(/^\[(annual|sick|special|unpaid|maternity|paternity)\]\s*/, '');
+  };
+
   const filteredHolidays = holidays.filter(holiday => {
     const matchesStatus = statusFilter === "all" || holiday.status === statusFilter;
     const matchesEmployee = selectedEmployee === "all" || holiday.employee_id === parseInt(selectedEmployee);
@@ -224,13 +300,23 @@ const Conges = () => {
   return (
     <div className="container mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
-            {isMobile ? "Congés" : "Congés & Absences"}
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
-            {isMobile ? "Gérer les congés" : "Gérer les demandes de congés et absences des employés"}
-          </p>
+        <div className="flex items-start gap-2">
+          <Button 
+            variant="outline" 
+            size={isMobile ? "sm" : "default"}
+            onClick={() => window.location.href = '/rh'}
+            className="shrink-0"
+          >
+            <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+          </Button>
+          <div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+              {isMobile ? "Congés" : "Congés & Absences"}
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
+              {isMobile ? "Gérer les congés" : "Gérer les demandes de congés et absences des employés"}
+            </p>
+          </div>
         </div>
         <Dialog open={isAddingHoliday} onOpenChange={setIsAddingHoliday}>
           <DialogTrigger asChild>
@@ -239,7 +325,7 @@ const Conges = () => {
               <span className="text-xs sm:text-sm">{isMobile ? "Demande" : "Nouvelle Demande"}</span>
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Nouvelle Demande de Congé</DialogTitle>
               <DialogDescription>
@@ -248,8 +334,8 @@ const Conges = () => {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="employee" className="text-right">
-                  Employé
+                <Label htmlFor="employee" className="text-right text-xs sm:text-sm">
+                  Employé *
                 </Label>
                 <div className="col-span-3">
                   <Select 
@@ -269,21 +355,126 @@ const Conges = () => {
                   </Select>
                 </div>
               </div>
+
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="date" className="text-right">
-                  Date
+                <Label className="text-right text-xs sm:text-sm">
+                  Type de congé *
                 </Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={newHoliday.date}
-                  onChange={(e) => setNewHoliday({...newHoliday, date: e.target.value})}
-                  className="col-span-3"
-                />
+                <div className="col-span-3">
+                  <Select 
+                    value={newHoliday.leave_type} 
+                    onValueChange={(value) => setNewHoliday({...newHoliday, leave_type: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="annual">
+                        <div className="flex items-center">
+                          <Plane className="h-4 w-4 mr-2" />
+                          Congé annuel
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="sick">
+                        <div className="flex items-center">
+                          <Heart className="h-4 w-4 mr-2" />
+                          Congé maladie
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="special">
+                        <div className="flex items-center">
+                          <Briefcase className="h-4 w-4 mr-2" />
+                          Congé spécial
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="unpaid">Congé sans solde</SelectItem>
+                      <SelectItem value="maternity">Congé maternité</SelectItem>
+                      <SelectItem value="paternity">Congé paternité</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+              
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="half_day" className="text-right">
-                  Type
+                <Label className="text-right text-xs sm:text-sm">
+                  Date début *
+                </Label>
+                <div className="col-span-3">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !newHoliday.start_date && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newHoliday.start_date ? (
+                          format(newHoliday.start_date, "PPP", { locale: fr })
+                        ) : (
+                          <span>Sélectionner une date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={newHoliday.start_date}
+                        onSelect={(date) => setNewHoliday({...newHoliday, start_date: date, end_date: date || newHoliday.end_date})}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right text-xs sm:text-sm">
+                  Date fin
+                </Label>
+                <div className="col-span-3">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !newHoliday.end_date && "text-muted-foreground"
+                        )}
+                        disabled={!newHoliday.start_date}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newHoliday.end_date ? (
+                          format(newHoliday.end_date, "PPP", { locale: fr })
+                        ) : (
+                          <span>Même jour</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={newHoliday.end_date}
+                        onSelect={(date) => setNewHoliday({...newHoliday, end_date: date})}
+                        disabled={(date) => 
+                          newHoliday.start_date ? date < newHoliday.start_date : false
+                        }
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Optionnel - Pour un seul jour, laissez vide
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="half_day" className="text-right text-xs sm:text-sm">
+                  Durée
                 </Label>
                 <div className="col-span-3">
                   <Select 
@@ -301,9 +492,10 @@ const Conges = () => {
                   </Select>
                 </div>
               </div>
+
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="motif" className="text-right">
-                  Motif
+                <Label htmlFor="motif" className="text-right text-xs sm:text-sm">
+                  Motif *
                 </Label>
                 <Textarea
                   id="motif"
@@ -311,11 +503,13 @@ const Conges = () => {
                   onChange={(e) => setNewHoliday({...newHoliday, motif: e.target.value})}
                   className="col-span-3"
                   placeholder="Raison de la demande de congé..."
+                  rows={3}
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" onClick={handleAddHoliday}>
+              <Button type="submit" onClick={handleAddHoliday} disabled={submitting}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Ajouter la Demande
               </Button>
             </DialogFooter>
@@ -372,13 +566,13 @@ const Conges = () => {
 
       {/* Filtres */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filtres</CardTitle>
+        <CardHeader className="p-3 sm:p-4 md:p-6">
+          <CardTitle className="text-sm sm:text-base md:text-lg">Filtres</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="text-xs sm:text-sm">
                 <SelectValue placeholder="Tous les statuts" />
               </SelectTrigger>
               <SelectContent>
@@ -390,7 +584,7 @@ const Conges = () => {
             </Select>
 
             <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
-              <SelectTrigger>
+              <SelectTrigger className="text-xs sm:text-sm">
                 <SelectValue placeholder="Tous les employés" />
               </SelectTrigger>
               <SelectContent>
@@ -403,7 +597,7 @@ const Conges = () => {
               </SelectContent>
             </Select>
 
-            <div className="text-sm text-muted-foreground flex items-center">
+            <div className="text-xs sm:text-sm text-muted-foreground flex items-center">
               Résultats: {filteredHolidays.length}
             </div>
           </div>
@@ -412,11 +606,99 @@ const Conges = () => {
 
       {/* Liste des congés */}
       <Card>
-        <CardHeader>
-          <CardTitle>Demandes de Congés</CardTitle>
+        <CardHeader className="p-3 sm:p-4 md:p-6">
+          <CardTitle className="text-sm sm:text-base md:text-lg">{isMobile ? "Demandes" : "Demandes de Congés"}</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
+        <CardContent className="p-2 sm:p-4 md:p-6 pt-0">
+          {isMobile ? (
+            <div className="space-y-2">
+              {filteredHolidays.map((holiday) => (
+                <Card key={holiday.id} className={`border-l-4 ${
+                  holiday.status === 'approved' ? 'border-l-green-500' : 
+                  holiday.status === 'rejected' ? 'border-l-red-500' : 'border-l-orange-500'
+                }`}>
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <div className="font-semibold text-sm">{getEmployeeName(holiday)}</div>
+                        <div className="flex items-center text-xs text-muted-foreground mt-0.5">
+                          <CalendarIcon className="h-3 w-3 mr-1" />
+                          {new Date(holiday.date).toLocaleDateString('fr-FR')}
+                        </div>
+                      </div>
+                      <Badge 
+                        variant={
+                          holiday.status === 'approved' ? "default" :
+                          holiday.status === 'rejected' ? "destructive" : "secondary"
+                        }
+                        className="text-xs"
+                      >
+                        {statusLabels[holiday.status]}
+                      </Badge>
+                    </div>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex gap-1 flex-wrap">
+                        <Badge variant={holiday.half_day === 'FULL' ? "default" : "secondary"} className="text-xs">
+                          {holiday.half_day === 'FULL' ? <Plane className="h-3 w-3 mr-0.5" /> : <Clock className="h-3 w-3 mr-0.5" />}
+                          {halfDayLabels[holiday.half_day]}
+                        </Badge>
+                        {getLeaveTypeFromMotif(holiday.motif || '') && (
+                          <Badge variant="outline" className="text-xs">
+                            {getLeaveTypeFromMotif(holiday.motif || '')}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-muted-foreground mt-1">{getCleanMotif(holiday.motif || '')}</div>
+                    </div>
+                    {holiday.status === 'pending' && (
+                      <div className="flex gap-1 pt-2 mt-2 border-t">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="flex-1 h-7 text-xs text-green-600 hover:text-green-700"
+                          onClick={() => handleStatusChange(holiday.id, 'approved')}
+                        >
+                          <Check className="h-3 w-3 mr-1" />
+                          Approuver
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="flex-1 h-7 text-xs text-red-600 hover:text-red-700"
+                          onClick={() => handleStatusChange(holiday.id, 'rejected')}
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Rejeter
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 text-red-600">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmer</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Supprimer cette demande ?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annuler</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteHoliday(holiday)}>
+                                Supprimer
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Employé</TableHead>
@@ -429,31 +711,42 @@ const Conges = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredHolidays.map((holiday) => (
+              {filteredHolidays.map((holiday) => {
+                const leaveType = getLeaveTypeFromMotif(holiday.motif || '');
+                const cleanMotif = getCleanMotif(holiday.motif || '');
+                
+                return (
                 <TableRow key={holiday.id}>
                   <TableCell className="font-medium">
-                    {holiday.employee_name}
+                    {getEmployeeName(holiday)}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center">
-                      <Calendar className="h-3 w-3 mr-1" />
+                      <CalendarIcon className="h-3 w-3 mr-1" />
                       {new Date(holiday.date).toLocaleDateString('fr-FR')}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge 
-                      variant={holiday.half_day === 'FULL' ? "default" : "secondary"}
-                    >
-                      {holiday.half_day === 'FULL' ? (
-                        <Plane className="h-3 w-3 mr-1" />
-                      ) : (
-                        <Clock className="h-3 w-3 mr-1" />
+                    <div className="flex flex-col gap-1">
+                      <Badge 
+                        variant={holiday.half_day === 'FULL' ? "default" : "secondary"}
+                      >
+                        {holiday.half_day === 'FULL' ? (
+                          <Plane className="h-3 w-3 mr-1" />
+                        ) : (
+                          <Clock className="h-3 w-3 mr-1" />
+                        )}
+                        {halfDayLabels[holiday.half_day]}
+                      </Badge>
+                      {leaveType && (
+                        <Badge variant="outline" className="text-xs">
+                          {leaveType}
+                        </Badge>
                       )}
-                      {halfDayLabels[holiday.half_day]}
-                    </Badge>
+                    </div>
                   </TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {holiday.motif}
+                  <TableCell className="max-w-xs">
+                    {cleanMotif}
                   </TableCell>
                   <TableCell>
                     <Badge 
@@ -540,9 +833,11 @@ const Conges = () => {
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
     </div>

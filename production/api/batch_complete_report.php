@@ -32,7 +32,8 @@ try {
                pr.img5_product,
                pr.description_product as description,
                pr.price_product as prix_vente,
-               pr.boutique_origin
+               pr.boutique_origin,
+               pr.production_specifications
         FROM production_batches pb 
         LEFT JOIN production_ready_products pr ON pb.product_id = pr.id
         WHERE pb.batch_reference = ?

@@ -1,15 +1,21 @@
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ScrollToTop } from "@/components/ScrollToTop";
+import { useAutoReload } from "@/hooks/useAutoReload";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import ConfigureQuantities from "./pages/ConfigureQuantities";
+import ConfigureSpecifications from "./pages/ConfigureSpecifications";
 
 import Produits from "./pages/Produits";
 import ProductDetails from "./pages/ProductDetails";
 import ProductionPlanning from "./pages/ProductionPlanning";
 import Productions from "./pages/Productions";
+import ProductionStatistics from "./pages/ProductionStatistics";
 import BatchDetails from "./pages/BatchDetails";
 import Commandes from "./pages/Commandes";
 import CommandeDetails from "./pages/CommandeDetails";
@@ -42,6 +48,7 @@ import NotFound from "./pages/NotFound";
 import GestionRH from "./pages/GestionRH";
 import { ProtectedRHRoute } from "./components/ProtectedRHRoute";
 import Employes from "./pages/rh/Employes";
+import EmployeDetails from "./pages/rh/EmployeDetails";
 import Planning from "./pages/rh/Planning";
 import Conges from "./pages/rh/Conges";
 import Salaires from "./pages/rh/Salaires";
@@ -49,13 +56,12 @@ import Statistiques from "./pages/rh/Statistiques";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
+const AppContent = () => {
+  // Enable auto-reload every 24 hours to ensure users have the latest version
+  useAutoReload();
+
+  return (
+    <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
           
@@ -65,6 +71,7 @@ const App = () => (
           <Route path="/produits/:productId/configurer-materiaux" element={<MainLayout><ConfigurerMateriaux /></MainLayout>} />
           <Route path="/soustraitance-products/:productId/configurer-materiaux" element={<MainLayout><ConfigurerMateriauxSoustraitance /></MainLayout>} />
           <Route path="/productions" element={<MainLayout><Productions /></MainLayout>} />
+          <Route path="/productions-statistics" element={<MainLayout><ProductionStatistics /></MainLayout>} />
           <Route path="/productions/:id" element={<MainLayout><BatchDetails /></MainLayout>} />
           <Route path="/commandes" element={<MainLayout><Commandes /></MainLayout>} />
           <Route path="/commandes/:id" element={<MainLayout><CommandeDetails /></MainLayout>} />
@@ -91,10 +98,15 @@ const App = () => (
           <Route path="/lucci-by-ey/:id" element={<MainLayout><LucciProductDetails /></MainLayout>} />
           <Route path="/spadadibattaglia" element={<MainLayout><Spadadibattaglia /></MainLayout>} />
           <Route path="/spadadibattaglia/:id" element={<MainLayout><SpadaProductDetails /></MainLayout>} />
+
+          {/* Production transfer wizard */}
+          <Route path="/production/transfer/:boutique/:id/quantities" element={<MainLayout><React.Suspense><ConfigureQuantities /></React.Suspense></MainLayout>} />
+          <Route path="/production/transfer/:boutique/:id/specifications" element={<MainLayout><React.Suspense><ConfigureSpecifications /></React.Suspense></MainLayout>} />
           
           {/* Routes RH - Protected */}
           <Route path="/rh" element={<MainLayout><ProtectedRHRoute><GestionRH /></ProtectedRHRoute></MainLayout>} />
           <Route path="/rh/employes" element={<MainLayout><ProtectedRHRoute><Employes /></ProtectedRHRoute></MainLayout>} />
+          <Route path="/rh/employes/:id" element={<MainLayout><ProtectedRHRoute><EmployeDetails /></ProtectedRHRoute></MainLayout>} />
           <Route path="/rh/planning" element={<MainLayout><ProtectedRHRoute><Planning /></ProtectedRHRoute></MainLayout>} />
           <Route path="/rh/conges" element={<MainLayout><ProtectedRHRoute><Conges /></ProtectedRHRoute></MainLayout>} />
           <Route path="/rh/salaires" element={<MainLayout><ProtectedRHRoute><Salaires /></ProtectedRHRoute></MainLayout>} />
@@ -103,6 +115,17 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+    );
+};
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <ScrollToTop />
+        <AppContent />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

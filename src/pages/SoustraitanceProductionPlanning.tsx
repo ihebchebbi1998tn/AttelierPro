@@ -333,28 +333,29 @@ const SoustraitanceProductionPlanning = () => {
       {/* Professional Header */}
       <div className="bg-card/95 backdrop-blur-md border-b shadow-sm sticky top-0 z-50">
         <div className="container-responsive py-4 lg:py-6">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => navigate(`/soustraitance-products/${id}`)}
-              className="hover:bg-accent shadow-sm"
+              className="hover:bg-accent shadow-sm shrink-0"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour au Produit
+              <span className="hidden sm:inline">Retour au Produit</span>
+              <span className="sm:hidden">Retour</span>
             </Button>
-            <Separator orientation="vertical" className="h-8" />
-            <div className="page-header">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Settings className="h-6 w-6 text-primary" />
+            <Separator orientation="vertical" className="hidden sm:block h-8" />
+            <div className="page-header flex-1 min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg shrink-0">
+                  <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
-                <div>
-                  <h1 className="text-2xl lg:text-3xl font-semibold text-foreground tracking-tight">
-                    Planification Production - Sous-traitance
+                <div className="min-w-0">
+                  <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-foreground tracking-tight truncate">
+                    Planification Production
                   </h1>
-                  <p className="text-muted-foreground">
-                    Configurez les quantités et validez les matériaux disponibles
+                  <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                    Configurez les quantités et validez les matériaux
                   </p>
                 </div>
               </div>
@@ -375,8 +376,8 @@ const SoustraitanceProductionPlanning = () => {
                 Produit Sous-traitance à Produire
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <CardContent className="p-4 sm:p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
                 {/* Product Image */}
                 <div className="lg:col-span-1">
                   <div className="aspect-square rounded-xl overflow-hidden bg-accent/20 border-2 border-dashed border-border flex items-center justify-center">
@@ -392,26 +393,26 @@ const SoustraitanceProductionPlanning = () => {
                       />
                     ) : null}
                     <div className={product.img_product ? 'hidden' : 'text-center p-4'}>
-                      <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
-                      <p className="text-sm text-muted-foreground">Image non disponible</p>
+                      <ImageIcon className="h-8 sm:h-12 w-8 sm:w-12 mx-auto text-muted-foreground/40 mb-2 sm:mb-3" />
+                      <p className="text-xs sm:text-sm text-muted-foreground">Image non disponible</p>
                     </div>
                   </div>
                 </div>
                 
                 {/* Product Details */}
-                <div className="lg:col-span-3 space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-3 space-y-4 sm:space-y-6">
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Nom du Produit
                       </Label>
-                      <p className="text-lg font-medium text-foreground">{product.nom_product}</p>
+                      <p className="text-base sm:text-lg font-medium text-foreground break-words">{product.nom_product}</p>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Référence
                       </Label>
-                      <p className="text-lg font-mono font-medium text-foreground bg-accent/30 px-3 py-1 rounded-md inline-block">
+                      <p className="text-sm sm:text-base font-mono font-medium text-foreground bg-accent/30 px-2 sm:px-3 py-1 rounded-md inline-block break-all">
                         {product.reference_product}
                       </p>
                     </div>
@@ -420,7 +421,7 @@ const SoustraitanceProductionPlanning = () => {
                         Client Sous-traitance
                       </Label>
                       <Badge 
-                        className="text-sm font-medium px-3 py-1 bg-secondary/50 text-secondary-foreground border-secondary"
+                        className="text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 bg-secondary/50 text-secondary-foreground border-secondary inline-block"
                       >
                         {product.client_name}
                       </Badge>
@@ -441,18 +442,18 @@ const SoustraitanceProductionPlanning = () => {
                 Configuration des Quantités à Produire
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               {hasNoSizes ? (
                 /* No sizes - single quantity input */
                 <div className="space-y-4">
-                  <div className="text-center p-6 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                    <Package className="h-8 w-8 text-blue-600 dark:text-blue-400 mx-auto mb-3" />
-                    <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">Produit sans tailles spécifiques</h3>
-                    <p className="text-sm text-blue-600 dark:text-blue-300 mb-4">
+                  <div className="text-center p-4 sm:p-6 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                    <Package className="h-6 sm:h-8 w-6 sm:w-8 text-blue-600 dark:text-blue-400 mx-auto mb-2 sm:mb-3" />
+                    <h3 className="text-base sm:text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">Produit sans tailles spécifiques</h3>
+                    <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-300 mb-4">
                       Ce produit ne nécessite pas de tailles particulières (accessoire, bijou, etc.)
                     </p>
                     <div className="max-w-xs mx-auto">
-                      <Label htmlFor="none-quantity" className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                      <Label htmlFor="none-quantity" className="text-xs sm:text-sm font-medium text-blue-700 dark:text-blue-300">
                         Quantité à produire
                       </Label>
                       <Input
@@ -461,7 +462,7 @@ const SoustraitanceProductionPlanning = () => {
                         min="0"
                         value={plannedQuantities['none'] || 0}
                         onChange={(e) => handleQuantityChange('none', e.target.value)}
-                        className="mt-2 text-center font-semibold text-lg border-blue-300 dark:border-blue-700 focus:border-blue-500 dark:focus:border-blue-400"
+                        className="mt-2 text-center font-semibold text-base sm:text-lg border-blue-300 dark:border-blue-700 focus:border-blue-500 dark:focus:border-blue-400"
                         placeholder="0"
                       />
                     </div>
@@ -469,29 +470,29 @@ const SoustraitanceProductionPlanning = () => {
                 </div>
               ) : (
                 /* Size-specific inputs */
-                <div className="space-y-6">
-                  <div className="text-center p-4 bg-accent/10 rounded-lg border border-accent/20">
-                    <h3 className="text-lg font-semibold text-foreground mb-2">Configuration par Tailles</h3>
-                    <p className="text-sm text-muted-foreground">
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="text-center p-3 sm:p-4 bg-accent/10 rounded-lg border border-accent/20">
+                    <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1 sm:mb-2">Configuration par Tailles</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Définissez combien de pièces produire pour chaque taille configurée
                     </p>
                   </div>
                   
                   {Object.entries(configuredSizes).map(([sizeType, sizes]) => (
-                    <div key={sizeType} className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-primary"></div>
-                        <h4 className="text-base font-semibold text-foreground capitalize">
+                    <div key={sizeType} className="space-y-3 sm:space-y-4">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary shrink-0"></div>
+                        <h4 className="text-sm sm:text-base font-semibold text-foreground capitalize">
                           {sizeType === 'clothing' ? 'Vêtements' : 
                            sizeType === 'numeric_pants' ? 'Pantalons (Tailles numériques)' :
                            sizeType === 'shoes' ? 'Chaussures' :
                            sizeType === 'belts' ? 'Ceintures' : sizeType}
                         </h4>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 pl-5">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 pl-3 sm:pl-5">
                         {sizes.map((size) => (
-                          <div key={size} className="space-y-2">
-                            <Label htmlFor={`size-${size}`} className="text-sm font-medium text-muted-foreground">
+                          <div key={size} className="space-y-1.5 sm:space-y-2">
+                            <Label htmlFor={`size-${size}`} className="text-xs sm:text-sm font-medium text-muted-foreground">
                               Taille {size}
                             </Label>
                             <Input
@@ -500,7 +501,7 @@ const SoustraitanceProductionPlanning = () => {
                               min="0"
                               value={plannedQuantities[size] || 0}
                               onChange={(e) => handleQuantityChange(size, e.target.value)}
-                              className="text-center font-medium"
+                              className="text-center font-medium text-sm sm:text-base h-9 sm:h-10"
                               placeholder="0"
                             />
                           </div>
@@ -512,25 +513,26 @@ const SoustraitanceProductionPlanning = () => {
               )}
 
               {/* Summary */}
-              <div className="mt-6 pt-6 border-t border-border">
-                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Package className="h-5 w-5 text-primary" />
+              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-border">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-3 sm:p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg shrink-0">
+                      <Package className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Total à produire</p>
-                      <p className="text-2xl font-bold text-foreground">{totalPlanned} pièces</p>
+                      <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total à produire</p>
+                      <p className="text-xl sm:text-2xl font-bold text-foreground">{totalPlanned} pièces</p>
                     </div>
                   </div>
                   <Button
                     onClick={validateProduction}
                     disabled={totalPlanned === 0 || validating}
                     size="lg"
-                    className="flex items-center gap-2 shadow-lg"
+                    className="flex items-center justify-center gap-2 shadow-lg w-full sm:w-auto"
                   >
                     <CheckCircle className="h-4 w-4" />
-                    {validating ? 'Validation...' : 'Valider la Production'}
+                    <span className="hidden sm:inline">{validating ? 'Validation...' : 'Valider la Production'}</span>
+                    <span className="sm:hidden">{validating ? 'Validation...' : 'Valider'}</span>
                   </Button>
                 </div>
               </div>
@@ -541,35 +543,35 @@ const SoustraitanceProductionPlanning = () => {
 
       {/* Validation Results Modal */}
       <Dialog open={showValidationModal} onOpenChange={setShowValidationModal}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-hidden p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-xl">
+            <DialogTitle className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg lg:text-xl">
               {validationResult?.has_sufficient_stock ? (
-                <CheckCircle className="h-6 w-6 text-green-600" />
+                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 shrink-0" />
               ) : (
-                <AlertTriangle className="h-6 w-6 text-amber-600" />
+                <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600 shrink-0" />
               )}
-              Résultats de la Validation
+              <span className="truncate">Résultats de la Validation</span>
             </DialogTitle>
           </DialogHeader>
 
-          <div className="overflow-y-auto max-h-[70vh] space-y-6">
+          <div className="overflow-y-auto max-h-[70vh] space-y-4 sm:space-y-6">
             {validationResult && (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Stock Status Overview */}
                 <Card className={validationResult.has_sufficient_stock ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-start sm:items-center gap-2 sm:gap-3">
                       {validationResult.has_sufficient_stock ? (
-                        <CheckCircle className="h-6 w-6 text-green-600" />
+                        <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 shrink-0 mt-0.5 sm:mt-0" />
                       ) : (
-                        <AlertTriangle className="h-6 w-6 text-amber-600" />
+                        <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600 shrink-0 mt-0.5 sm:mt-0" />
                       )}
-                      <div>
-                        <h3 className="font-semibold text-lg">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-sm sm:text-base lg:text-lg">
                           {validationResult.has_sufficient_stock ? 'Stock Suffisant ✓' : 'Stock Insuffisant ⚠️'}
                         </h3>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           {validationResult.has_sufficient_stock 
                             ? 'Tous les matériaux nécessaires sont disponibles en stock'
                             : `${validationResult.insufficient_materials.length} matériau(x) en quantité insuffisante`}
@@ -582,33 +584,33 @@ const SoustraitanceProductionPlanning = () => {
                 {/* Material Requirements Details */}
                 {Object.entries(validationResult.material_requirements).map(([materialId, requirement]) => (
                   <Card key={materialId} className={requirement.is_sufficient ? "border-green-200" : "border-red-200"}>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-semibold text-lg">{requirement.material_name}</h4>
-                          <p className="text-sm text-muted-foreground">{requirement.material_color}</p>
+                    <CardHeader className="pb-3 p-3 sm:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <h4 className="font-semibold text-sm sm:text-base lg:text-lg truncate">{requirement.material_name}</h4>
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">{requirement.material_color}</p>
                         </div>
-                        <Badge variant={requirement.is_sufficient ? "default" : "destructive"}>
+                        <Badge variant={requirement.is_sufficient ? "default" : "destructive"} className="text-xs sm:text-sm self-start sm:self-auto shrink-0">
                           {requirement.is_sufficient ? "✓ Suffisant" : "⚠️ Insuffisant"}
                         </Badge>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <CardContent className="p-3 sm:p-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
                         <div>
                           <Label className="text-xs text-muted-foreground">Stock Actuel</Label>
-                          <p className="font-semibold">{formatNumber(requirement.current_stock)} {requirement.quantity_unit}</p>
+                          <p className="font-semibold text-sm sm:text-base">{formatNumber(requirement.current_stock)} {requirement.quantity_unit}</p>
                         </div>
                         <div>
                           <Label className="text-xs text-muted-foreground">Quantité Nécessaire</Label>
-                          <p className="font-semibold">{formatNumber(requirement.total_needed)} {requirement.quantity_unit}</p>
+                          <p className="font-semibold text-sm sm:text-base">{formatNumber(requirement.total_needed)} {requirement.quantity_unit}</p>
                         </div>
                         <div>
                           <Label className="text-xs text-muted-foreground">Statut Stock</Label>
                           <Badge variant={
                             requirement.stock_status === 'good' ? 'default' : 
                             requirement.stock_status === 'warning' ? 'secondary' : 'destructive'
-                          }>
+                          } className="text-xs">
                             {requirement.stock_status === 'good' ? 'Bon' : 
                              requirement.stock_status === 'warning' ? 'Faible' : 'Critique'}
                           </Badge>
@@ -616,7 +618,7 @@ const SoustraitanceProductionPlanning = () => {
                       </div>
 
                       <div className="space-y-2 mb-4">
-                        <Label className="text-sm font-medium">Progression du stock utilisé</Label>
+                        <Label className="text-xs sm:text-sm font-medium">Progression du stock utilisé</Label>
                         <Progress value={Math.min(100, requirement.stock_percentage)} className="h-2" />
                         <p className="text-xs text-muted-foreground">
                           {formatNumber(requirement.stock_percentage)}% du stock actuel sera utilisé
@@ -625,12 +627,12 @@ const SoustraitanceProductionPlanning = () => {
 
                       {requirement.size_breakdown.length > 0 && (
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium">Détail par taille</Label>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          <Label className="text-xs sm:text-sm font-medium">Détail par taille</Label>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                             {requirement.size_breakdown.map((sizeDetail, idx) => (
                               <div key={idx} className="p-2 bg-muted rounded text-center">
-                                <p className="text-sm font-medium">{sizeDetail.size}</p>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs sm:text-sm font-medium">{sizeDetail.size}</p>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground break-words">
                                   {sizeDetail.planned_pieces} × {formatNumber(sizeDetail.material_per_piece)} = {formatNumber(sizeDetail.total_material_needed)} {requirement.quantity_unit}
                                 </p>
                               </div>
@@ -645,21 +647,21 @@ const SoustraitanceProductionPlanning = () => {
                 {/* Suggested Quantities if stock insufficient */}
                 {!validationResult.has_sufficient_stock && validationResult.can_produce_any && (
                   <Card className="border-blue-200 bg-blue-50">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-blue-800">
-                        <Info className="h-5 w-5" />
-                        Quantités Suggérées
+                    <CardHeader className="p-3 sm:p-6">
+                      <CardTitle className="flex items-center gap-2 text-blue-800 text-sm sm:text-base">
+                        <Info className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                        <span>Quantités Suggérées</span>
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-blue-600 mb-4">
+                    <CardContent className="p-3 sm:p-6">
+                      <p className="text-xs sm:text-sm text-blue-600 mb-3 sm:mb-4">
                         Quantités maximales réalisables avec le stock actuel:
                       </p>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                         {Object.entries(validationResult.suggested_quantities).map(([size, quantity]) => (
-                          <div key={size} className="p-3 bg-white rounded border text-center">
-                            <p className="text-sm font-medium text-blue-800">Taille {size}</p>
-                            <p className="text-lg font-bold text-blue-600">{quantity} pièces</p>
+                          <div key={size} className="p-2 sm:p-3 bg-white rounded border text-center">
+                            <p className="text-xs sm:text-sm font-medium text-blue-800 truncate">Taille {size}</p>
+                            <p className="text-base sm:text-lg font-bold text-blue-600">{quantity} pièces</p>
                           </div>
                         ))}
                       </div>
@@ -667,7 +669,7 @@ const SoustraitanceProductionPlanning = () => {
                         onClick={applySuggestedQuantities}
                         variant="outline"
                         size="sm"
-                        className="mt-4 border-blue-300 text-blue-700 hover:bg-blue-100"
+                        className="mt-3 sm:mt-4 border-blue-300 text-blue-700 hover:bg-blue-100 w-full sm:w-auto text-xs sm:text-sm"
                       >
                         Appliquer ces quantités
                       </Button>
@@ -699,23 +701,25 @@ const SoustraitanceProductionPlanning = () => {
             )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-3">
             <Button 
               variant="outline" 
               onClick={() => setShowValidationModal(false)}
               size="lg"
-              className="flex-1 sm:flex-none"
+              className="w-full sm:w-auto order-2 sm:order-1"
             >
-              Modifier les Quantités
+              <span className="hidden sm:inline">Modifier les Quantités</span>
+              <span className="sm:hidden">Modifier</span>
             </Button>
             {validationResult?.has_sufficient_stock && (
               <Button 
                 onClick={() => setShowConfirmationModal(true)} 
                 size="lg"
-                className="flex-1 sm:flex-none bg-success hover:bg-success/90 text-success-foreground flex items-center gap-2 shadow-lg"
+                className="w-full sm:w-auto bg-success hover:bg-success/90 text-success-foreground flex items-center justify-center gap-2 shadow-lg order-1 sm:order-2"
               >
                 <Play className="h-4 w-4" />
-                Démarrer la Production
+                <span className="hidden sm:inline">Démarrer la Production</span>
+                <span className="sm:hidden">Démarrer</span>
               </Button>
             )}
           </DialogFooter>
@@ -724,34 +728,34 @@ const SoustraitanceProductionPlanning = () => {
 
       {/* Confirmation Modal */}
       <Dialog open={showConfirmationModal} onOpenChange={setShowConfirmationModal}>
-        <DialogContent className="max-w-md mx-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-md mx-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-xl text-foreground">
-              <div className="p-2 bg-warning/20 rounded-lg">
-                <AlertTriangle className="h-6 w-6 text-warning" />
+            <DialogTitle className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg lg:text-xl text-foreground">
+              <div className="p-1.5 sm:p-2 bg-warning/20 rounded-lg shrink-0">
+                <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-warning" />
               </div>
-              Confirmation de Production
+              <span className="truncate">Confirmation de Production</span>
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <p className="text-muted-foreground text-center">
+          <div className="space-y-3 sm:space-y-4 py-3 sm:py-4">
+            <p className="text-xs sm:text-sm text-muted-foreground text-center">
               Le démarrage de la production va déduire les matériaux suivants du stock :
             </p>
             
-            <div className="space-y-3 max-h-60 overflow-y-auto">
+            <div className="space-y-2 sm:space-y-3 max-h-48 sm:max-h-60 overflow-y-auto">
               {validationResult && validationResult.material_requirements && 
                 Object.entries(validationResult.material_requirements).map(([materialId, material]: [string, any]) => (
-                  <div key={materialId} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{material.material_name}</div>
-                      <div className="text-xs text-muted-foreground">{material.material_color}</div>
+                  <div key={materialId} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 sm:p-3 bg-muted/50 rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-xs sm:text-sm truncate">{material.material_name}</div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground truncate">{material.material_color}</div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-warning">
+                    <div className="text-left sm:text-right">
+                      <div className="font-semibold text-warning text-xs sm:text-sm">
                         -{material.total_needed} {material.quantity_unit}
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">
                         Stock restant: {(material.current_stock - material.total_needed).toFixed(1)} {material.quantity_unit}
                       </div>
                     </div>
@@ -760,17 +764,17 @@ const SoustraitanceProductionPlanning = () => {
               }
             </div>
 
-            <div className="text-center text-sm text-muted-foreground border-t pt-3">
+            <div className="text-center text-xs sm:text-sm text-muted-foreground border-t pt-3">
               Cette action est irréversible. Êtes-vous sûr de vouloir continuer ?
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-3">
             <Button 
               variant="outline" 
               onClick={() => setShowConfirmationModal(false)}
               size="lg"
-              className="flex-1"
+              className="w-full sm:flex-1 order-2 sm:order-1"
             >
               Annuler
             </Button>
@@ -780,9 +784,9 @@ const SoustraitanceProductionPlanning = () => {
                 startProduction();
               }} 
               size="lg"
-              className="flex-1 bg-success hover:bg-success/90 text-success-foreground"
+              className="w-full sm:flex-1 bg-success hover:bg-success/90 text-success-foreground flex items-center justify-center gap-2 order-1 sm:order-2"
             >
-              <Play className="h-4 w-4 mr-2" />
+              <Play className="h-4 w-4" />
               Confirmer
             </Button>
           </DialogFooter>

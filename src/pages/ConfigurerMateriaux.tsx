@@ -378,6 +378,14 @@ const ConfigurerMateriaux = () => {
   };
   // Remove the manual save function since we have auto-save
   const getStockStatus = (currentStock: number, minStock: number, maxStock: number) => {
+    // Check if quantity exceeds max - show pink
+    if (currentStock > maxStock) {
+      return {
+        status: 'excess',
+        color: 'bg-pink-500',
+        badgeVariant: 'default'
+      };
+    }
     // Align with backend logic in production/api/matieres.php
     // critical: qty <= min, warning: qty < max, good: qty >= max
     if (currentStock <= minStock) {
@@ -402,6 +410,8 @@ const ConfigurerMateriaux = () => {
   };
   const getStockStatusLabel = (status: string) => {
     switch (status) {
+      case 'excess':
+        return 'Excès';
       case 'critical':
         return 'Critique';
       case 'warning':
@@ -451,7 +461,7 @@ const ConfigurerMateriaux = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => navigate(`/produits/${productId}`)} className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate(`/produits/${productId}`, { state: { refresh: Date.now() } })} className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
               Retour
             </Button>

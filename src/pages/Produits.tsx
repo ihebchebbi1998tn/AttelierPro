@@ -104,40 +104,54 @@ const Produits = () => {
     }
   };
 
-  const handleStartProduction = async (product) => {
-    if ((product.materials_configured == 1 || product.materials_configured === "1")) {
-      try {
-        // Remove product from products list when production starts
-        const response = await fetch('https://luccibyey.com.tn/production/api/remove_from_products_on_production.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            product_id: product.id
-          })
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          // Navigate to production after successful removal
-          navigate('/productions', { state: { selectedProduct: product } });
-          // Refresh products list to remove the product
-          loadProducts();
-        } else {
-          throw new Error(data.message);
-        }
-      } catch (error) {
-        toast({
-          title: "Erreur",
-          description: "Erreur lors du démarrage de la production",
-          variant: "destructive",
-        });
+  const markAsSeen = async (productId) => {
+    try {
+      const response = await fetch('https://luccibyey.com.tn/production/api/mark_product_as_seen.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ productId })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        // Refresh products list to update the highlighting
+        loadProducts();
       }
+    } catch (error) {
+      console.error('Error marking product as seen:', error);
+    }
+  };
+
+  const getRowHighlightClass = (product) => {
+    if (!product.transfer_date || product.is_seen === "1" || product.is_seen === 1) {
+      return "";
+    }
+
+    const today = new Date();
+    const transferDate = new Date(product.transfer_date);
+    
+    // Reset time parts for accurate date comparison
+    today.setHours(0, 0, 0, 0);
+    transferDate.setHours(0, 0, 0, 0);
+    
+    if (transferDate.getTime() === today.getTime()) {
+      return "bg-yellow-100 dark:bg-yellow-900/20 hover:bg-yellow-200 dark:hover:bg-yellow-900/30";
+    } else if (transferDate < today) {
+      return "bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/30";
+    }
+    
+    return "";
+  };
+
+  const handleStartProduction = (product) => {
+    if ((product.materials_configured == 1 || product.materials_configured === "1")) {
+      // Navigate to production planning page if materials are configured
+      navigate(`/produits/${product.id}/production-planning`);
     } else {
-      // Show materials configuration modal
-      setSelectedProduct(product);
-      setShowMaterialsModal(true);
+      // Navigate to materials configuration page
+      navigate(`/produits/${product.id}/configurer-materiaux`);
     }
   };
 
@@ -320,15 +334,16 @@ const Produits = () => {
   // Remove the window focus listener as we're using location state instead
 
   const filteredProducts = products.filter(product => 
-    product.nom_product?.toLowerCase().includes(search.toLowerCase()) ||
-    product.reference_product?.toLowerCase().includes(search.toLowerCase())
+    (product.nom_product?.toLowerCase().includes(search.toLowerCase()) ||
+    product.reference_product?.toLowerCase().includes(search.toLowerCase())) &&
+    (!product.is_in_production || product.is_in_production === "0" || product.is_in_production === 0)
   );
 
   return (
     <div className="space-y-4 md:space-y-6 p-4 md:p-6">
       <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Produits à Produire</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Produits Prêt à Porter Production</h1>
           <p className="text-sm md:text-base text-muted-foreground">Liste d'attente - Produits sélectionnés pour être mis en production</p>
         </div>
       </div>
@@ -362,7 +377,6 @@ const Produits = () => {
                   <TableHead className="text-xs md:text-sm hidden lg:table-cell">Quantités</TableHead>
                   <TableHead className="text-xs md:text-sm hidden lg:table-cell">Matériaux</TableHead>
                   <TableHead className="text-xs md:text-sm">Boutique</TableHead>
-                  <TableHead className="text-xs md:text-sm hidden md:table-cell">Prix</TableHead>
                   <TableHead className="text-xs md:text-sm">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -374,8 +388,15 @@ const Produits = () => {
                   return (
                     <TableRow 
                       key={product.id} 
-                      className="text-xs md:text-sm cursor-pointer hover:bg-muted/50"
-                      onClick={() => navigate(`/produits/${product.id}`)}
+                      className={`text-xs md:text-sm cursor-pointer hover:bg-muted/50 ${getRowHighlightClass(product)}`}
+                      onClick={() => {
+                        // Mark as seen if not already seen
+                        if (product.is_seen === "0" || product.is_seen === 0) {
+                          markAsSeen(product.id);
+                        }
+                        // Always navigate to product details
+                        navigate(`/produits/${product.id}`);
+                      }}
                     >
                       <TableCell>
                         <div 
@@ -431,7 +452,6 @@ const Produits = () => {
                           {product.boutique_origin === 'luccibyey' ? 'Lucci By Ey' : 'Spada di Battaglia'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">{product.price_product} TND</TableCell>
                       <TableCell>
                         <div className="flex flex-col sm:flex-row gap-1" onClick={(e) => e.stopPropagation()}>
                           {(product.materials_configured == 1 || product.materials_configured === "1") ? (
@@ -462,7 +482,7 @@ const Produits = () => {
                 })}
                 {filteredProducts.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       {loading ? 'Chargement...' : 'Aucun produit en attente de production'}
                     </TableCell>
                   </TableRow>
@@ -481,7 +501,7 @@ const Produits = () => {
             const allImages = getProductImages(product);
             
             return (
-              <Card key={product.id} className="overflow-hidden">
+              <Card key={product.id} className={`overflow-hidden ${getRowHighlightClass(product)}`}>
                 <CardContent className="p-2">
                   <div className="flex gap-3">
                     <div 
@@ -503,7 +523,14 @@ const Produits = () => {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0" onClick={() => navigate(`/produits/${product.id}`)}>
+                    <div className="flex-1 min-w-0" onClick={() => {
+                      // Mark as seen if not already seen
+                      if (product.is_seen === "0" || product.is_seen === 0) {
+                        markAsSeen(product.id);
+                      }
+                      // Always navigate to product details
+                      navigate(`/produits/${product.id}`);
+                    }}>
                       <h3 className="font-semibold text-xs break-words line-clamp-3">{product.nom_product}</h3>
                       <p className="text-xs text-muted-foreground mb-2">Ref: {product.reference_product}</p>
                       <div className="flex flex-wrap gap-1 mb-2">
@@ -523,8 +550,7 @@ const Produits = () => {
                           {(product.materials_configured == 1 || product.materials_configured === "1") ? 'Configurés' : 'Non configurés'}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-primary">{product.price_product} TND</p>
+                      <div className="flex items-center justify-end">
                         <div onClick={(e) => e.stopPropagation()}>
                           {(product.materials_configured == 1 || product.materials_configured === "1") ? (
                             <Button

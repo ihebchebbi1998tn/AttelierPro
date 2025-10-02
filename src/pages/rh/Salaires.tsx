@@ -14,7 +14,8 @@ import {
   TrendingUp,
   TrendingDown,
   Calculator,
-  Loader2
+  Loader2,
+  ArrowLeft
 } from "lucide-react";
 import {
   Table,
@@ -120,11 +121,15 @@ const Salaires = () => {
     }
   };
 
-  const filteredSalaries = salaries.filter(salary => {
-    const matchesEmployee = selectedEmployee === "all" || salary.employee_id === parseInt(selectedEmployee);
-    const matchesYear = salary.effective_from.startsWith(selectedYear);
-    return matchesEmployee && matchesYear;
-  });
+  const filteredSalaries = salaries
+    .filter(salary => {
+      // Only show current/active salaries
+      const isActive = !salary.effective_to || new Date(salary.effective_to) >= new Date();
+      if (!isActive) return false;
+      
+      const matchesEmployee = selectedEmployee === "all" || salary.employee_id === parseInt(selectedEmployee);
+      return matchesEmployee;
+    });
 
   const handleAddSalary = async () => {
     if (!newSalary.employee_id || !newSalary.net_total || !newSalary.effective_from) {
@@ -242,10 +247,10 @@ const Salaires = () => {
     
     return {
       totalEmployees: new Set(currentSalaries.map(s => s.employee_id)).size,
-      totalNetMonthly: currentSalaries.reduce((sum, s) => sum + (s.net_total || 0), 0),
-      totalBrutMonthly: currentSalaries.reduce((sum, s) => sum + (s.brut_total || 0), 0),
-      totalTaxesMonthly: currentSalaries.reduce((sum, s) => sum + (s.taxes || 0), 0),
-      averageNet: currentSalaries.length > 0 ? currentSalaries.reduce((sum, s) => sum + (s.net_total || 0), 0) / currentSalaries.length : 0
+      totalNetMonthly: Math.round(currentSalaries.reduce((sum, s) => sum + (s.net_total || 0), 0)),
+      totalBrutMonthly: Math.round(currentSalaries.reduce((sum, s) => sum + (s.brut_total || 0), 0)),
+      totalTaxesMonthly: Math.round(currentSalaries.reduce((sum, s) => sum + (s.taxes || 0), 0)),
+      averageNet: currentSalaries.length > 0 ? Math.round(currentSalaries.reduce((sum, s) => sum + (s.net_total || 0), 0) / currentSalaries.length) : 0
     };
   };
 
@@ -254,177 +259,74 @@ const Salaires = () => {
   return (
     <div className="container mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
-            {isMobile ? "Salaires" : "Gestion des Salaires"}
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
-            {isMobile ? "Gérer les salaires" : "Gérer les salaires et historique des rémunérations"}
-          </p>
+        <div className="flex items-start gap-2">
+          <Button 
+            variant="outline" 
+            size={isMobile ? "sm" : "default"}
+            onClick={() => window.location.href = '/rh'}
+            className="shrink-0"
+          >
+            <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+          </Button>
+          <div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+              {isMobile ? "Salaires" : "Gestion des Salaires"}
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
+              {isMobile ? "Salaires actuels" : "Vue des salaires actuels des employés"}
+            </p>
+          </div>
         </div>
-        <Dialog open={isAddingSalary} onOpenChange={setIsAddingSalary}>
-          <DialogTrigger asChild>
-            <Button size={isMobile ? "sm" : "default"} className="w-full sm:w-auto">
-              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              <span className="text-xs sm:text-sm">{isMobile ? "Salaire" : "Nouveau Salaire"}</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nouveau Salaire</DialogTitle>
-              <DialogDescription>
-                Enregistrer un nouveau salaire pour un employé
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="employee" className="text-right">
-                  Employé
-                </Label>
-                <div className="col-span-3">
-                    <Select 
-                      value={newSalary.employee_id.toString()} 
-                      onValueChange={(value) => setNewSalary({...newSalary, employee_id: parseInt(value)})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner un employé" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {employees.map(emp => (
-                          <SelectItem key={emp.id} value={emp.id.toString()}>
-                            {emp.prenom} {emp.nom}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="brut_total" className="text-right">
-                  Salaire Brut
-                </Label>
-                <Input
-                  id="brut_total"
-                  type="number"
-                  step="0.01"
-                  value={newSalary.brut_total || ""}
-                  onChange={(e) => setNewSalary({...newSalary, brut_total: parseFloat(e.target.value) || 0})}
-                  className="col-span-3"
-                  placeholder="1500.00"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="taxes" className="text-right">
-                  Taxes
-                </Label>
-                <Input
-                  id="taxes"
-                  type="number"
-                  step="0.01"
-                  value={newSalary.taxes || ""}
-                  onChange={(e) => setNewSalary({...newSalary, taxes: parseFloat(e.target.value) || 0})}
-                  className="col-span-3"
-                  placeholder="300.00"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="net_total" className="text-right">
-                  Salaire Net
-                </Label>
-                <Input
-                  id="net_total"
-                  type="number"
-                  step="0.01"
-                  value={newSalary.net_total || ""}
-                  onChange={(e) => setNewSalary({...newSalary, net_total: parseFloat(e.target.value) || 0})}
-                  className="col-span-3"
-                  placeholder="1200.00"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="effective_from" className="text-right">
-                  Date d'effet
-                </Label>
-                <Input
-                  id="effective_from"
-                  type="date"
-                  value={newSalary.effective_from}
-                  onChange={(e) => setNewSalary({...newSalary, effective_from: e.target.value})}
-                  className="col-span-3"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit" onClick={handleAddSalary} disabled={submitting}>
-                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Enregistrer le Salaire
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         <Card className="modern-card bg-primary text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">
-              Employés Actifs
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">
+              {isMobile ? "Employés" : "Employés Actifs"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">{stats.totalEmployees}</div>
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">{stats.totalEmployees}</div>
           </CardContent>
         </Card>
         
         <Card className="modern-card bg-primary text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">
-              Total Net/Mois
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">
+              {isMobile ? "Net/Mois" : "Total Net/Mois"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">
-              {stats.totalNetMonthly.toLocaleString()} TND
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">
+              {isMobile ? `${Math.round(stats.totalNetMonthly / 1000)}K` : `${stats.totalNetMonthly.toLocaleString('fr-FR')} TND`}
             </div>
           </CardContent>
         </Card>
 
         <Card className="modern-card bg-primary text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">
-              Total Brut/Mois
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">
+              {isMobile ? "Brut/Mois" : "Total Brut/Mois"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">
-              {stats.totalBrutMonthly.toLocaleString()} TND
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">
+              {isMobile ? `${Math.round(stats.totalBrutMonthly / 1000)}K` : `${stats.totalBrutMonthly.toLocaleString('fr-FR')} TND`}
             </div>
           </CardContent>
         </Card>
 
         <Card className="modern-card bg-primary text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">
-              Total Taxes/Mois
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground">
+              {isMobile ? "Taxes/Mois" : "Total Taxes/Mois"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">
-              {stats.totalTaxesMonthly.toLocaleString()} TND
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="modern-card bg-primary text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground">
-              Salaire Moyen
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">
-              {Math.round(stats.averageNet).toLocaleString()} TND
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">
+              {isMobile ? `${Math.round(stats.totalTaxesMonthly / 1000)}K` : `${stats.totalTaxesMonthly.toLocaleString('fr-FR')} TND`}
             </div>
           </CardContent>
         </Card>
@@ -432,13 +334,13 @@ const Salaires = () => {
 
       {/* Filtres */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filtres</CardTitle>
+        <CardHeader className="p-3 sm:p-4 md:p-6">
+          <CardTitle className="text-sm sm:text-base md:text-lg">Filtres</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
-              <SelectTrigger>
+              <SelectTrigger className="text-xs sm:text-sm">
                 <SelectValue placeholder="Tous les employés" />
               </SelectTrigger>
               <SelectContent>
@@ -451,35 +353,96 @@ const Salaires = () => {
               </SelectContent>
             </Select>
 
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger>
-                <SelectValue placeholder="Année" />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map(year => (
-                  <SelectItem key={year} value={year}>{year}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <div className="text-sm text-muted-foreground flex items-center">
-              <Calculator className="h-4 w-4 mr-2" />
-              Résultats: {filteredSalaries.length}
+            <div className="text-xs sm:text-sm text-muted-foreground flex items-center">
+              <Calculator className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              Salaires actifs: {filteredSalaries.length}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Liste des salaires */}
+      {/* Salaires actuels */}
       <Card>
-        <CardHeader>
-          <CardTitle>Historique des Salaires</CardTitle>
+        <CardHeader className="p-3 sm:p-4 md:p-6">
+          <CardTitle className="text-sm sm:text-base md:text-lg">{isMobile ? "Salaires" : "Salaires Actuels"}</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 sm:p-4 md:p-6 pt-0">
           {loading ? (
             <div className="flex items-center justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="ml-2">Chargement des salaires...</span>
+              <span className="ml-2 text-sm">Chargement...</span>
+            </div>
+          ) : isMobile ? (
+            <div className="space-y-2">
+              {filteredSalaries.map((salary) => {
+                const isActive = !salary.effective_to || new Date(salary.effective_to) >= new Date();
+                const taxRate = calculateTaxRate(salary.brut_total || 0, salary.taxes || 0);
+                const employeeName = salary.nom && salary.prenom ? `${salary.prenom} ${salary.nom}` : `Employé ${salary.employee_id}`;
+                
+                return (
+                  <Card key={salary.id} className={`border-l-4 ${isActive ? 'border-l-green-500' : 'border-l-gray-400'}`}>
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <div className="font-semibold text-sm">{employeeName}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            Du: {new Date(salary.effective_from).toLocaleDateString('fr-FR')}
+                          </div>
+                        </div>
+                        <Badge variant={isActive ? "default" : "secondary"} className="text-xs">
+                          {isActive ? "Actuel" : "Archivé"}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <div className="text-muted-foreground">Net</div>
+                          <div className="font-semibold text-green-600">
+                            {(salary.net_total || 0).toLocaleString()} TND
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Taxes</div>
+                          <div className="text-red-600">
+                            {(salary.taxes || 0).toLocaleString()} TND
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-1 pt-2 mt-2 border-t">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="flex-1 h-7 text-xs"
+                          onClick={() => setIsEditingSalary(salary)}
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Modifier
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 text-red-600">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmer</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Supprimer cette entrée de salaire ?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annuler</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteSalary(salary)}>
+                                Supprimer
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <Table>
@@ -489,9 +452,7 @@ const Salaires = () => {
                   <TableHead>Salaire Brut</TableHead>
                   <TableHead>Taxes</TableHead>
                   <TableHead>Salaire Net</TableHead>
-                  <TableHead>Taux Taxes</TableHead>
-                  <TableHead>Période</TableHead>
-                  <TableHead>Statut</TableHead>
+                  <TableHead>Date d'effet</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -523,32 +484,9 @@ const Salaires = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">
-                          {taxRate}%
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
                         <div className="text-sm">
-                          <div>Du: {new Date(salary.effective_from).toLocaleDateString('fr-FR')}</div>
-                          {salary.effective_to && (
-                            <div>Au: {new Date(salary.effective_to).toLocaleDateString('fr-FR')}</div>
-                          )}
+                          {new Date(salary.effective_from).toLocaleDateString('fr-FR')}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={isActive ? "default" : "secondary"}>
-                          {isActive ? (
-                            <>
-                              <TrendingUp className="h-3 w-3 mr-1" />
-                              Actuel
-                            </>
-                          ) : (
-                            <>
-                              <TrendingDown className="h-3 w-3 mr-1" />
-                              Archivé
-                            </>
-                          )}
-                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
@@ -584,17 +522,17 @@ const Salaires = () => {
                         </div>
                       </TableCell>
                     </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                );
+              })}
+            </TableBody>
+          </Table>
           )}
         </CardContent>
       </Card>
 
       {/* Edit Salary Dialog */}
       <Dialog open={!!isEditingSalary} onOpenChange={() => setIsEditingSalary(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Modifier le Salaire</DialogTitle>
             <DialogDescription>

@@ -184,7 +184,7 @@ const Dashboard = () => {
       </div>
 
       {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <Card 
           className="border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300 cursor-pointer"
           onClick={() => navigate('/commandes')}
@@ -292,7 +292,7 @@ const Dashboard = () => {
           </div>
           
           {/* Materials Grid */}
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 lg:grid-cols-4 gap-3">
             {filteredMaterials.slice(0, 16).map((material) => (
               <Card 
                 key={material.material_id} 

@@ -5,7 +5,7 @@ import { Search, Eye, Package, Clock, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchSurMesureOrders, markSurMesureOrderAsSeen } from '../utils/surMesureService';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -65,6 +65,7 @@ const statusLabels = {
 const Commandes = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -88,29 +89,42 @@ const Commandes = () => {
 
   const handleViewOrder = async (order: SurMesureOrder) => {
     try {
-      // Mark order as seen
-      await markSurMesureOrderAsSeen(order.id);
-      // Refetch to update the UI
-      refetch();
+      // Optimistically mark as seen in cache to update UI immediately
+      queryClient.setQueryData<SurMesureOrder[] | undefined>(['surMesureOrders'], (old) => {
+        if (!old) return old;
+        return old.map((o) => (o.id === order.id ? { ...o, is_seen: '1' } : o));
+      });
+
+      // Mark on server and refresh in background
+      markSurMesureOrderAsSeen(order.id)
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['surMesureOrders'] });
+        })
+        .catch((error) => {
+          console.error('Error marking order as seen:', error);
+        });
     } catch (error) {
-      console.error('Error marking order as seen:', error);
+      console.error('Error in optimistic update:', error);
     }
     navigate(`/commandes/${order.id}`);
   };
 
   // Helper function to determine row highlighting
+  const isOrderUnseen = (o: SurMesureOrder) =>
+    o.is_seen === '0' || (o as any).is_seen === 0 || (o as any).is_seen === false || (o as any).is_seen === 'false';
+
   const getRowHighlight = (order: SurMesureOrder) => {
     const now = new Date();
     const createdAt = new Date(order.created_at);
     const daysDiff = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
     
-    // Red if created more than 1 day ago
-    if (daysDiff > 1) {
-      return 'bg-red-50 hover:bg-red-100 border-l-4 border-red-400';
-    }
-    
-    // Yellow if not seen
-    if (order.is_seen === '0') {
+    // Only highlight UNSEEN orders
+    if (isOrderUnseen(order)) {
+      // Red if unseen and older than 1 day
+      if (daysDiff > 1) {
+        return 'bg-red-50 hover:bg-red-100 border-l-4 border-red-400';
+      }
+      // Yellow if unseen and recent
       return 'bg-yellow-50 hover:bg-yellow-100 border-l-4 border-yellow-400';
     }
     
@@ -312,9 +326,7 @@ const Commandes = () => {
                   {filteredOrders.map((order: SurMesureOrder) => (
                     <Card 
                       key={order.id} 
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        order.is_seen === '0' ? 'bg-yellow-50 border-l-4 border-yellow-400' : ''
-                      }`}
+                      className={`cursor-pointer transition-all hover:shadow-md ${getRowHighlight(order)}`}
                       onClick={() => handleViewOrder(order)}
                     >
                       <CardContent className="p-3">

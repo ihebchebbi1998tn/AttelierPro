@@ -20,6 +20,7 @@ import ProductAttachments from '@/components/ProductAttachments';
 import MeasurementScaleTable from '@/components/MeasurementScaleTable';
 import ProductReport from '@/components/ProductReport';
 import ProductMeasurementScaleBySizes from '@/components/ProductMeasurementScaleBySizes';
+import ProductionSpecifications from '@/components/ProductionSpecifications';
 
 interface Product {
   id: number;
@@ -96,6 +97,8 @@ interface Product {
   sync_date: string;
   created_at: string;
   updated_at: string;
+  production_quantities?: string;
+  production_specifications?: string;
 }
 
 const ProductDetails = () => {
@@ -126,6 +129,20 @@ const ProductDetails = () => {
   const [measurementScale, setMeasurementScale] = useState<any>(null);
   const [sizesLocked, setSizesLocked] = useState(false);
 
+  const markProductAsSeen = async (productId: string) => {
+    try {
+      await fetch('https://luccibyey.com.tn/production/api/mark_product_as_seen.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ productId: parseInt(productId) })
+      });
+    } catch (error) {
+      console.error('Error marking product as seen:', error);
+    }
+  };
+
   const loadProduct = async () => {
     if (!id) return;
     
@@ -135,6 +152,8 @@ const ProductDetails = () => {
       const data = await response.json();
       if (data.success && data.data) {
         setProduct(data.data);
+        // Mark product as seen when entering details page
+        await markProductAsSeen(id);
         // Load size configuration and materials if configured
         await loadSizeConfiguration(id);
         await loadMeasurementScale(id);
@@ -1043,8 +1062,18 @@ const ProductDetails = () => {
                         <p className="text-lg font-bold text-primary">{product.price_product} TND</p>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Stock</Label>
-                        <p className="text-sm font-medium">{product.qnty_product} pièces</p>
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Stock à produire</Label>
+                        {product.production_quantities ? (
+                          <div className="space-y-1">
+                            {Object.entries(JSON.parse(product.production_quantities) as Record<string, number>).map(([size, qty]) => (
+                              <p key={size} className="text-sm font-medium">
+                                <span className="text-primary font-bold">{size}</span>: {qty} pièce{qty > 1 ? 's' : ''}
+                              </p>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm font-medium">{product.qnty_product} pièces</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Couleur</Label>
@@ -1076,6 +1105,19 @@ const ProductDetails = () => {
                 </Card>
               </div>
             </div>
+
+            {/* Production Specifications */}
+            {product.production_specifications && 
+             product.production_specifications !== 'null' && 
+             product.production_specifications !== '{}' && (
+              <ProductionSpecifications
+                specifications={typeof product.production_specifications === 'string' 
+                  ? JSON.parse(product.production_specifications) 
+                  : product.production_specifications}
+                editable={false}
+                productName={product.nom_product}
+              />
+            )}
 
             {/* Description */}
             {product.description_product && (
@@ -1331,30 +1373,6 @@ const ProductDetails = () => {
 
             {/* Size Breakdown */}
             <SizeBreakdown product={product} />
-
-            {/* Measurement Scale Table */}
-            {sizeConfigured && Object.keys(configuredSizes).length > 0 && (
-              <MeasurementScaleTable 
-                productId={id!} 
-                configuredSizes={configuredSizes} 
-              />
-            )}
-
-            {(!sizeConfigured || Object.keys(configuredSizes).length === 0) && (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-8 md:py-12 px-3 md:px-6">
-                  <Ruler className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground mb-3 md:mb-4" />
-                  <h3 className="text-sm md:text-lg font-semibold mb-2">Barème de mesure indisponible</h3>
-                  <p className="text-xs md:text-sm text-muted-foreground text-center mb-3 md:mb-4">
-                    Le barème de mesure sera disponible une fois les tailles configurées
-                  </p>
-                  <Button onClick={handleConfigureSizes} size="sm" className="text-xs md:text-sm">
-                    <Settings className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                    Configurer les tailles
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
           </TabsContent>
 
           {/* Stock Tab */}

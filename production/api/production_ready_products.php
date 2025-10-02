@@ -13,6 +13,7 @@ try {
                 // Récupérer un produit spécifique avec ses matériaux
                 $stmt = $db->prepare("
                     SELECT p.*, 
+                           p.production_specifications,
                            GROUP_CONCAT(
                                CONCAT(pm.material_id, ':', pm.quantity_needed, ':', pm.quantity_type_id, ':', COALESCE(pm.size_specific, ''), ':', COALESCE(pm.notes, ''))
                                SEPARATOR '|'
@@ -52,6 +53,24 @@ try {
                     echo json_encode(['success' => false, 'message' => 'Produit non trouvé']);
                 }
             } else {
+                // Check if requesting unseen products only
+                if (isset($_GET['unseen_only']) && $_GET['unseen_only'] == '1') {
+                    // Get unseen transferred products for notifications
+                    $stmt = $db->prepare("
+                        SELECT * FROM production_ready_products 
+                        WHERE is_seen = 0 AND transfer_date IS NOT NULL
+                        ORDER BY transfer_date DESC, created_at DESC
+                    ");
+                    $stmt->execute();
+                    $unseenProducts = $stmt->fetchAll();
+                    
+                    echo json_encode([
+                        'success' => true,
+                        'data' => $unseenProducts
+                    ]);
+                    break;
+                }
+                
                 // Récupérer tous les produits avec pagination
                 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
                 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
@@ -206,6 +225,29 @@ try {
                 echo json_encode(['success' => true, 'message' => 'Produit mis à jour avec succès']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Erreur lors de la mise à jour du produit']);
+            }
+            break;
+            
+        case 'PATCH':
+            // Handle marking product as seen
+            $data = json_decode(file_get_contents('php://input'), true);
+            
+            if (!isset($data['id'])) {
+                echo json_encode(['success' => false, 'message' => 'ID du produit requis']);
+                break;
+            }
+            
+            if (isset($data['mark_as_seen']) && $data['mark_as_seen'] === true) {
+                $stmt = $db->prepare("UPDATE production_ready_products SET is_seen = 1 WHERE id = :id");
+                $stmt->bindParam(':id', $data['id']);
+                
+                if ($stmt->execute()) {
+                    echo json_encode(['success' => true, 'message' => 'Produit marqué comme vu']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Erreur lors de la mise à jour']);
+                }
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Action non supportée']);
             }
             break;
             

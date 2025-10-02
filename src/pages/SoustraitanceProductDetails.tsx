@@ -742,7 +742,7 @@ const SoustraitanceProductDetails = () => {
       <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Main Tabbed Content */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-muted p-1">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 bg-muted p-1">
             <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Image className="h-4 w-4" />
               <span className="hidden sm:inline">Aperçu</span>
@@ -758,10 +758,6 @@ const SoustraitanceProductDetails = () => {
             <TabsTrigger value="measurements" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Ruler className="h-4 w-4" />
               <span className="hidden sm:inline">Mesures</span>
-            </TabsTrigger>
-            <TabsTrigger value="stock" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">Stock</span>
             </TabsTrigger>
             <TabsTrigger value="files" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <FileText className="h-4 w-4" />
@@ -1293,13 +1289,6 @@ const SoustraitanceProductDetails = () => {
             )}
           </TabsContent>
 
-          {/* Stock Tab */}
-          <TabsContent value="stock" className="space-y-6">
-            <SoustraitanceStockManager 
-              productId={parseInt(product.id)} 
-              productName={product.nom_product} 
-            />
-          </TabsContent>
 
           {/* Files Tab */}
           <TabsContent value="files" className="space-y-6">

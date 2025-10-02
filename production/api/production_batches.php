@@ -291,8 +291,8 @@ try {
 
                 $db->beginTransaction();
                 try {
-                    // Vérifier matériaux configurés pour produit sous-traitance
-                    $productStmt = $db->prepare("SELECT materials_configured, client_id FROM production_soustraitance_products WHERE id = :pid");
+                    // Vérifier matériaux configurés pour produit sous-traitance et récupérer production_specifications
+                    $productStmt = $db->prepare("SELECT materials_configured, client_id, production_specifications FROM production_soustraitance_products WHERE id = :pid");
                     $productStmt->bindValue(':pid', $data['product_id'], PDO::PARAM_INT);
                     $productStmt->execute();
                     $product = $productStmt->fetch();
@@ -315,6 +315,7 @@ try {
                     $sizes_breakdown = $data['sizes_breakdown'] ?? null;
                     $notification_emails = $data['notification_emails'] ?? null;
                     $notes = $data['notes'] ?? null;
+                    $production_specifications = $product['production_specifications'] ?? null;
 
                     // Parse sizes breakdown for accurate material needs per size
                     $sizesData = [];
@@ -330,13 +331,14 @@ try {
                     // Insert into production_batches with soustraitance reference
                     $batchStmt = $db->prepare("
                         INSERT INTO production_batches
-                        (batch_reference, product_id, quantity_to_produce, sizes_breakdown, status, notification_emails, started_by, started_at, notes, product_type, boutique_origin)
-                        VALUES (:batch_reference, :product_id, :quantity_to_produce, :sizes_breakdown, 'planifie', :notification_emails, :started_by, NOW(), :notes, 'soustraitance', :boutique_origin)
+                        (batch_reference, product_id, quantity_to_produce, sizes_breakdown, production_specifications, status, notification_emails, started_by, started_at, notes, product_type, boutique_origin)
+                        VALUES (:batch_reference, :product_id, :quantity_to_produce, :sizes_breakdown, :production_specifications, 'planifie', :notification_emails, :started_by, NOW(), :notes, 'soustraitance', :boutique_origin)
                     ");
                     $batchStmt->bindValue(':batch_reference', $batchReference);
                     $batchStmt->bindValue(':product_id', $data['product_id'], PDO::PARAM_INT);
                     $batchStmt->bindValue(':quantity_to_produce', $data['quantity_to_produce'], PDO::PARAM_INT);
                     $batchStmt->bindValue(':sizes_breakdown', $sizes_breakdown);
+                    $batchStmt->bindValue(':production_specifications', $production_specifications);
                     $batchStmt->bindValue(':notification_emails', $notification_emails);
                     $batchStmt->bindValue(':started_by', $userId, $userId ? PDO::PARAM_INT : PDO::PARAM_NULL);
                     $batchStmt->bindValue(':notes', $notes);
@@ -473,6 +475,15 @@ try {
                     $updateCostStmt->bindValue(':id', $batchId, PDO::PARAM_INT);
                     $updateCostStmt->execute();
 
+                    // Mark soustraitance product as in production
+                    $markSoustStmt = $db->prepare("
+                        UPDATE production_soustraitance_products 
+                        SET is_in_production = 1 
+                        WHERE id = :product_id
+                    ");
+                    $markSoustStmt->bindValue(':product_id', $data['product_id'], PDO::PARAM_INT);
+                    $markSoustStmt->execute();
+
                     $db->commit();
 
                     echo json_encode([
@@ -510,8 +521,8 @@ try {
 
                 $db->beginTransaction();
                 try {
-                    // Vérifier matériaux configurés
-                    $productStmt = $db->prepare("SELECT materials_configured FROM production_ready_products WHERE id = :pid");
+                    // Vérifier matériaux configurés et récupérer production_specifications
+                    $productStmt = $db->prepare("SELECT materials_configured, production_specifications FROM production_ready_products WHERE id = :pid");
                     $productStmt->bindValue(':pid', $data['product_id'], PDO::PARAM_INT);
                     $productStmt->execute();
                     $product = $productStmt->fetch();
@@ -527,6 +538,7 @@ try {
                     $sizes_breakdown = $data['sizes_breakdown'] ?? null;
                     $notification_emails = $data['notification_emails'] ?? null;
                     $notes = $data['notes'] ?? null;
+                    $production_specifications = $product['production_specifications'] ?? null;
 
                     // Parse sizes breakdown for accurate material needs per size
                     $sizesData = [];
@@ -541,13 +553,14 @@ try {
 
                     $batchStmt = $db->prepare("
                         INSERT INTO production_batches
-                        (batch_reference, product_id, quantity_to_produce, sizes_breakdown, status, notification_emails, started_by, started_at, notes)
-                        VALUES (:batch_reference, :product_id, :quantity_to_produce, :sizes_breakdown, 'planifie', :notification_emails, :started_by, NOW(), :notes)
+                        (batch_reference, product_id, quantity_to_produce, sizes_breakdown, production_specifications, status, notification_emails, started_by, started_at, notes)
+                        VALUES (:batch_reference, :product_id, :quantity_to_produce, :sizes_breakdown, :production_specifications, 'planifie', :notification_emails, :started_by, NOW(), :notes)
                     ");
                     $batchStmt->bindValue(':batch_reference', $batchReference);
                     $batchStmt->bindValue(':product_id', $data['product_id'], PDO::PARAM_INT);
                     $batchStmt->bindValue(':quantity_to_produce', $data['quantity_to_produce'], PDO::PARAM_INT);
                     $batchStmt->bindValue(':sizes_breakdown', $sizes_breakdown);
+                    $batchStmt->bindValue(':production_specifications', $production_specifications);
                     $batchStmt->bindValue(':notification_emails', $notification_emails);
                     $batchStmt->bindValue(':started_by', $userId, $userId ? PDO::PARAM_INT : PDO::PARAM_NULL);
                     $batchStmt->bindValue(':notes', $notes);
@@ -664,6 +677,15 @@ try {
                     $upd->bindValue(':tc', $totalCost);
                     $upd->bindValue(':bid', $batchId, PDO::PARAM_INT);
                     $upd->execute();
+
+                    // Mark product as in production - remove from production_ready_products list
+                    $markProductStmt = $db->prepare("
+                        UPDATE production_ready_products 
+                        SET is_in_production = 1 
+                        WHERE id = :product_id
+                    ");
+                    $markProductStmt->bindValue(':product_id', $data['product_id'], PDO::PARAM_INT);
+                    $markProductStmt->execute();
 
                     $db->commit();
                     echo json_encode([

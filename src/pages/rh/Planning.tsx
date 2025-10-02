@@ -17,7 +17,8 @@ import {
   Users,
   CalendarPlus,
   Phone,
-  MapPin
+  MapPin,
+  ArrowLeft
 } from "lucide-react";
 import WeeklyPlanningCreator from "@/components/WeeklyPlanningCreator";
 import {
@@ -110,6 +111,16 @@ const Planning = () => {
     { id: 6, name: "Samedi" }
   ];
 
+  // Safely resolve weekday label from API values (supports 0-6 or 1-7) or use backend-provided name
+  const getWeekdayLabel = (weekday: number, weekdayName?: string) => {
+    if (weekdayName && weekdayName.trim()) return weekdayName;
+    const names = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+    const w = Number.isFinite(weekday as any)
+      ? (weekday >= 0 && weekday <= 6 ? weekday : (weekday % 7))
+      : 0;
+    return names[(w + 7) % 7];
+  };
+
   // Load data on component mount
   useEffect(() => {
     loadEmployees();
@@ -117,7 +128,7 @@ const Planning = () => {
 
   // Reload when selected employee changes
   useEffect(() => {
-    if (!loading && selectedEmployee) {
+    if (selectedEmployee) {
       loadShiftTemplates();
       loadSchedules();
     }
@@ -142,17 +153,16 @@ const Planning = () => {
     if (!selectedEmployee) return;
     
     try {
-      setLoading(true);
       const data = await shiftTemplateService.getAll(selectedEmployee.id);
+      console.log('Loaded shift templates:', data);
       setShiftTemplates(data);
     } catch (error) {
+      console.error('Error loading shift templates:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les templates d'horaires",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -161,8 +171,10 @@ const Planning = () => {
     
     try {
       const data = await scheduleService.getAll({ employee_id: selectedEmployee.id });
+      console.log('Loaded schedules:', data);
       setSchedules(data);
     } catch (error) {
+      console.error('Error loading schedules:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les plannings",
@@ -337,13 +349,23 @@ const Planning = () => {
     return (
       <div className="container mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
-              {isMobile ? "Planning" : "Planning & Horaires"}
-            </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
-              {isMobile ? "Sélectionner un employé" : "Sélectionnez un employé pour voir son planning"}
-            </p>
+          <div className="flex items-start gap-2">
+            <Button 
+              variant="outline" 
+              size={isMobile ? "sm" : "default"}
+              onClick={() => window.location.href = '/rh'}
+              className="shrink-0"
+            >
+              <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+            </Button>
+            <div>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+                {isMobile ? "Planning" : "Planning & Horaires"}
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
+                {isMobile ? "Sélectionner un employé" : "Sélectionnez un employé pour voir son planning"}
+              </p>
+            </div>
           </div>
           <Button onClick={() => setShowWeeklyCreator(true)} size={isMobile ? "sm" : "default"} className="w-full sm:w-auto">
             <CalendarPlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
@@ -458,48 +480,50 @@ const Planning = () => {
 
   // Individual Employee Planning View
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="container mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+        <div className="flex items-start gap-2 flex-1">
           <Button 
             variant="outline" 
             onClick={handleBackToEmployeeList}
-            className="flex items-center gap-2"
+            size={isMobile ? "sm" : "default"}
+            className="shrink-0"
           >
-            <Calendar className="h-4 w-4" />
-            ← Retour à la liste
+            <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              Planning de {selectedEmployee.prenom} {selectedEmployee.nom}
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+              {isMobile ? `${selectedEmployee.prenom} ${selectedEmployee.nom}` : `Planning de ${selectedEmployee.prenom} ${selectedEmployee.nom}`}
             </h1>
-            <p className="text-muted-foreground mt-2">
-              Gérer les horaires de travail et plannings
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
+              {isMobile ? "Horaires" : "Gérer les horaires de travail et plannings"}
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <Button 
             onClick={() => {
               setSelectedEmployeeForPlanning(selectedEmployee);
               setShowWeeklyCreator(true);
             }}
+            size={isMobile ? "sm" : "default"}
+            className="flex-1 sm:flex-none"
           >
-            <CalendarPlus className="h-4 w-4 mr-2" />
-            Planning Rapide
+            <CalendarPlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">{isMobile ? "Rapide" : "Planning Rapide"}</span>
           </Button>
           <Dialog open={isAddingTemplate} onOpenChange={setIsAddingTemplate}>
             <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Planning Avancé
+              <Button variant="outline" size={isMobile ? "sm" : "default"} className="flex-1 sm:flex-none">
+                <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="text-xs sm:text-sm">{isMobile ? "Modifier" : "Modifier Template"}</span>
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Nouveau Template ou Planning</DialogTitle>
+                <DialogTitle>Modifier Template Hebdomadaire</DialogTitle>
                 <DialogDescription>
-                  Créer un template d'horaire ou un planning spécifique
+                  Modifier les horaires hebdomadaires de l'employé
                 </DialogDescription>
               </DialogHeader>
               <Tabs defaultValue="template" className="w-full">
@@ -650,19 +674,20 @@ const Planning = () => {
 
       {/* Filtres */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filtres</CardTitle>
+        <CardHeader className="p-3 sm:p-4 md:p-6">
+          <CardTitle className="text-sm sm:text-base md:text-lg">Filtres</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <Input
               type="date"
               value={selectedWeek}
               onChange={(e) => setSelectedWeek(e.target.value)}
               placeholder="Date de référence"
+              className="text-xs sm:text-sm"
             />
-            <div className="text-sm text-muted-foreground flex items-center">
-              Planning pour: {selectedEmployee.prenom} {selectedEmployee.nom}
+            <div className="text-xs sm:text-sm text-muted-foreground flex items-center">
+              {isMobile ? `${selectedEmployee.prenom} ${selectedEmployee.nom}` : `Planning pour: ${selectedEmployee.prenom} ${selectedEmployee.nom}`}
             </div>
           </div>
         </CardContent>
@@ -670,14 +695,73 @@ const Planning = () => {
 
       {/* Templates d'horaires */}
       <Card>
-        <CardHeader>
-          <CardTitle>Templates d'Horaires Hebdomadaires</CardTitle>
+        <CardHeader className="p-3 sm:p-4 md:p-6">
+          <CardTitle className="text-sm sm:text-base md:text-lg">{isMobile ? "Templates Hebdo" : "Templates d'Horaires Hebdomadaires"}</CardTitle>
         </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center p-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="ml-2">Chargement...</span>
+        <CardContent className="p-2 sm:p-4 md:p-6 pt-0">
+          {shiftTemplates.length === 0 ? (
+            <div className="text-center py-8">
+              <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground mb-2">Aucun template d'horaire défini</p>
+              <p className="text-xs text-muted-foreground">Cliquez sur "Modifier Template" pour ajouter des horaires hebdomadaires</p>
+            </div>
+          ) : isMobile ? (
+            <div className="space-y-2">
+              {shiftTemplates.map((template) => (
+                <Card key={template.id} className="border-l-4 border-l-primary">
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between mb-2">
+                      <Badge variant="outline" className="text-xs">
+                        {getWeekdayLabel(template.weekday, (template as any).weekday_name)}
+                      </Badge>
+                      <Badge variant={template.active ? "default" : "destructive"} className="text-xs">
+                        {template.active ? "Actif" : "Inactif"}
+                      </Badge>
+                    </div>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex items-center">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {template.start_time} - {template.end_time}
+                      </div>
+                      {template.lunch_start && template.lunch_end && (
+                        <div className="flex items-center text-muted-foreground">
+                          <Coffee className="h-3 w-3 mr-1" />
+                          {template.lunch_start} - {template.lunch_end}
+                        </div>
+                      )}
+                      <div className="font-semibold text-primary">
+                        Total: {calculateWorkHours(template.start_time, template.end_time, template.lunch_start || undefined, template.lunch_end || undefined)}h
+                      </div>
+                    </div>
+                    <div className="flex gap-1 pt-2 mt-2 border-t">
+                      <Button variant="ghost" size="sm" className="flex-1 h-7 text-xs">
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="flex-1 h-7 text-xs">
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmer</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Supprimer le template pour {getWeekdayLabel(template.weekday, (template as any).weekday_name)} ?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteTemplate(template)}>
+                              Supprimer
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           ) : (
             <Table>
@@ -696,7 +780,7 @@ const Planning = () => {
                   <TableRow key={template.id}>
                     <TableCell>
                       <Badge variant="outline">
-                        {weekdays.find(d => d.id === template.weekday)?.name}
+                        {getWeekdayLabel(template.weekday, (template as any).weekday_name)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -740,7 +824,7 @@ const Planning = () => {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Supprimer le template pour {weekdays.find(d => d.id === template.weekday)?.name} ?
+                                Supprimer le template pour {getWeekdayLabel(template.weekday, (template as any).weekday_name)} ?
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -761,89 +845,6 @@ const Planning = () => {
         </CardContent>
       </Card>
 
-      {/* Plannings spécifiques */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Plannings Spécifiques</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Heures</TableHead>
-                <TableHead>Pause Déjeuner</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Note</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {schedules.map((schedule) => (
-                <TableRow key={schedule.id}>
-                  <TableCell>
-                    {new Date(schedule.date).toLocaleDateString('fr-FR')}
-                  </TableCell>
-                  <TableCell>
-                    {schedule.start_time && schedule.end_time ? (
-                      <div className="flex items-center">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {schedule.start_time} - {schedule.end_time}
-                      </div>
-                    ) : (
-                      "Non défini"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {schedule.lunch_start && schedule.lunch_end ? (
-                      <div className="flex items-center">
-                        <Coffee className="h-3 w-3 mr-1" />
-                        {schedule.lunch_start} - {schedule.lunch_end}
-                      </div>
-                    ) : (
-                      "Aucune"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={schedule.is_half_day ? "secondary" : "default"}>
-                      {schedule.is_half_day ? "Demi-journée" : "Journée complète"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{schedule.note || "-"}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Supprimer le planning du {new Date(schedule.date).toLocaleDateString('fr-FR')} ?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteSchedule(schedule)}>
-                              Supprimer
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
     </div>
   );
 };

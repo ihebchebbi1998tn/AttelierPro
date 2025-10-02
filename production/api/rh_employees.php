@@ -65,8 +65,8 @@ try {
             }
             
             $stmt = $db->prepare("
-                INSERT INTO production_employees (nom, prenom, telephone, adresse, region, statut_civil, actif) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO production_employees (nom, prenom, telephone, adresse, region, statut_civil, actif, role, age) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $result = $stmt->execute([
@@ -76,7 +76,9 @@ try {
                 $input['adresse'] ?? null,
                 $input['region'] ?? null,
                 $input['statut_civil'] ?? 'autre',
-                $input['actif'] ?? 1
+                $input['actif'] ?? 1,
+                $input['role'] ?? null,
+                $input['age'] ?? null
             ]);
             
             if ($result) {
@@ -96,7 +98,7 @@ try {
             
             $stmt = $db->prepare("
                 UPDATE production_employees 
-                SET nom = ?, prenom = ?, telephone = ?, adresse = ?, region = ?, statut_civil = ?, actif = ?
+                SET nom = ?, prenom = ?, telephone = ?, adresse = ?, region = ?, statut_civil = ?, actif = ?, role = ?, age = ?
                 WHERE id = ?
             ");
             
@@ -108,6 +110,8 @@ try {
                 $input['region'] ?? null,
                 $input['statut_civil'] ?? 'autre',
                 $input['actif'] ?? 1,
+                $input['role'] ?? null,
+                $input['age'] ?? null,
                 $_GET['id']
             ]);
             

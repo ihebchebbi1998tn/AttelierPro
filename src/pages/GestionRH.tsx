@@ -62,7 +62,8 @@ const GestionRH = () => {
       description: "Enregistrer les heures d'entrée et sortie des employés",
       icon: Clock,
       link: "/rh/pointage",
-      color: "bg-indigo-500"
+      color: "bg-indigo-500",
+      disabled: true
     },
     {
       title: "Statistiques RH",
@@ -247,13 +248,21 @@ const GestionRH = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
-              <Button asChild className="w-full" size={isMobile ? "sm" : "default"}>
-                <Link to={module.link}>
+              {module.disabled ? (
+                <Button className="w-full" size={isMobile ? "sm" : "default"} disabled>
                   <span className="text-xs sm:text-sm">
-                    {isMobile ? "Accéder" : "Accéder au module"}
+                    {isMobile ? "Bientôt disponible" : "Module bientôt disponible"}
                   </span>
-                </Link>
-              </Button>
+                </Button>
+              ) : (
+                <Button asChild className="w-full" size={isMobile ? "sm" : "default"}>
+                  <Link to={module.link}>
+                    <span className="text-xs sm:text-sm">
+                      {isMobile ? "Accéder" : "Accéder au module"}
+                    </span>
+                  </Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}

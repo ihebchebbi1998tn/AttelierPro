@@ -90,6 +90,7 @@ interface ProductionBatch {
   client_id?: number;     // Added for soustraitance client navigation
   quantity_to_produce: number;
   sizes_breakdown?: string;
+  production_specifications?: string;
   status: 'planifie' | 'en_cours' | 'termine' | 'en_a_collecter' | 'en_magasin' | 'cancelled';
   total_materials_cost: number;
   notification_emails?: string;
@@ -1212,6 +1213,34 @@ const BatchDetails = () => {
         currentY = drawTable(['TAILLE', 'QUANTITÉ'], sizeRows, currentY, [90, 90], 20);
       }
 
+      // PRODUCTION SPECIFICATIONS TABLE
+      if (batchData.batch.production_specifications && 
+          batchData.batch.production_specifications !== 'null' && 
+          batchData.batch.production_specifications !== '{}') {
+        try {
+          const specs = typeof batchData.batch.production_specifications === 'string' 
+            ? JSON.parse(batchData.batch.production_specifications) 
+            : batchData.batch.production_specifications;
+          
+          if (specs && Object.keys(specs).length > 0) {
+            checkPageBreak(60);
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('SPÉCIFICATIONS DE PRODUCTION', 15, currentY);
+            currentY += 5;
+            
+            const specRows = Object.entries(specs).map(([key, value]) => [
+              key,
+              String(value)
+            ]);
+            
+            currentY = drawTable(['SPÉCIFICATION', 'VALEUR'], specRows, currentY, [90, 90], 20);
+          }
+        } catch (e) {
+          console.error('Error parsing production specifications for PDF:', e);
+        }
+      }
+
       // MATERIALS USED TABLE - Handle large datasets with compact layout
       if (batchData.materials_used && batchData.materials_used.length > 0) {
         checkPageBreak(40);
@@ -2166,6 +2195,37 @@ const BatchDetails = () => {
                     </div>
                   </div>
                 )}
+
+                {batch.production_specifications && 
+                 batch.production_specifications !== 'null' && 
+                 batch.production_specifications !== '{}' && (() => {
+                   try {
+                     const specs = typeof batch.production_specifications === 'string' 
+                       ? JSON.parse(batch.production_specifications) 
+                       : batch.production_specifications;
+                     
+                     if (specs && Object.keys(specs).length > 0) {
+                       return (
+                         <div className="pt-4 border-t">
+                           <p className="text-sm text-muted-foreground mb-2">Spécifications de production</p>
+                           <div className="bg-muted p-3 rounded-md">
+                             <div className="space-y-2">
+                               {Object.entries(specs).map(([key, value], index) => (
+                                 <div key={index} className="flex justify-between items-start text-sm">
+                                   <span className="font-medium">{key}:</span>
+                                   <span className="text-right ml-2">{value as string}</span>
+                                 </div>
+                               ))}
+                             </div>
+                           </div>
+                         </div>
+                       );
+                     }
+                   } catch (e) {
+                     console.error('Error parsing production specifications:', e);
+                   }
+                   return null;
+                 })()}
               </CardContent>
             </Card>
 

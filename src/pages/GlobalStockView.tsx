@@ -140,8 +140,13 @@ const GlobalStockView = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  const getStatusColor = (material: MaterialItem) => {
+    // Check if quantity exceeds max - show pink
+    if (material.quantity_total > material.good_quantity_needed) {
+      return "bg-pink-500";
+    }
+    
+    switch (material.status) {
       case "critical":
         return "bg-destructive";
       case "warning":
@@ -383,7 +388,7 @@ const GlobalStockView = () => {
                   
                   {/* Progress fill */}
                   <div 
-                    className={`absolute bottom-0 w-full transition-all duration-500 rounded-lg ${getStatusColor(material.status)}`}
+                    className={`absolute bottom-0 w-full transition-all duration-500 rounded-lg ${getStatusColor(material)}`}
                     style={{ height: `${getProgressHeight(material.progress_percentage)}%` }}
                   />
                   
@@ -403,12 +408,14 @@ const GlobalStockView = () => {
                 </p>
                 <Badge 
                   variant={
+                    material.quantity_total > material.good_quantity_needed ? "default" :
                     material.status === "critical" ? "destructive" : 
                     material.status === "warning" ? "secondary" : "default"
                   } 
-                  className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0"
+                  className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 ${material.quantity_total > material.good_quantity_needed ? 'bg-pink-500 text-white hover:bg-pink-600' : ''}`}
                 >
-                  {material.status === "critical" ? "Critique" : 
+                  {material.quantity_total > material.good_quantity_needed ? "Excès" :
+                   material.status === "critical" ? "Critique" : 
                    material.status === "warning" ? "Faible" : "Bon"}
                 </Badge>
               </div>

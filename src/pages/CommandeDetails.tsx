@@ -62,7 +62,8 @@ import {
   deleteOptionFinition,
   uploadOptionFinitionImage,
   OptionFinition,
-  getSurMesureMaterials
+  getSurMesureMaterials,
+  markSurMesureOrderAsSeen
 } from '@/utils/surMesureService';
 import { SurMesureOrder } from './Commandes';
 import { DynamicTriesSection } from '@/components/admin/DynamicTriesSection';
@@ -177,8 +178,20 @@ const CommandeDetails = () => {
         product_name: order.product_name || '',
         ready_date: order.ready_date || ''
       });
+      
+      // Mark order as seen when it's loaded
+      if (order.is_seen === '0') {
+        markSurMesureOrderAsSeen(order.id)
+          .then(() => {
+            // Refetch to update the order status
+            queryClient.invalidateQueries({ queryKey: ['surMesureOrders'] });
+          })
+          .catch((error) => {
+            console.error('Error marking order as seen:', error);
+          });
+      }
     }
-  }, [order]);
+  }, [order, queryClient]);
 
 
   // Load options when order is loaded
@@ -361,6 +374,13 @@ const CommandeDetails = () => {
       // Validation: Can't set to "en cours" without materials configured
       if (selectedStatus === 'in_progress') {
         try {
+          // Force refetch orders to ensure we have latest data
+          await refetch();
+          
+          // Small delay to ensure database has committed the transaction
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          // Now check materials with fresh data
           const materials = await getSurMesureMaterials(order!.id);
           if (!materials || materials.length === 0) {
             toast({

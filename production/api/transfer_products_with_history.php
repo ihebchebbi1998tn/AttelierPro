@@ -1,3 +1,4 @@
+
 <?php
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -86,6 +87,8 @@ try {
                         size_configuration_version = size_configuration_version + 1,
                         total_configured_quantity = ?,
                         transferred_at = CURRENT_TIMESTAMP,
+                        transfer_date = CURDATE(),
+                        is_seen = 0,
                         status_product = 'transferred'
                     WHERE id = ?
                 ");
@@ -105,9 +108,9 @@ try {
                 $stmt = $db->prepare("
                     INSERT INTO production_ready_products 
                     (external_product_id, nom, prix, description, image1, image2, image3, image4, image5, 
-                     boutique_origin, production_quantities, sizes_data, transferred_at, status_product,
-                     total_configured_quantity, size_configuration_version) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 'transferred', ?, 1)
+                     boutique_origin, production_quantities, sizes_data, transferred_at, transfer_date, 
+                     is_seen, status_product, total_configured_quantity, size_configuration_version) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURDATE(), 0, 'transferred', ?, 1)
                 ");
                 
                 $sizesJson = json_encode($product['size_quantities'] ?? []);

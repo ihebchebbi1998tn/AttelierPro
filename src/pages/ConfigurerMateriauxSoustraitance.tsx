@@ -396,6 +396,10 @@ const ConfigurerMateriauxSoustraitance = () => {
   };
 
   const getStockStatus = (currentStock: number, minStock: number, maxStock: number) => {
+    // Check if quantity exceeds max - show pink
+    if (currentStock > maxStock) {
+      return { status: 'excess', color: 'bg-pink-500', badgeVariant: 'default' };
+    }
     if (currentStock <= minStock) {
       return { status: 'critical', color: 'bg-destructive', badgeVariant: 'destructive' };
     } else if (currentStock < maxStock) {
@@ -407,6 +411,7 @@ const ConfigurerMateriauxSoustraitance = () => {
 
   const getStockStatusLabel = (status: string) => {
     switch (status) {
+      case 'excess': return 'Excès';
       case 'critical': return 'Critique';
       case 'warning': return 'Faible';
       case 'good': return 'Bon';

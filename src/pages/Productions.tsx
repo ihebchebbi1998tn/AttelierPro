@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Eye, Package, Clock, CheckCircle, Truck, Store, X } from 'lucide-react';
+import { Eye, Package, Clock, CheckCircle, Truck, Store, X, BarChart3 } from 'lucide-react';
 
 interface ProductionBatch {
   id: number;
@@ -231,6 +231,14 @@ const Productions = () => {
           <h1 className="text-2xl md:text-3xl font-bold">Productions</h1>
           <p className="text-sm md:text-base text-muted-foreground">Suivi des batches de production</p>
         </div>
+        <Button 
+          onClick={() => navigate('/productions-statistics')}
+          variant="default"
+          className="w-full md:w-auto"
+        >
+          <BarChart3 className="h-4 w-4 mr-2" />
+          Statistiques
+        </Button>
       </div>
 
       {/* Statistics Cards */}

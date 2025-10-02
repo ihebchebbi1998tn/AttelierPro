@@ -196,10 +196,7 @@ const Stock = () => {
       } else if (selectedLocation === 'spada') {
         filtered = filtered.filter(item => item.location === 'Spada');
       } else if (selectedLocation === 'extern') {
-        filtered = filtered.filter(item => 
-          item.location !== 'Lucci By Ey' && 
-          item.location !== 'Spada'
-        );
+        filtered = filtered.filter(item => item.materiere_type === 'extern');
       }
     }
 
@@ -248,8 +245,13 @@ const Stock = () => {
     setFilteredItems(filtered);
   }, [stockItems, searchTerm, statusFilter, materiereTypeFilter, categoryFilter, sortBy, selectedLocation]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  const getStatusColor = (item: MaterialItem) => {
+    // Check if quantity exceeds max
+    if (item.quantity_total > item.good_quantity_needed) {
+      return "default"; // Will style as pink
+    }
+    
+    switch (item.status) {
       case "critical":
         return "destructive";
       case "warning":
@@ -287,9 +289,12 @@ const Stock = () => {
     }
   };
 
-  const getProgressColor = (percentage: number, status: string) => {
-    if (status === "critical") return "bg-destructive";
-    if (status === "warning") return "bg-warning";
+  const getProgressColor = (item: MaterialItem) => {
+    // Check if quantity exceeds max - show pink
+    if (item.quantity_total > item.good_quantity_needed) return "bg-pink-500";
+    
+    if (item.status === "critical") return "bg-destructive";
+    if (item.status === "warning") return "bg-warning";
     return "bg-success";
   };
 
@@ -391,9 +396,7 @@ const Stock = () => {
   const criticalCount = stockItems.filter(item => item.status === "critical").length;
   const warningCount = stockItems.filter(item => item.status === "warning").length;
   const goodCount = stockItems.filter(item => item.status === "good").length;
-  const externCount = stockItems.filter(item => 
-    item.location !== 'Lucci By Ey' && item.location !== 'Spada'
-  ).length;
+  const externCount = stockItems.filter(item => item.materiere_type === 'extern').length;
   
   // Get unique categories for filter
   const categoriesMap = new Map();
@@ -470,7 +473,10 @@ const Stock = () => {
               </div>
               <div>
                 <p className="text-muted-foreground">Statut</p>
-                <Badge variant={getStatusColor(item.status) as any} className="flex items-center gap-1 w-fit">
+                <Badge 
+                  variant={getStatusColor(item) as any} 
+                  className={`flex items-center gap-1 w-fit ${item.quantity_total > item.good_quantity_needed ? 'bg-pink-500 text-white hover:bg-pink-600' : ''}`}
+                >
                   {getStatusIcon(item.status)}
                   {getStatusLabel(item.status)}
                 </Badge>
@@ -479,14 +485,14 @@ const Stock = () => {
             
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className={`font-medium ${item.status === 'critical' ? 'text-destructive' : ''}`}>
+                <span className={`font-medium ${item.status === 'critical' ? 'text-destructive' : item.quantity_total > item.good_quantity_needed ? 'text-pink-500' : ''}`}>
                   Niveau: {Math.min(item.progress_percentage, 100).toFixed(1)}%
                 </span>
                 <span className="text-muted-foreground">Min: {item.lowest_quantity_needed}</span>
               </div>
               <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
                 <div 
-                  className={`h-full transition-all duration-300 ${getProgressColor(item.progress_percentage, item.status)}`}
+                  className={`h-full transition-all duration-300 ${getProgressColor(item)}`}
                   style={{ width: `${Math.min(item.progress_percentage, 100)}%` }}
                 />
               </div>
@@ -985,11 +991,13 @@ const Stock = () => {
                               {item.quantity_total} {item.quantity_type}
                             </div>
                             <div className="flex items-center justify-center gap-2">
-                              <Progress 
-                                value={Math.min(item.progress_percentage, 100)} 
-                                className="h-2 w-20"
-                              />
-                              <span className={`text-xs font-medium ${item.status === 'critical' ? 'text-destructive' : ''}`}>
+                              <div className="relative h-2 w-20 overflow-hidden rounded-full bg-secondary">
+                                <div 
+                                  className={`h-full transition-all duration-300 ${getProgressColor(item)}`}
+                                  style={{ width: `${Math.min(item.progress_percentage, 100)}%` }}
+                                />
+                              </div>
+                              <span className={`text-xs font-medium ${item.status === 'critical' ? 'text-destructive' : item.quantity_total > item.good_quantity_needed ? 'text-pink-500' : ''}`}>
                                 {Math.min(item.progress_percentage, 100).toFixed(0)}%
                               </span>
                             </div>
@@ -999,7 +1007,10 @@ const Stock = () => {
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge variant={getStatusColor(item.status) as any} className="flex items-center gap-1 w-fit mx-auto">
+                          <Badge 
+                            variant={getStatusColor(item) as any} 
+                            className={`flex items-center gap-1 w-fit mx-auto ${item.quantity_total > item.good_quantity_needed ? 'bg-pink-500 text-white hover:bg-pink-600' : ''}`}
+                          >
                             {getStatusIcon(item.status)}
                             {getStatusLabel(item.status)}
                           </Badge>

@@ -154,8 +154,13 @@ const ProductReport = forwardRef<HTMLDivElement, ProductReportProps>(
             </div>
           )}
 
-          {/* Measurement Scale Table */}
-          {measurementScale && measurementScale.measurement_types.length > 0 && availableSizes.length > 0 && (
+          {/* Measurement Scale Table - Only show if configured */}
+          {measurementScale && 
+           measurementScale.measurement_types && 
+           measurementScale.measurement_types.length > 0 && 
+           availableSizes.length > 0 && 
+           measurementScale.measurements_data && 
+           Object.keys(measurementScale.measurements_data).length > 0 && (
             <div className="border border-black">
               <div className="bg-gray-100 p-2 border-b border-black">
                 <strong>BARÈME DE MESURE</strong>
@@ -231,6 +236,46 @@ const ProductReport = forwardRef<HTMLDivElement, ProductReportProps>(
             </div>
           </div>
         </div>
+
+        {/* Production Specifications */}
+        {product.production_specifications && 
+         product.production_specifications !== 'null' && 
+         product.production_specifications !== '{}' && (() => {
+           try {
+             const specs = typeof product.production_specifications === 'string' 
+               ? JSON.parse(product.production_specifications) 
+               : product.production_specifications;
+             
+             if (specs && Object.keys(specs).length > 0) {
+               return (
+                 <div className="mb-6">
+                   <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">SPÉCIFICATIONS DE PRODUCTION</h2>
+                   <div className="border border-black">
+                     <table className="w-full">
+                       <thead>
+                         <tr className="border-b border-black bg-gray-100">
+                           <th className="text-left p-2 border-r border-black">SPÉCIFICATION</th>
+                           <th className="text-left p-2">VALEUR</th>
+                         </tr>
+                       </thead>
+                       <tbody>
+                         {Object.entries(specs).map(([key, value], index) => (
+                           <tr key={index} className="border-b border-black">
+                             <td className="p-2 border-r border-black font-medium">{key}</td>
+                             <td className="p-2">{value as string}</td>
+                           </tr>
+                         ))}
+                       </tbody>
+                     </table>
+                   </div>
+                 </div>
+               );
+             }
+           } catch (e) {
+             console.error('Error parsing production specifications:', e);
+           }
+           return null;
+         })()}
 
         {/* Description */}
         {product.description_product && (

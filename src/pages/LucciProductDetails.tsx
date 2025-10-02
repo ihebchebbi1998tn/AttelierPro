@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ArrowLeft, Eye, Settings, ChevronLeft, ChevronRight, Send } from 'lucide-react';
 import { getProductImageUrl, getProductImages } from "@/utils/imageUtils";
 import SizeBreakdown from "@/components/SizeBreakdown";
-import ProductSizeQuantityModal from "@/components/ProductSizeQuantityModal";
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Product {
@@ -51,7 +50,6 @@ const LucciProductDetails = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showTransferModal, setShowTransferModal] = useState(false);
 
   const formatStockDisplay = (product: Product) => {
     if (!product) return "0 pièce";
@@ -128,15 +126,12 @@ const LucciProductDetails = () => {
   };
 
   const handleTransferProduct = () => {
-    setShowTransferModal(true);
+    if (!product) return;
+    navigate(`/production/transfer/luccibyey/${product.id}/quantities`, { state: { product } });
   };
 
   const handleTransferComplete = () => {
-    toast({
-      title: "Transfert réussi",
-      description: "Le produit a été transféré vers la production avec succès",
-    });
-    setShowTransferModal(false);
+    toast({ title: "Transfert réussi", description: "Le produit a été transféré vers la production avec succès" });
   };
 
   useEffect(() => {
@@ -493,14 +488,7 @@ const LucciProductDetails = () => {
         </Dialog>
       )}
 
-      {/* Transfer Modal */}
-      <ProductSizeQuantityModal
-        open={showTransferModal}
-        onOpenChange={setShowTransferModal}
-        selectedProducts={product ? [product] : []}
-        boutique="luccibyey"
-        onTransferComplete={handleTransferComplete}
-      />
+      {/* Transfer Flow now uses dedicated pages; no inline modal */}
     </div>
   );
 };

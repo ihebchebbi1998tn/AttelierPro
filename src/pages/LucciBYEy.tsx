@@ -7,11 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { RefreshCw, Eye, ShoppingCart, ArrowRight } from 'lucide-react';
+import { RefreshCw, Eye, ShoppingCart } from 'lucide-react';
 import { getProductImageUrl, getProductImages } from "@/utils/imageUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import ProductSizeQuantityModal from "@/components/ProductSizeQuantityModal";
 
 interface Product {
   id: number;
@@ -44,10 +42,6 @@ const LucciBYEy = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
-  const [transferring, setTransferring] = useState(false);
-  const [showTransferModal, setShowTransferModal] = useState(false);
-  const [showQuantityModal, setShowQuantityModal] = useState(false);
   const isMobile = useIsMobile();
 
   const loadProducts = async () => {
@@ -108,37 +102,6 @@ const LucciBYEy = () => {
     }
   };
 
-  const handleSelectProduct = (productId: number) => {
-    const newSelected = new Set(selectedProducts);
-    if (newSelected.has(productId)) {
-      newSelected.delete(productId);
-    } else {
-      newSelected.add(productId);
-    }
-    setSelectedProducts(newSelected);
-  };
-
-  const handleSelectAll = () => {
-    if (selectedProducts.size === filteredProducts.length) {
-      setSelectedProducts(new Set());
-    } else {
-      setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
-    }
-  };
-
-  const handleTransferComplete = () => {
-    setSelectedProducts(new Set());
-    setShowQuantityModal(false);
-    setShowTransferModal(false);
-  };
-
-  const transferProducts = async () => {
-    if (selectedProducts.size === 0) return;
-    
-    // Open the quantity selection modal instead of direct transfer
-    setShowTransferModal(false);
-    setShowQuantityModal(true);
-  };
 
   useEffect(() => {
     loadProducts();
@@ -158,18 +121,7 @@ const LucciBYEy = () => {
         </div>
         
         <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:gap-2">
-          {!isMobile && selectedProducts.size > 0 && (
-            <Button 
-              onClick={() => setShowQuantityModal(true)} 
-              variant="default" 
-              size="sm" 
-              className="w-full sm:w-auto text-xs sm:text-sm"
-            >
-              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-              Transférer à Produits ({selectedProducts.size})
-            </Button>
-          )}
-          <Button 
+          <Button
             onClick={syncProducts} 
             variant="outline" 
             size="sm" 
@@ -201,14 +153,6 @@ const LucciBYEy = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">
-                    <Checkbox
-                      checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
-                      onCheckedChange={handleSelectAll}
-                      aria-label="Sélectionner tout"
-                      className="h-5 w-5"
-                    />
-                  </TableHead>
                   <TableHead className="text-xs md:text-sm">Image</TableHead>
                   <TableHead className="text-xs md:text-sm">Référence</TableHead>
                   <TableHead className="text-xs md:text-sm">Nom</TableHead>
@@ -227,16 +171,9 @@ const LucciBYEy = () => {
                     <TableRow 
                       key={product.id} 
                       className="text-xs md:text-sm cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/lucci-by-ey/${product.id}`)}
                     >
-                      <TableCell onClick={(e) => e.stopPropagation()} className="w-16">
-                        <Checkbox
-                          checked={selectedProducts.has(product.id)}
-                          onCheckedChange={() => handleSelectProduct(product.id)}
-                          aria-label={`Sélectionner ${product.nom_product}`}
-                          className="h-5 w-5"
-                        />
-                      </TableCell>
-                      <TableCell onClick={() => navigate(`/lucci-by-ey/${product.id}`)}>
+                      <TableCell>
                         <div 
                           className="relative w-12 h-12 md:w-16 md:h-16 cursor-pointer group"
                           onClick={(e) => {
@@ -262,17 +199,17 @@ const LucciBYEy = () => {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium cursor-pointer" onClick={() => navigate(`/lucci-by-ey/${product.id}`)}>{product.reference_product}</TableCell>
-                      <TableCell className="max-w-[150px] md:max-w-none truncate cursor-pointer" onClick={() => navigate(`/lucci-by-ey/${product.id}`)}>{product.nom_product}</TableCell>
-                      <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => navigate(`/lucci-by-ey/${product.id}`)}>
+                      <TableCell className="font-medium">{product.reference_product}</TableCell>
+                      <TableCell className="max-w-[150px] md:max-w-none truncate">{product.nom_product}</TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <Badge variant="outline" className="text-xs">{product.type_product}</Badge>
                       </TableCell>
-                      <TableCell className="cursor-pointer" onClick={() => navigate(`/lucci-by-ey/${product.id}`)}>
+                      <TableCell>
                         <Badge variant="default" className="text-xs">
                           Lucci By Ey
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => navigate(`/lucci-by-ey/${product.id}`)}>{product.price_product} TND</TableCell>
+                      <TableCell className="hidden md:table-cell">{product.price_product} TND</TableCell>
                       <TableCell>
                         <div className="flex flex-col sm:flex-row gap-1" onClick={(e) => e.stopPropagation()}>
                           <Button
@@ -315,15 +252,10 @@ const LucciBYEy = () => {
             const allImages = getProductImages(product);
             
             return (
-              <Card key={product.id} className="overflow-hidden">
+              <Card key={product.id} className="overflow-hidden" onClick={() => navigate(`/lucci-by-ey/${product.id}`)}>
                 <CardContent className="p-3">
                   <div className="flex gap-3">
-                    <Checkbox
-                      checked={selectedProducts.has(product.id)}
-                      onCheckedChange={() => handleSelectProduct(product.id)}
-                      className="h-4 w-4 mt-1 flex-shrink-0"
-                    />
-                    <div 
+                    <div
                       className="relative w-16 h-16 flex-shrink-0 cursor-pointer"
                       onClick={() => navigate(`/lucci-by-ey/${product.id}`)}
                     >
@@ -342,7 +274,7 @@ const LucciBYEy = () => {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0" onClick={() => navigate(`/lucci-by-ey/${product.id}`)}>
+                    <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-1">{product.nom_product}</h3>
                       <p className="text-xs text-muted-foreground mb-2">Ref: {product.reference_product}</p>
                       <div className="flex flex-wrap gap-1 mb-2">
@@ -361,67 +293,6 @@ const LucciBYEy = () => {
         </div>
       )}
 
-      {/* Floating Transfer Button for Mobile */}
-      {isMobile && selectedProducts.size > 0 && (
-        <div className="fixed bottom-4 left-4 right-4 z-50">
-          <Button 
-            onClick={() => setShowQuantityModal(true)} 
-            className="w-full shadow-lg"
-            size="lg"
-          >
-            <ArrowRight className="h-4 w-4 mr-2" />
-            Transférer ({selectedProducts.size}) produit{selectedProducts.size > 1 ? 's' : ''}
-          </Button>
-        </div>
-      )}
-
-      {/* Transfer Confirmation Modal */}
-      <Dialog open={showTransferModal} onOpenChange={setShowTransferModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirmer le transfert</DialogTitle>
-            <DialogDescription>
-              Voulez-vous transférer {selectedProducts.size} produit{selectedProducts.size > 1 ? 's' : ''} vers la page Produits ?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowTransferModal(false)}
-              disabled={transferring}
-              className="w-full sm:w-auto"
-            >
-              Annuler
-            </Button>
-            <Button
-              onClick={transferProducts}
-              disabled={transferring}
-              className="w-full sm:w-auto"
-            >
-              {transferring ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Transfert en cours...
-                </>
-              ) : (
-                <>
-                  <ArrowRight className="h-4 w-4 mr-2" />
-                  Transférer à Produits
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Size Quantity Selection Modal */}
-      <ProductSizeQuantityModal
-        open={showQuantityModal}
-        onOpenChange={setShowQuantityModal}
-        selectedProducts={products.filter(p => selectedProducts.has(p.id))}
-        boutique="luccibyey"
-        onTransferComplete={handleTransferComplete}
-      />
     </div>
   );
 };

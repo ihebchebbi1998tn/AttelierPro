@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 
@@ -12,7 +13,8 @@ import {
   Calendar,
   PieChart,
   Target,
-  Loader2
+  Loader2,
+  ArrowLeft
 } from "lucide-react";
 import {
   BarChart,
@@ -127,13 +129,23 @@ const Statistiques = () => {
   return (
     <div className="container mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
-            {isMobile ? "Stats RH" : "Statistiques RH"}
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
-            {isMobile ? "Indicateurs RH" : "Tableaux de bord et indicateurs de performance RH"}
-          </p>
+        <div className="flex items-start gap-2">
+          <Button 
+            variant="outline" 
+            size={isMobile ? "sm" : "default"}
+            onClick={() => window.location.href = '/rh'}
+            className="shrink-0"
+          >
+            <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+          </Button>
+          <div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+              {isMobile ? "Stats RH" : "Statistiques RH"}
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
+              {isMobile ? "Indicateurs RH" : "Tableaux de bord et indicateurs de performance RH"}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -144,10 +156,10 @@ const Statistiques = () => {
             {isMobile ? "Période" : "Période d'analyse"}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger>
+              <SelectTrigger className="text-xs sm:text-sm">
                 <SelectValue placeholder="Période" />
               </SelectTrigger>
               <SelectContent>
@@ -157,7 +169,7 @@ const Statistiques = () => {
             </Select>
 
             <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger>
+              <SelectTrigger className="text-xs sm:text-sm">
                 <SelectValue placeholder="Année" />
               </SelectTrigger>
               <SelectContent>
@@ -166,88 +178,88 @@ const Statistiques = () => {
               </SelectContent>
             </Select>
 
-            <div className="text-sm text-muted-foreground flex items-center">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Données en temps réel
+            <div className="text-xs sm:text-sm text-muted-foreground flex items-center">
+              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              {isMobile ? "Temps réel" : "Données en temps réel"}
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Indicateurs principaux */}
-      <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-3 md:gap-4">
         <Card className="modern-card bg-primary text-primary-foreground col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground flex items-center">
-              <Users className="h-4 w-4 mr-2" />
-              Employés Actifs
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground flex items-center">
+              <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              {isMobile ? "Actifs" : "Employés Actifs"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">{statistics.active_employees}</div>
-            <div className="text-xs text-primary-foreground/80">
-              sur {statistics.total_employees} total
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">{statistics.active_employees}</div>
+            <div className="text-[10px] sm:text-xs text-primary-foreground/80">
+              {isMobile ? `/${statistics.total_employees}` : `sur ${statistics.total_employees} total`}
             </div>
           </CardContent>
         </Card>
 
         <Card className="modern-card bg-primary text-primary-foreground col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground flex items-center">
-              <Clock className="h-4 w-4 mr-2" />
-              Heures ce Mois
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground flex items-center">
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              {isMobile ? "Heures" : "Heures ce Mois"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">{statistics.total_hours_this_month}h</div>
-            <div className="text-xs text-primary-foreground/80">
-              Moy: {statistics.avg_hours_per_employee}h/employé
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">{statistics.total_hours_this_month}h</div>
+            <div className="text-[10px] sm:text-xs text-primary-foreground/80 hidden sm:block">
+              Moy: {statistics.avg_hours_per_employee}h/emp
             </div>
           </CardContent>
         </Card>
 
         <Card className="modern-card bg-primary text-primary-foreground col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground flex items-center">
-              <Banknote className="h-4 w-4 mr-2" />
-              Salaires ce Mois
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground flex items-center">
+              <Banknote className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              {isMobile ? "Sal/Mois" : "Salaires ce Mois"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">
-              {statistics.total_salaries_this_month?.toLocaleString() || 0} TND
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">
+              {isMobile ? `${Math.round((statistics.total_salaries_this_month || 0) / 1000)}K` : `${statistics.total_salaries_this_month?.toLocaleString() || 0} TND`}
             </div>
-            <div className="text-xs text-primary-foreground/80">
-              Moy: {statistics.avg_salary_per_employee?.toLocaleString() || 0} TND/employé
+            <div className="text-[10px] sm:text-xs text-primary-foreground/80 hidden sm:block">
+              Moy: {statistics.avg_salary_per_employee?.toLocaleString() || 0}
             </div>
           </CardContent>
         </Card>
 
         <Card className="modern-card bg-primary text-primary-foreground col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground flex items-center">
-              <Target className="h-4 w-4 mr-2" />
-              Taux Présence
+          <CardHeader className="p-2 sm:p-3 md:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-primary-foreground flex items-center">
+              <Target className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              {isMobile ? "Présence" : "Taux Présence"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary-foreground">{statistics.attendance_rate}%</div>
-            <div className="text-xs text-primary-foreground/80">
-              {statistics.pending_holidays} congés en attente
+          <CardContent className="p-2 sm:p-3 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-primary-foreground">{statistics.attendance_rate}%</div>
+            <div className="text-[10px] sm:text-xs text-primary-foreground/80 hidden sm:block">
+              {statistics.pending_holidays} congés
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Graphiques principaux */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
         {/* Évolution des heures et salaires */}
         <Card>
-          <CardHeader>
-            <CardTitle>Évolution des Heures et Salaires</CardTitle>
+          <CardHeader className="p-3 sm:p-4 md:p-6">
+            <CardTitle className="text-sm sm:text-base md:text-lg">{isMobile ? "Évolution" : "Évolution des Heures et Salaires"}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+          <CardContent className="p-2 sm:p-4 md:p-6 pt-0">
+            <ResponsiveContainer width="100%" height={isMobile ? 200 : 300}>
               <AreaChart data={getDataByPeriod()}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey={selectedPeriod === "week" ? "week" : "month"} />
@@ -279,11 +291,11 @@ const Statistiques = () => {
 
         {/* Répartition par employé */}
         <Card>
-          <CardHeader>
-            <CardTitle>Répartition par Employé</CardTitle>
+          <CardHeader className="p-3 sm:p-4 md:p-6">
+            <CardTitle className="text-sm sm:text-base md:text-lg">{isMobile ? "Par Employé" : "Répartition par Employé"}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+          <CardContent className="p-2 sm:p-4 md:p-6 pt-0">
+            <ResponsiveContainer width="100%" height={isMobile ? 200 : 300}>
               <BarChart data={employeeBreakdown}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
@@ -298,14 +310,14 @@ const Statistiques = () => {
       </div>
 
       {/* Statistiques détaillées */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
         {/* Congés par mois */}
         <Card>
-          <CardHeader>
-            <CardTitle>Congés par Mois</CardTitle>
+          <CardHeader className="p-3 sm:p-4 md:p-6">
+            <CardTitle className="text-sm sm:text-base md:text-lg">{isMobile ? "Congés" : "Congés par Mois"}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+          <CardContent className="p-2 sm:p-4 md:p-6 pt-0">
+            <ResponsiveContainer width="100%" height={isMobile ? 180 : 250}>
               <LineChart data={monthlyHours}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
@@ -325,11 +337,11 @@ const Statistiques = () => {
 
         {/* Répartition des départements */}
         <Card>
-          <CardHeader>
-            <CardTitle>Répartition par Département</CardTitle>
+          <CardHeader className="p-3 sm:p-4 md:p-6">
+            <CardTitle className="text-sm sm:text-base md:text-lg">{isMobile ? "Départements" : "Répartition par Département"}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+          <CardContent className="p-2 sm:p-4 md:p-6 pt-0">
+            <ResponsiveContainer width="100%" height={isMobile ? 180 : 250}>
               <RechartsPieChart>
                 <Tooltip />
                 <RechartsPieChart data={departmentData}>
@@ -358,10 +370,10 @@ const Statistiques = () => {
 
         {/* Résumé annuel */}
         <Card>
-          <CardHeader>
-            <CardTitle>Résumé Annuel {selectedYear}</CardTitle>
+          <CardHeader className="p-3 sm:p-4 md:p-6">
+            <CardTitle className="text-sm sm:text-base md:text-lg">{isMobile ? `Année ${selectedYear}` : `Résumé Annuel ${selectedYear}`}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-3 sm:p-4 md:p-6 pt-0 space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <Clock className="h-4 w-4 mr-2 text-blue-500" />
@@ -401,12 +413,13 @@ const Statistiques = () => {
       </div>
 
       {/* Tableau détaillé par employé */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Performance par Employé - {selectedYear}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
+      {!isMobile && (
+        <Card>
+          <CardHeader className="p-3 sm:p-4 md:p-6">
+            <CardTitle className="text-sm sm:text-base md:text-lg">Performance par Employé - {selectedYear}</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
@@ -438,6 +451,7 @@ const Statistiques = () => {
           </div>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 };

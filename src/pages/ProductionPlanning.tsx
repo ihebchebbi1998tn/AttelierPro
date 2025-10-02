@@ -83,6 +83,7 @@ const ProductionPlanning = () => {
   const [plannedQuantities, setPlannedQuantities] = useState<{ [size: string]: number }>({});
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showValidationModal, setShowValidationModal] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [validating, setValidating] = useState(false);
 
   const loadProductData = async () => {
@@ -901,7 +902,10 @@ const ProductionPlanning = () => {
             </Button>
             {validationResult?.has_sufficient_stock && (
               <Button 
-                onClick={startProduction} 
+                onClick={() => {
+                  setShowValidationModal(false);
+                  setShowConfirmationModal(true);
+                }} 
                 size="lg"
                 className="flex-1 sm:flex-none bg-success hover:bg-success/90 text-success-foreground flex items-center gap-2 shadow-lg"
               >
@@ -909,6 +913,116 @@ const ProductionPlanning = () => {
                 Démarrer la Production
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Production Confirmation Dialog */}
+      <Dialog open={showConfirmationModal} onOpenChange={setShowConfirmationModal}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-warning/20 rounded-lg">
+                <AlertTriangle className="h-6 w-6 text-warning" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold">Confirmation de Production</h2>
+                <p className="text-sm text-muted-foreground font-normal mt-1">
+                  Le démarrage de la production va déduire les matériaux suivants du stock :
+                </p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+
+          {validationResult && (
+            <div className="space-y-4">
+              {/* Material List */}
+              <div className="border rounded-lg divide-y">
+                {Object.entries(validationResult.material_requirements).map(([materialId, requirement]) => (
+                  <div key={materialId} className="p-4 hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <Package className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-foreground">{requirement.material_name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {requirement.material_color || 'Couleur non définie'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-lg text-foreground">
+                          {formatNumber(requirement.total_needed)} {requirement.quantity_unit}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Stock actuel: {formatNumber(requirement.current_stock)} {requirement.quantity_unit}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Size Breakdown */}
+                    {requirement.size_breakdown && requirement.size_breakdown.length > 0 && (
+                      <div className="mt-3 pt-3 border-t">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                          Détail par taille
+                        </p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {requirement.size_breakdown.map((sizeData, idx) => (
+                            <div key={idx} className="text-xs bg-muted/50 rounded px-2 py-1">
+                              <span className="font-medium">{sizeData.size}:</span>{' '}
+                              <span className="text-muted-foreground">
+                                {sizeData.planned_pieces} pcs × {formatNumber(sizeData.material_per_piece)} = {formatNumber(sizeData.total_material_needed)} {requirement.quantity_unit}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Warning Message */}
+              <div className="bg-warning/10 border border-warning/30 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+                  <div className="text-sm text-foreground">
+                    <p className="font-medium mb-1">Cette action est irréversible</p>
+                    <p className="text-muted-foreground">
+                      Les quantités de matériaux ci-dessus seront automatiquement déduites du stock. 
+                      Assurez-vous que les quantités sont correctes avant de confirmer.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-3 pt-4 border-t">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowConfirmationModal(false);
+                setShowValidationModal(true);
+              }}
+              size="lg"
+              className="flex-1 sm:flex-none"
+            >
+              Annuler
+            </Button>
+            <Button 
+              onClick={() => {
+                setShowConfirmationModal(false);
+                startProduction();
+              }} 
+              size="lg"
+              className="flex-1 sm:flex-none bg-success hover:bg-success/90 text-success-foreground flex items-center gap-2 shadow-lg"
+            >
+              <CheckCircle className="h-4 w-4" />
+              Confirmer la Production
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

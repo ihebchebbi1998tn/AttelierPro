@@ -35,9 +35,9 @@ Inspired by professional business dashboards
     --accent-foreground: 215 35% 12%;
 
     /* Reduce color variations - keep minimal palette */
-    --success: 142 71% 45%;
+    --success: 330 71% 45%;
     --success-foreground: 0 0% 100%;
-    --success-light: 142 71% 95%;
+    --success-light: 330 71% 95%;
     
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
@@ -100,9 +100,9 @@ Inspired by professional business dashboards
     --accent: 215 32% 14%;
     --accent-foreground: 210 25% 98%;
 
-    --success: 142 71% 45%;
+    --success: 330 71% 45%;
     --success-foreground: 0 0% 100%;
-    --success-light: 142 71% 20%;
+    --success-light: 330 71% 20%;
     
     --warning: 38 92% 55%;
     --warning-foreground: 0 0% 100%;
@@ -329,4 +329,30 @@ Inspired by professional business dashboards
   .no-print {
     display: none !important;
   }
+}
+
+/* Custom scrollbar styling - Primary color theme */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary));
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary-dark));
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary)) hsl(var(--muted));
 }

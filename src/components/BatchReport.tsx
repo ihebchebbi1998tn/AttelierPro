@@ -23,6 +23,7 @@ interface ProductionBatch {
   boutique_origin: string;
   quantity_to_produce: number;
   sizes_breakdown?: string;
+  production_specifications?: string;
   status: 'planifie' | 'en_cours' | 'termine' | 'en_a_collecter' | 'en_magasin' | 'cancelled';
   total_materials_cost: number;
   notification_emails?: string;
@@ -426,6 +427,46 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
             })()}
           </div>
         )}
+
+        {/* Production Specifications */}
+        {batch.production_specifications && 
+         batch.production_specifications !== 'null' && 
+         batch.production_specifications !== '{}' && (() => {
+           try {
+             const specs = typeof batch.production_specifications === 'string' 
+               ? JSON.parse(batch.production_specifications) 
+               : batch.production_specifications;
+             
+             if (specs && Object.keys(specs).length > 0) {
+               return (
+                 <div className="mb-6">
+                   <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">SPÉCIFICATIONS DE PRODUCTION</h2>
+                   <div className="border border-black">
+                     <table className="w-full">
+                       <thead>
+                         <tr className="border-b border-black bg-gray-100">
+                           <th className="text-left p-2 border-r border-black">SPÉCIFICATION</th>
+                           <th className="text-left p-2">VALEUR</th>
+                         </tr>
+                       </thead>
+                       <tbody>
+                         {Object.entries(specs).map(([key, value], index) => (
+                           <tr key={index} className="border-b border-black">
+                             <td className="p-2 border-r border-black font-medium">{key}</td>
+                             <td className="p-2">{String(value)}</td>
+                           </tr>
+                         ))}
+                       </tbody>
+                     </table>
+                   </div>
+                 </div>
+               );
+             }
+           } catch (error) {
+             console.error('Error parsing production specifications:', error);
+           }
+           return null;
+         })()}
 
         {/* Production Summary */}
         <div className="mb-6">

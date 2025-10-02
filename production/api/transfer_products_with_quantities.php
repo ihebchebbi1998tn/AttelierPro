@@ -40,14 +40,79 @@ try {
     foreach ($products as $product) {
         try {
             // Check if product already exists in production_ready_products
-            $checkStmt = $db->prepare("SELECT id FROM production_ready_products WHERE external_product_id = ? AND boutique_origin = ?");
+            $checkStmt = $db->prepare("SELECT id, production_quantities FROM production_ready_products WHERE external_product_id = ? AND boutique_origin = ?");
             $checkStmt->execute([$product['external_product_id'], $boutique]);
+            $existingProduct = $checkStmt->fetch(PDO::FETCH_ASSOC);
             
-            if ($checkStmt->rowCount() > 0) {
-                $errors[] = "Produit {$product['nom_product']} déjà transféré";
+            if ($existingProduct) {
+                // Product exists - merge quantities instead of skipping
+                if (isset($product['size_quantities']) && !empty($product['size_quantities'])) {
+                    // Get existing production quantities
+                    $existingQuantities = [];
+                    if (!empty($existingProduct['production_quantities'])) {
+                        $existingQuantities = json_decode($existingProduct['production_quantities'], true) ?: [];
+                    }
+                    
+                    // Merge new quantities with existing (add them together)
+                    foreach ($product['size_quantities'] as $size => $quantity) {
+                        if ($quantity > 0) {
+                            $existingQty = isset($existingQuantities[$size]) ? intval($existingQuantities[$size]) : 0;
+                            $existingQuantities[$size] = $existingQty + intval($quantity);
+                        }
+                    }
+                    
+                    // Update production quantities and reset is_seen to 0, and update specifications
+                    $currentDate = date('Y-m-d');
+                    $productionSpecsJson = isset($product['production_specifications']) ? json_encode($product['production_specifications']) : null;
+                    
+                    $updateStmt = $db->prepare("
+                        UPDATE production_ready_products 
+                        SET production_quantities = ?, 
+                            production_specifications = ?,
+                            is_seen = 0,
+                            transfer_date = ?,
+                            updated_at = NOW()
+                        WHERE id = ?
+                    ");
+                    $mergedQuantitiesJson = json_encode($existingQuantities);
+                    $updateStmt->execute([$mergedQuantitiesJson, $productionSpecsJson, $currentDate, $existingProduct['id']]);
+                    
+                    // Update product sizes configuration
+                    foreach ($product['size_quantities'] as $size => $quantity) {
+                        if ($quantity > 0) {
+                            try {
+                                // Determine size type based on size value
+                                $sizeType = 'clothing'; // default
+                                if (is_numeric($size)) {
+                                    if (intval($size) >= 30 && intval($size) <= 66) {
+                                        $sizeType = 'numeric_pants';
+                                    } elseif (intval($size) >= 39 && intval($size) <= 47) {
+                                        $sizeType = 'shoes';
+                                    } elseif (intval($size) >= 85 && intval($size) <= 125) {
+                                        $sizeType = 'belts';
+                                    }
+                                }
+                                
+                                $sizeStmt = $db->prepare("
+                                    INSERT INTO product_sizes_config (product_id, size_type, size_value, is_active, created_at, updated_at) 
+                                    VALUES (?, ?, ?, 1, NOW(), NOW())
+                                    ON DUPLICATE KEY UPDATE is_active = 1, updated_at = NOW()
+                                ");
+                                $sizeStmt->execute([$existingProduct['id'], $sizeType, $size]);
+                            } catch (Exception $sizeError) {
+                                error_log("Size update error for product {$existingProduct['id']}, size $size: " . $sizeError->getMessage());
+                            }
+                        }
+                    }
+                    
+                    $transferred++;
+                } else {
+                    $errors[] = "Produit {$product['nom_product']} existe déjà sans nouvelles quantités";
+                }
                 continue;
             }
 
+            // Product doesn't exist - create new entry
             // Prepare production quantities JSON from size quantities if provided
             $productionQuantities = null;
             $sizesData = null;
@@ -66,6 +131,9 @@ try {
             }
 
             // Prepare INSERT statement with enhanced fields
+            $currentDate = date('Y-m-d');
+            $productionSpecsJson = isset($product['production_specifications']) ? json_encode($product['production_specifications']) : null;
+            
             $stmt = $db->prepare("
                 INSERT INTO production_ready_products 
                 (boutique_origin, external_product_id, reference_product, nom_product, 
@@ -73,14 +141,14 @@ try {
                  itemgroup_product, price_product, qnty_product, color_product, 
                  collection_product, auto_replenishment, auto_replenishment_quantity, 
                  auto_replenishment_quantity_sizes, sizes_data, production_quantities,
-                 status_product, transferred_at) 
+                 production_specifications, status_product, transferred_at, transfer_date, is_seen) 
                 VALUES 
                 (:boutique_origin, :external_product_id, :reference_product, :nom_product, 
                  :img_product, :description_product, :type_product, :category_product, 
                  :itemgroup_product, :price_product, :qnty_product, :color_product, 
                  :collection_product, :auto_replenishment, :auto_replenishment_quantity, 
                  :auto_replenishment_quantity_sizes, :sizes_data, :production_quantities,
-                 'awaiting_production', NOW())
+                 :production_specifications, 'awaiting_production', :transferred_at, :transfer_date, 0)
             ");
             
             // Bind parameters
@@ -102,6 +170,9 @@ try {
             $stmt->bindValue(':auto_replenishment_quantity_sizes', $product['AutoReapprovisionnement_quantity_sizes'] ?? null);
             $stmt->bindValue(':sizes_data', $sizesData); // Auto-configured from production quantities
             $stmt->bindValue(':production_quantities', $productionQuantities);
+            $stmt->bindValue(':production_specifications', $productionSpecsJson);
+            $stmt->bindValue(':transferred_at', $currentDate);
+            $stmt->bindValue(':transfer_date', $currentDate);
             
             if ($stmt->execute()) {
                 $productId = $db->lastInsertId();

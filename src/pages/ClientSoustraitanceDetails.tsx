@@ -843,7 +843,15 @@ const ClientSoustraitanceDetails = () => {
                                   <p className="font-medium">{material.quantite_stock}</p>
                                   <div className="w-full bg-muted rounded-full h-2">
                                     <div 
-                                      className="bg-primary h-2 rounded-full transition-all" 
+                                      className={`h-2 rounded-full transition-all ${
+                                        material.quantite_stock > material.quantite_max 
+                                          ? 'bg-pink-500' 
+                                          : material.quantite_stock <= (material.quantite_min || 0)
+                                            ? 'bg-destructive'
+                                            : material.quantite_stock < material.quantite_max
+                                              ? 'bg-warning'
+                                              : 'bg-success'
+                                      }`} 
                                       style={{ 
                                         width: `${Math.min((material.quantite_stock / material.quantite_max) * 100, 100)}%` 
                                       }}
@@ -923,7 +931,15 @@ const ClientSoustraitanceDetails = () => {
                             </div>
                             <div className="w-full bg-muted rounded-full h-2">
                               <div 
-                                className="bg-primary h-2 rounded-full transition-all" 
+                                className={`h-2 rounded-full transition-all ${
+                                  material.quantite_stock > material.quantite_max 
+                                    ? 'bg-pink-500' 
+                                    : material.quantite_stock <= (material.quantite_min || 0)
+                                      ? 'bg-destructive'
+                                      : material.quantite_stock < material.quantite_max
+                                        ? 'bg-warning'
+                                        : 'bg-success'
+                                }`} 
                                 style={{ 
                                   width: `${Math.min((material.quantite_stock / material.quantite_max) * 100, 100)}%` 
                                 }}

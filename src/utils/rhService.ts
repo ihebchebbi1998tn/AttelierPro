@@ -3,10 +3,11 @@ import axios from 'axios';
 const BASE_URL = 'https://luccibyey.com.tn/production/api';
 
 // API Response interface
-interface ApiResponse<T = any> {
+export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   message?: string;
+  id?: number; // For employee creation response
 }
 
 // Employee interfaces
@@ -19,6 +20,9 @@ export interface Employee {
   region?: string;
   statut_civil: 'celibataire' | 'marie' | 'divorce' | 'veuf' | 'autre';
   actif: boolean;
+  photo?: string;
+  role?: string;
+  age?: number;
   created_at: string;
   updated_at?: string;
 }
@@ -31,6 +35,9 @@ export interface CreateEmployeeData {
   region?: string;
   statut_civil?: 'celibataire' | 'marie' | 'divorce' | 'veuf' | 'autre';
   actif?: boolean;
+  photo?: string;
+  role?: string;
+  age?: number;
 }
 
 // Schedule interfaces
@@ -224,6 +231,32 @@ export const employeeService = {
   delete: async (id: number): Promise<ApiResponse> => {
     const response = await axios.delete<ApiResponse>(
       `${BASE_URL}/rh_employees.php?id=${id}`
+    );
+    return response.data;
+  },
+
+  // Upload employee photo
+  uploadPhoto: async (employeeId: number, file: File): Promise<ApiResponse> => {
+    const formData = new FormData();
+    formData.append('employee_id', employeeId.toString());
+    formData.append('photo', file);
+
+    const response = await axios.post<ApiResponse>(
+      `${BASE_URL}/rh_employee_photo.php`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  },
+
+  // Delete employee photo
+  deletePhoto: async (employeeId: number): Promise<ApiResponse> => {
+    const response = await axios.delete<ApiResponse>(
+      `${BASE_URL}/rh_employee_photo.php?employee_id=${employeeId}`
     );
     return response.data;
   }

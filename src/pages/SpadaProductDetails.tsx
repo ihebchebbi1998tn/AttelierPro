@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ArrowLeft, Eye, Settings, ChevronLeft, ChevronRight, Send } from 'lucide-react';
 import { getProductImageUrl, getProductImages } from "@/utils/imageUtils";
 import SizeBreakdown from "@/components/SizeBreakdown";
-import ProductSizeQuantityModal from "@/components/ProductSizeQuantityModal";
 
 interface Product {
   id: number;
@@ -49,7 +48,6 @@ const SpadaProductDetails = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showTransferModal, setShowTransferModal] = useState(false);
 
   const formatStockDisplay = (product: Product) => {
     if (!product) return "0 pièce";
@@ -126,15 +124,12 @@ const SpadaProductDetails = () => {
   };
 
   const handleTransferProduct = () => {
-    setShowTransferModal(true);
+    if (!product) return;
+    navigate(`/production/transfer/spadadibattaglia/${product.id}/quantities`, { state: { product } });
   };
 
   const handleTransferComplete = () => {
-    toast({
-      title: "Transfert réussi",
-      description: "Le produit a été transféré vers la production avec succès",
-    });
-    setShowTransferModal(false);
+    toast({ title: "Transfert réussi", description: "Le produit a été transféré vers la production avec succès" });
   };
 
   useEffect(() => {
@@ -468,14 +463,7 @@ const SpadaProductDetails = () => {
         </Dialog>
       )}
 
-      {/* Transfer Modal */}
-      <ProductSizeQuantityModal
-        open={showTransferModal}
-        onOpenChange={setShowTransferModal}
-        selectedProducts={product ? [product] : []}
-        boutique="spadadibattaglia"
-        onTransferComplete={handleTransferComplete}
-      />
+      {/* Transfer Flow now uses dedicated pages; no inline modal */}
     </div>
   );
 };

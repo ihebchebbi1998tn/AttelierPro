@@ -114,7 +114,9 @@ try {
                 66_size = :66_size, 85_size = :85_size, 90_size = :90_size, 95_size = :95_size, 100_size = :100_size,
                 105_size = :105_size, 110_size = :110_size, 115_size = :115_size, 120_size = :120_size, 125_size = :125_size,
                 sync_date = CURRENT_TIMESTAMP,
-                updated_at = CURRENT_TIMESTAMP
+                updated_at = CURRENT_TIMESTAMP,
+                transfer_date = CURDATE(),
+                is_seen = 0
                 WHERE id = :id
             ");
             
@@ -164,7 +166,7 @@ try {
                  30_size, 31_size, 32_size, 33_size, 34_size, 36_size, 38_size, 39_size, 40_size, 41_size,
                  42_size, 43_size, 44_size, 45_size, 46_size, 47_size, 48_size, 50_size, 52_size, 54_size,
                  56_size, 58_size, 60_size, 62_size, 64_size, 66_size, 85_size, 90_size, 95_size, 100_size,
-                 105_size, 110_size, 115_size, 120_size, 125_size, sync_date) 
+                 105_size, 110_size, 115_size, 120_size, 125_size, sync_date, transfer_date, is_seen)
                 VALUES 
                 ('luccibyey', :external_id, :reference, :nom, 
                  :img, :img2, :img3, :img4, :img5,
@@ -176,7 +178,7 @@ try {
                  :30_size, :31_size, :32_size, :33_size, :34_size, :36_size, :38_size, :39_size, :40_size, :41_size,
                  :42_size, :43_size, :44_size, :45_size, :46_size, :47_size, :48_size, :50_size, :52_size, :54_size,
                  :56_size, :58_size, :60_size, :62_size, :64_size, :66_size, :85_size, :90_size, :95_size, :100_size,
-                 :105_size, :110_size, :115_size, :120_size, :125_size, CURRENT_TIMESTAMP)
+                 :105_size, :110_size, :115_size, :120_size, :125_size, CURRENT_TIMESTAMP, CURDATE(), 0)
             ");
             
             $insertStmt->bindParam(':external_id', $externalId);

@@ -42,6 +42,8 @@ interface SoustraitanceProduct {
   img4_product?: string;
   img5_product?: string;
   created_at: string;
+  is_in_production?: string | number;
+  last_transfer_batch_id?: string | number;
 }
 
 const SoustraitanceProducts = () => {
@@ -321,9 +323,10 @@ const SoustraitanceProducts = () => {
   };
 
   const filteredProducts = products.filter(product =>
-    product.nom_product.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (product.nom_product.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (product.reference_product && product.reference_product.toLowerCase().includes(searchTerm.toLowerCase()))
+    (product.reference_product && product.reference_product.toLowerCase().includes(searchTerm.toLowerCase()))) &&
+    (!product.is_in_production || product.is_in_production === "0" || product.is_in_production === 0)
   );
 
   const stats = {
