@@ -13,6 +13,7 @@ switch($method) {
             $stmt = $db->query("
                 SELECT 
                     c.*,
+                    c.coupe,
                     is_seen,
                     (SELECT COUNT(*) FROM production_surmesure_images WHERE commande_id = c.id) as images_count,
                     (SELECT COUNT(*) FROM production_surmesure_videos WHERE commande_id = c.id) as videos_count,
@@ -55,9 +56,10 @@ switch($method) {
                 $commentsStmt->execute([$order['id']]);
                 $comments = $commentsStmt->fetchAll();
                 
-                // Parse measurements and tolerance JSON
+                // Parse measurements, tolerance, and coupe JSON
                 $measurements = [];
                 $tolerance = [];
+                $coupe = [];
                 
                 if (!empty($order['measurements'])) {
                     $measurements = json_decode($order['measurements'], true) ?: [];
@@ -67,9 +69,14 @@ switch($method) {
                     $tolerance = json_decode($order['tolerance'], true) ?: [];
                 }
                 
+                if (!empty($order['couple'])) {
+                    $coupe = json_decode($order['couple'], true) ?: [];
+                }
+                
                 // Add processed data to order
                 $orders[$key]['measurements'] = $measurements;
                 $orders[$key]['tolerance'] = $tolerance;
+                $orders[$key]['couple'] = $coupe;
                 $orders[$key]['images'] = $images;
                 $orders[$key]['videos'] = $videos;
                 $orders[$key]['commentaires'] = $comments;

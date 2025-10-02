@@ -25,6 +25,7 @@ try {
         SELECT pb.*, 
                pr.nom_product as nom_produit,
                pr.reference_product as ref_produit,
+               pr.external_product_id,
                pr.img_product,
                pr.img2_product,
                pr.img3_product,
@@ -81,46 +82,40 @@ try {
         }
     }
 
-    // Get product images based on boutique origin
+    // Get product images from production_ready_products (already captured at production start)
+    // This ensures we show the images as they were when production was initiated
     $product_images = [];
-    if ($batch['boutique_origin'] === 'luccibyey') {
-        $product_query = "SELECT img_product, img2_product, img3_product, img4_product, img5_product 
-                         FROM productions_products_lucci WHERE id = ?";
-    } else if ($batch['boutique_origin'] === 'spadadibattaglia') {
-        $product_query = "SELECT img_product, img2_product, img3_product, img4_product, img5_product 
-                         FROM productions_products_spada WHERE id = ?";
-    }
+    $image_fields = ['img_product', 'img2_product', 'img3_product', 'img4_product', 'img5_product'];
     
-    if (isset($product_query)) {
-        $product_stmt = $conn->prepare($product_query);
-        $product_stmt->execute([$batch['product_id']]);
-        $product_data = $product_stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($product_data) {
-            $image_fields = ['img_product', 'img2_product', 'img3_product', 'img4_product', 'img5_product'];
-            foreach ($image_fields as $field) {
-                if (!empty($product_data[$field])) {
-                    $image_path = $product_data[$field];
-                    // Clean the path by removing any leading slashes
-                    $cleanPath = ltrim($image_path, '/');
-                    
-                    // Ensure path starts with 'uploads/' if it doesn't already
-                    if (!preg_match('/^uploads\//', $cleanPath)) {
-                        $cleanPath = 'uploads/' . $cleanPath;
-                    }
-                    
-                    // Build the full URL based on boutique origin
-                    if ($batch['boutique_origin'] === 'luccibyey') {
-                        // Lucci By Ey: https://luccibyey.com.tn/api/uploads/filename
-                        $full_url = "https://luccibyey.com.tn/api/" . $cleanPath;
-                    } else if ($batch['boutique_origin'] === 'spadadibattaglia') {
-                        // Spada di Battaglia: https://spadadibattaglia.com/uploads/filename
-                        $full_url = "https://spadadibattaglia.com/" . $cleanPath;
-                    }
-                    
-                    if (isset($full_url) && $full_url) {
-                        $product_images[] = $full_url;
-                    }
+    foreach ($image_fields as $field) {
+        if (!empty($batch[$field])) {
+            $image_path = $batch[$field];
+            
+            // Check if it's already a full URL
+            if (preg_match('/^https?:\/\//', $image_path)) {
+                $product_images[] = $image_path;
+            } else {
+                // Clean the path by removing any leading slashes
+                $cleanPath = ltrim($image_path, '/');
+                
+                // Ensure path starts with 'uploads/' if it doesn't already
+                if (!preg_match('/^uploads\//', $cleanPath)) {
+                    $cleanPath = 'uploads/' . $cleanPath;
+                }
+                
+                // Build the full URL based on boutique origin
+                if ($batch['boutique_origin'] === 'luccibyey') {
+                    // Lucci By Ey: https://luccibyey.com.tn/api/uploads/filename
+                    $full_url = "https://luccibyey.com.tn/api/" . $cleanPath;
+                } else if ($batch['boutique_origin'] === 'spadadibattaglia') {
+                    // Spada di Battaglia: https://spadadibattaglia.com/uploads/filename
+                    $full_url = "https://spadadibattaglia.com/" . $cleanPath;
+                } else {
+                    $full_url = null;
+                }
+                
+                if ($full_url) {
+                    $product_images[] = $full_url;
                 }
             }
         }

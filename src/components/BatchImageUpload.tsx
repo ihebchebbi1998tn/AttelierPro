@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -219,7 +219,7 @@ const BatchImageUpload = ({ batchId, images, productImages = [], soustraitancePr
                     <span className="text-xs text-muted-foreground">({productImages.length})</span>
                   </div>
                   <div className="grid grid-cols-1 gap-4">
-                    {productImages.map((imageUrl, index) => (
+                  {productImages.map((imageUrl, index) => (
                       <div key={`product-${index}`} className="relative group">
                         <div className="aspect-[16/10] rounded-lg overflow-hidden bg-gray-100 border shadow-sm hover:shadow-md transition-shadow">
                           <img
@@ -263,7 +263,7 @@ const BatchImageUpload = ({ batchId, images, productImages = [], soustraitancePr
                     <span className="text-xs text-muted-foreground">({soustraitanceProductImages.length})</span>
                   </div>
                   <div className="grid grid-cols-1 gap-4">
-                    {soustraitanceProductImages.map((imageUrl, index) => (
+                  {soustraitanceProductImages.map((imageUrl, index) => (
                       <div key={`soustraitance-${index}`} className="relative group">
                         <div className="aspect-[16/10] rounded-lg overflow-hidden bg-gray-100 border shadow-sm hover:shadow-md transition-shadow">
                           <img

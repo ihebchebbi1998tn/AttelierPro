@@ -41,7 +41,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CalendarDays,
-  FileText
+  FileText,
+  AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -159,6 +160,39 @@ const CommandeDetails = () => {
   });
 
   const order = orders.find((o: SurMesureOrder) => o.id.toString() === id);
+
+  // Check if order is not confirmed and show warning
+  if (order && order.is_confirmed === '0') {
+    return (
+      <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-7xl">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/commandes')}
+          className="mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Retour
+        </Button>
+        
+        <Card className="border-orange-500/50 bg-orange-50 dark:bg-orange-950/20">
+          <CardHeader>
+            <CardTitle className="text-orange-700 dark:text-orange-500 flex items-center gap-2">
+              <AlertCircle className="w-6 h-6" />
+              Commande Non Confirmée
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg text-orange-600 dark:text-orange-400 mb-4">
+              Cette commande n'est pas encore confirmée. Veuillez confirmer la commande pour accéder aux détails.
+            </p>
+            <Badge variant="outline" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+              Pas encore confirmé
+            </Badge>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Initialize measurements and tolerance when order is loaded
   React.useEffect(() => {
@@ -977,15 +1011,13 @@ const CommandeDetails = () => {
 
         {/* Main Content with Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-7'} gap-1 mb-3 sm:mb-4 md:mb-6 bg-muted p-1 rounded-md overflow-x-auto`}>
+          <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1' : 'grid-cols-3 lg:grid-cols-7'} gap-1 mb-3 sm:mb-4 md:mb-6 bg-muted p-1 rounded-md overflow-x-auto`}>
             <TabsTrigger value="overview" className="text-xs whitespace-nowrap px-2 py-1">
               {isMobile ? "Info" : "Aperçu"}
             </TabsTrigger>
-            <TabsTrigger value="dates" className="text-xs whitespace-nowrap px-2 py-1">
-              {isMobile ? "Dates" : "Dates d'essayage"}
-            </TabsTrigger>
             {!isMobile && (
               <>
+                <TabsTrigger value="coupe" className="text-xs whitespace-nowrap px-2 py-1">Coupe</TabsTrigger>
                 <TabsTrigger value="measurements" className="text-xs whitespace-nowrap px-2 py-1">Mesures</TabsTrigger>
                 <TabsTrigger value="options" className="text-xs whitespace-nowrap px-2 py-1">Finitions</TabsTrigger>
                 <TabsTrigger value="matiere" className="text-xs whitespace-nowrap px-2 py-1">Matiere</TabsTrigger>
@@ -997,7 +1029,8 @@ const CommandeDetails = () => {
           
           {/* Mobile additional tabs - shown as a second row */}
           {isMobile && (
-            <TabsList className="grid w-full grid-cols-5 gap-1 mb-3 bg-muted p-1 rounded-md">
+            <TabsList className="grid w-full grid-cols-6 gap-1 mb-3 bg-muted p-1 rounded-md">
+              <TabsTrigger value="coupe" className="text-xs whitespace-nowrap px-1 py-1">Coupe</TabsTrigger>
               <TabsTrigger value="measurements" className="text-xs whitespace-nowrap px-1 py-1">Mesures</TabsTrigger>
               <TabsTrigger value="options" className="text-xs whitespace-nowrap px-1 py-1">Finitions</TabsTrigger>
               <TabsTrigger value="matiere" className="text-xs whitespace-nowrap px-1 py-1">Matiere</TabsTrigger>
@@ -1148,31 +1181,8 @@ const CommandeDetails = () => {
               </Card>
             </div>
 
-            {/* Edit Actions */}
-            <div className="flex justify-end space-x-2">
-              {isEditing ? (
-                <>
-                  <Button variant="outline" onClick={() => setIsEditing(false)}>
-                    <X className="w-4 h-4 mr-2" />
-                    Annuler
-                  </Button>
-                  <Button onClick={handleSaveClientAndProductInfo} disabled={isLoading}>
-                    <Save className="w-4 h-4 mr-2" />
-                    {isLoading ? 'Sauvegarde...' : 'Sauvegarder'}
-                  </Button>
-                </>
-              ) : (
-                <Button onClick={() => setIsEditing(true)}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Modifier
-                </Button>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Dates d'essayage Tab */}
-          <TabsContent value="dates" className="mt-6">
-            <Card>
+            {/* Dates d'essayage Section */}
+            <Card className="mt-3 sm:mt-4 md:mt-6">
               <CardHeader>
                 <CardTitle className="flex items-center text-lg">
                   <CalendarDays className="w-5 h-5 mr-2" />
@@ -1184,6 +1194,48 @@ const CommandeDetails = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+
+          {/* Coupe Tab */}
+          <TabsContent value="coupe" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-lg">
+                  <FileText className="w-5 h-5 mr-2" />
+                  Informations de Coupe
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {order?.couple && order.couple.length > 0 ? (
+                  <div className="space-y-2">
+                    {order.couple
+                      .filter((item) => item.valeur && item.valeur.trim() !== '')
+                      .map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex justify-between items-center py-3 border-b last:border-b-0"
+                        >
+                          <span className="font-medium text-muted-foreground">
+                            {item.donne}
+                          </span>
+                          <span className="text-foreground font-semibold">{item.valeur}</span>
+                        </div>
+                      ))}
+                    {order.couple.filter((item) => item.valeur && item.valeur.trim() !== '').length === 0 && (
+                      <p className="text-muted-foreground text-center py-8">
+                        Aucune information de coupe disponible
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">
+                    Aucune information de coupe disponible
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
 
           {/* Measurements Tab */}
           <TabsContent value="measurements" className="mt-6">
@@ -1229,7 +1281,7 @@ const CommandeDetails = () => {
                         </thead>
                         <tbody>
                           {Object.entries(measurements)
-                            .filter(([name, value]) => name.trim() !== '' && (value === 0 || value))
+                            .filter(([name, value]) => name.trim() !== '' && value && value !== 0)
                             .map(([name, value], index) => (
                             <tr key={name} className={`border-b ${index % 2 === 0 ? 'bg-muted/30' : 'bg-background'}`}>
                               <td className="py-3 px-4 font-medium">{name}</td>
@@ -1325,7 +1377,7 @@ const CommandeDetails = () => {
                       </thead>
                       <tbody>
                         {Object.entries(order?.measurements || {})
-                          .filter(([name, value]) => name.trim() !== '' && (value === 0 || value))
+                          .filter(([name, value]) => name.trim() !== '' && value && value !== 0)
                           .map(([name, value], index) => (
                           <tr key={name} className={`border-b ${index % 2 === 0 ? 'bg-muted/30' : 'bg-background'}`}>
                             <td className="py-3 px-4 font-medium">{name}</td>

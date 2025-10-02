@@ -41,6 +41,22 @@ try {
                 $stmt->bindValue(':id', $_GET['id'], PDO::PARAM_INT);
                 $stmt->execute();
                 $batch = $stmt->fetch();
+                
+                // Mark batch as seen when viewing details
+                if ($batch) {
+                    try {
+                        $checkStmt = $db->prepare("SHOW COLUMNS FROM production_batches LIKE 'is_seen'");
+                        $checkStmt->execute();
+                        if ($checkStmt->fetch()) {
+                            $markSeenStmt = $db->prepare("UPDATE production_batches SET is_seen = 1 WHERE id = :id");
+                            $markSeenStmt->bindValue(':id', $_GET['id'], PDO::PARAM_INT);
+                            $markSeenStmt->execute();
+                        }
+                    } catch (Exception $e) {
+                        // Silently fail if column doesn't exist yet
+                        error_log("Could not mark batch as seen: " . $e->getMessage());
+                    }
+                }
 
                 if ($batch) {
                     // Recompute materials used based on product configuration and batch sizes
@@ -194,6 +210,7 @@ try {
                 $offset = ($page - 1) * $limit;
                 $status = $_GET['status'] ?? '';
                 $search = $_GET['search'] ?? '';
+                $unseenOnly = isset($_GET['unseen_only']) && $_GET['unseen_only'] == '1';
 
                 $where = "WHERE 1=1";
                 $params = [];
@@ -205,6 +222,20 @@ try {
                 if ($search) {
                     $where .= " AND (b.batch_reference LIKE :search OR p.nom_product LIKE :search)";
                     $params[':search'] = "%$search%";
+                }
+                
+                // Filter for unseen batches if requested
+                if ($unseenOnly) {
+                    // Check if is_seen column exists
+                    try {
+                        $checkStmt = $db->prepare("SHOW COLUMNS FROM production_batches LIKE 'is_seen'");
+                        $checkStmt->execute();
+                        if ($checkStmt->fetch()) {
+                            $where .= " AND b.is_seen = 0 AND b.created_at IS NOT NULL";
+                        }
+                    } catch (Exception $e) {
+                        // Column doesn't exist yet, ignore filter
+                    }
                 }
 
                 // Count total

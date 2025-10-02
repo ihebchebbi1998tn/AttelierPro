@@ -38,6 +38,7 @@ export interface SurMesureOrder {
   created_at: string;
   updated_at: string;
   is_seen: string;
+  is_confirmed: string;
 }
 
 const statusColors = {
@@ -88,6 +89,11 @@ const Commandes = () => {
   });
 
   const handleViewOrder = async (order: SurMesureOrder) => {
+    // Prevent navigation if order is not confirmed
+    if (order.is_confirmed === '0') {
+      return;
+    }
+    
     try {
       // Optimistically mark as seen in cache to update UI immediately
       queryClient.setQueryData<SurMesureOrder[] | undefined>(['surMesureOrders'], (old) => {
@@ -272,49 +278,63 @@ const Commandes = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredOrders.map((order: SurMesureOrder) => (
-                        <tr 
-                          key={order.id} 
-                          className={`border-b cursor-pointer transition-colors ${getRowHighlight(order)}`}
-                          onClick={() => handleViewOrder(order)}
-                        >
-                          <td className="p-2">
-                            <div>
-                              <div className="font-medium">
-                                {order.client_name} {order.client_vorname}
+                      {filteredOrders.map((order: SurMesureOrder) => {
+                        const isNotConfirmed = order.is_confirmed === '0';
+                        return (
+                          <tr 
+                            key={order.id} 
+                            className={`border-b transition-colors ${
+                              isNotConfirmed 
+                                ? 'opacity-50 cursor-not-allowed bg-muted/30' 
+                                : `cursor-pointer ${getRowHighlight(order)}`
+                            }`}
+                            onClick={() => !isNotConfirmed && handleViewOrder(order)}
+                          >
+                            <td className="p-2">
+                              <div>
+                                <div className="font-medium">
+                                  {order.client_name} {order.client_vorname}
+                                </div>
+                                <div className="text-sm text-muted-foreground">{order.client_email}</div>
                               </div>
-                              <div className="text-sm text-muted-foreground">{order.client_email}</div>
-                            </div>
-                          </td>
-                          <td className="p-2">
-                            <div className="font-medium">{order.product_name}</div>
-                          </td>
-                          <td className="p-2">
-                            <div className="text-sm">
-                              {new Date(order.ready_date).toLocaleDateString('fr-FR')}
-                            </div>
-                          </td>
-                          <td className="p-2">
-                            <Badge className={`${statusColors[order.status]} text-white`}>
-                              {statusLabels[order.status]}
-                            </Badge>
-                          </td>
-                          <td className="p-2">
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleViewOrder(order);
-                                }}
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="p-2">
+                              <div className="font-medium">{order.product_name}</div>
+                            </td>
+                            <td className="p-2">
+                              <div className="text-sm">
+                                {new Date(order.ready_date).toLocaleDateString('fr-FR')}
+                              </div>
+                            </td>
+                            <td className="p-2">
+                              {isNotConfirmed ? (
+                                <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900 dark:text-orange-200">
+                                  Pas encore confirmé
+                                </Badge>
+                              ) : (
+                                <Badge className={`${statusColors[order.status]} text-white`}>
+                                  {statusLabels[order.status]}
+                                </Badge>
+                              )}
+                            </td>
+                            <td className="p-2">
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={isNotConfirmed}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleViewOrder(order);
+                                  }}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -323,60 +343,74 @@ const Commandes = () => {
               {/* Mobile Card View */}
               {isMobile && (
                 <div className="space-y-3">
-                  {filteredOrders.map((order: SurMesureOrder) => (
-                    <Card 
-                      key={order.id} 
-                      className={`cursor-pointer transition-all hover:shadow-md ${getRowHighlight(order)}`}
-                      onClick={() => handleViewOrder(order)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                <h3 className="font-semibold text-sm truncate">
-                                  {order.client_name} {order.client_vorname}
-                                </h3>
+                  {filteredOrders.map((order: SurMesureOrder) => {
+                    const isNotConfirmed = order.is_confirmed === '0';
+                    return (
+                      <Card 
+                        key={order.id} 
+                        className={`transition-all ${
+                          isNotConfirmed 
+                            ? 'opacity-50 cursor-not-allowed bg-muted/30' 
+                            : `cursor-pointer hover:shadow-md ${getRowHighlight(order)}`
+                        }`}
+                        onClick={() => !isNotConfirmed && handleViewOrder(order)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                  <h3 className="font-semibold text-sm truncate">
+                                    {order.client_name} {order.client_vorname}
+                                  </h3>
+                                </div>
+                                <p className="text-xs text-muted-foreground truncate">{order.client_email}</p>
                               </div>
-                              <p className="text-xs text-muted-foreground truncate">{order.client_email}</p>
+                              {isNotConfirmed ? (
+                                <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300 text-xs px-2 py-1 flex-shrink-0 dark:bg-orange-900 dark:text-orange-200">
+                                  Pas confirmé
+                                </Badge>
+                              ) : (
+                                <Badge className={`${statusColors[order.status]} text-white text-xs px-2 py-1 flex-shrink-0`}>
+                                  {statusLabels[order.status]}
+                                </Badge>
+                              )}
                             </div>
-                            <Badge className={`${statusColors[order.status]} text-white text-xs px-2 py-1 flex-shrink-0`}>
-                              {statusLabels[order.status]}
-                            </Badge>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                              <span className="text-sm font-medium truncate">{order.product_name}</span>
+                            
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="text-sm font-medium truncate">{order.product_name}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="text-xs text-muted-foreground">
+                                  Prêt le {new Date(order.ready_date).toLocaleDateString('fr-FR')}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                              <span className="text-xs text-muted-foreground">
-                                Prêt le {new Date(order.ready_date).toLocaleDateString('fr-FR')}
-                              </span>
+                            
+                            <div className="flex justify-end pt-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={isNotConfirmed}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewOrder(order);
+                                }}
+                                className="text-xs px-3 py-1"
+                              >
+                                <Eye className="w-3 h-3 mr-1" />
+                                Voir
+                              </Button>
                             </div>
                           </div>
-                          
-                          <div className="flex justify-end pt-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleViewOrder(order);
-                              }}
-                              className="text-xs px-3 py-1"
-                            >
-                              <Eye className="w-3 h-3 mr-1" />
-                              Voir
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </>

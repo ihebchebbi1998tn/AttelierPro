@@ -103,6 +103,7 @@ CREATE TABLE `production_ready_products` (
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `production_quantities` text COLLATE utf8mb4_unicode_ci COMMENT 'JSON data for production quantities by size',
   `is_in_production` tinyint(1) DEFAULT '0' COMMENT 'Flag to track if product is currently in production',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Soft delete flag: 1=active, 0=deleted/archived',
   `transferred_at` date DEFAULT NULL COMMENT 'Date when product was transferred to production list',
   `last_transfer_batch_id` int DEFAULT NULL,
   `size_configuration_version` int DEFAULT '1',
@@ -125,7 +126,9 @@ ALTER TABLE `production_ready_products`
   ADD KEY `idx_boutique_origin` (`boutique_origin`),
   ADD KEY `idx_status` (`status_product`),
   ADD KEY `fk_last_transfer_batch` (`last_transfer_batch_id`),
-  ADD KEY `idx_is_seen_transfer_date` (`is_seen`,`transfer_date`);
+  ADD KEY `idx_is_seen_transfer_date` (`is_seen`,`transfer_date`),
+  ADD KEY `idx_is_active` (`is_active`),
+  ADD KEY `idx_active_in_production` (`is_active`,`is_in_production`);
 
 --
 -- AUTO_INCREMENT for dumped tables

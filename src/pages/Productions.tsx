@@ -30,6 +30,7 @@ interface ProductionBatch {
   notes?: string;
   created_at: string;
   materials_used?: BatchMaterial[];
+  is_seen?: number | string;  // 0 or '0' = not seen, 1 or '1' = seen
 }
 
 interface BatchMaterial {
@@ -341,18 +342,28 @@ const Productions = () => {
           {/* Mobile Cards View */}
           <div className="block md:hidden">
             <div className="space-y-3 p-4">
-              {batches.map((batch) => (
+              {batches.map((batch) => {
+                const isUnseen = batch.is_seen === 0 || batch.is_seen === '0';
+                
+                return (
                 <Card 
                   key={batch.id} 
-                  className="border-l-4 cursor-pointer hover:bg-muted/20" 
-                  style={{borderLeftColor: getBoutiqueColor(batch.boutique_origin).replace('bg-', '#')}}
+                  className={`border-l-4 cursor-pointer hover:bg-muted/20 ${isUnseen ? 'bg-red-50 dark:bg-red-950/20 border-red-500' : ''}`}
+                  style={{borderLeftColor: isUnseen ? '#ef4444' : getBoutiqueColor(batch.boutique_origin).replace('bg-', '#')}}
                   onClick={() => fetchBatchDetails(batch.id)}
                 >
                   <CardContent className="p-4">
                     <div className="space-y-3">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-sm">{batch.batch_reference}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-sm">{batch.batch_reference}</h3>
+                            {isUnseen && (
+                              <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">
+                                Nouveau
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground">{batch.nom_product}</p>
                         </div>
                         <Badge className={`text-white text-xs ${getStatusColor(batch.status)}`}>
@@ -422,7 +433,8 @@ const Productions = () => {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              );
+              })}
             </div>
           </div>
 
@@ -443,13 +455,25 @@ const Productions = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {batches.map((batch) => (
+                {batches.map((batch) => {
+                  const isUnseen = batch.is_seen === 0 || batch.is_seen === '0';
+                  
+                  return (
                   <TableRow 
                     key={batch.id} 
-                    className="cursor-pointer hover:bg-muted/50"
+                    className={`cursor-pointer hover:bg-muted/50 ${isUnseen ? 'bg-red-50 dark:bg-red-950/20 border-l-4 border-l-red-500' : ''}`}
                     onClick={() => fetchBatchDetails(batch.id)}
                   >
-                    <TableCell className="font-medium">{batch.batch_reference}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {batch.batch_reference}
+                        {isUnseen && (
+                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">
+                            Nouveau
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div>
                         <div className="font-medium">{batch.nom_product}</div>
@@ -509,7 +533,8 @@ const Productions = () => {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                );
+                })}
               </TableBody>
             </Table>
           </div>

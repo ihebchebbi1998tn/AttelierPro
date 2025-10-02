@@ -78,7 +78,7 @@ try {
                 $search = isset($_GET['search']) ? $_GET['search'] : '';
                 $boutique = isset($_GET['boutique']) ? $_GET['boutique'] : '';
                 
-                $whereClause = "WHERE 1=1 AND is_in_production = 0";
+                $whereClause = "WHERE is_active = 1 AND is_in_production = 0";
                 $params = [];
                 
                 if ($search) {
@@ -257,7 +257,8 @@ try {
                 break;
             }
             
-            $stmt = $db->prepare("DELETE FROM production_ready_products WHERE id = :id");
+            // Soft delete: set is_active = 0 instead of hard delete
+            $stmt = $db->prepare("UPDATE production_ready_products SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
             $stmt->bindParam(':id', $_GET['id']);
             
             if ($stmt->execute()) {

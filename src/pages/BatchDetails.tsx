@@ -142,6 +142,21 @@ const BatchDetails = () => {
       fetchBatchDetails(parseInt(id));
       fetchBatchCompleteReport(id);
       // Images and attachments are now fetched within fetchBatchDetails
+      
+      // Mark batch as seen when viewing details
+      const markAsSeen = async () => {
+        try {
+          await fetch('https://luccibyey.com.tn/production/api/mark_batch_as_seen.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ batchId: parseInt(id) }),
+          });
+        } catch (error) {
+          console.error('Error marking batch as seen:', error);
+        }
+      };
+      
+      markAsSeen();
     }
   }, [id]);
 
@@ -901,32 +916,57 @@ const BatchDetails = () => {
 
   const fetchBatchCompleteReport = async (batchId: string) => {
     try {
+      console.log('🔍 fetchBatchCompleteReport - Starting for batch ID:', batchId);
+      
       // First get basic batch info to get batch_reference and product_type
       const batchResponse = await fetch(`https://luccibyey.com.tn/production/api/production_batches.php?id=${batchId}`);
+      console.log('📡 Batch response status:', batchResponse.status);
+      
       if (batchResponse.ok) {
         const batchData = await batchResponse.json();
+        console.log('📦 Batch data received:', batchData);
+        
         if (batchData.success) {
           const batchReference = batchData.data.batch_reference;
           const productType = batchData.data.product_type;
           const productId = batchData.data.product_id;
           
+          console.log('🔍 Batch info:', { batchReference, productType, productId });
+          
           // Load regular product images if it's a regular product
           if (productType !== 'soustraitance') {
+            console.log('📸 Fetching regular product images for batch:', batchReference);
             const completeResponse = await fetch(`https://luccibyey.com.tn/production/api/batch_complete_report.php?batch_id=${batchReference}`);
+            console.log('📡 Complete report response status:', completeResponse.status);
+            
             if (completeResponse.ok) {
               const completeData = await completeResponse.json();
+              console.log('📦 Complete report data:', completeData);
+              
               if (completeData.success && completeData.data.product_images) {
+                console.log('✅ Setting product images:', completeData.data.product_images);
                 setProductImages(completeData.data.product_images);
+              } else {
+                console.warn('⚠️ No product images found in complete report');
               }
+            } else {
+              console.error('❌ Failed to fetch complete report:', completeResponse.status);
             }
+          } else {
+            console.log('ℹ️ Skipping regular product images (soustraitance product)');
           }
           
           // Load soustraitance product images if it's a soustraitance product
           if (productType === 'soustraitance' && productId) {
+            console.log('📸 Fetching soustraitance product images for product ID:', productId);
             try {
               const soustraitanceResponse = await fetch(`https://luccibyey.com.tn/production/api/soustraitance_products.php?id=${productId}`);
+              console.log('📡 Soustraitance product response status:', soustraitanceResponse.status);
+              
               if (soustraitanceResponse.ok) {
                 const soustraitanceData = await soustraitanceResponse.json();
+                console.log('📦 Soustraitance product data:', soustraitanceData);
+                
                 if (soustraitanceData.success && soustraitanceData.data) {
                   const product = soustraitanceData.data;
                   const images: string[] = [];
@@ -948,17 +988,28 @@ const BatchDetails = () => {
                     images.push(`https://luccibyey.com.tn/production/api/${product.img5_product}`);
                   }
                   
+                  console.log('✅ Setting soustraitance product images:', images);
                   setSoustraitanceProductImages(images);
+                } else {
+                  console.warn('⚠️ No soustraitance product data found');
                 }
+              } else {
+                console.error('❌ Failed to fetch soustraitance product:', soustraitanceResponse.status);
               }
             } catch (error) {
-              console.error('Error fetching soustraitance product images:', error);
+              console.error('💥 Error fetching soustraitance product images:', error);
             }
+          } else if (productType === 'soustraitance') {
+            console.warn('⚠️ Soustraitance product but no product_id found');
           }
+        } else {
+          console.error('❌ Batch data fetch failed:', batchData);
         }
+      } else {
+        console.error('❌ Batch response not OK:', batchResponse.status);
       }
     } catch (error) {
-      console.error('Error fetching complete batch report:', error);
+      console.error('💥 Error fetching complete batch report:', error);
     }
   };
 
