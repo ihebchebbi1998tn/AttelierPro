@@ -23,8 +23,10 @@ import {
   Filter,
   Trash2,
   Tag,
-  BarChart3
+  BarChart3,
+  Zap
 } from "lucide-react";
+import QuickAddMaterialModal from "@/components/QuickAddMaterialModal";
 
 
 interface MaterialItem {
@@ -64,6 +66,7 @@ const Stock = () => {
   const [deletePassword, setDeletePassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const [quickAddModalOpen, setQuickAddModalOpen] = useState(false);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -737,6 +740,15 @@ const Stock = () => {
                 <span>Actualiser</span>
               </Button>
               <Button 
+                variant="outline"
+                className="rounded-xl flex-1 sm:flex-initial text-xs sm:text-sm h-9" 
+                size="sm"
+                onClick={() => setQuickAddModalOpen(true)}
+              >
+                <Zap className="mr-1 h-4 w-4" />
+                <span>Ajout Rapide</span>
+              </Button>
+              <Button 
                 className="rounded-xl flex-1 sm:flex-initial text-xs sm:text-sm h-9" 
                 size="sm"
                 onClick={() => navigate('/add-material')}
@@ -1075,6 +1087,16 @@ const Stock = () => {
           )}
         </div>
       )}
+
+
+      {/* Quick Add Material Modal */}
+      <QuickAddMaterialModal
+        open={quickAddModalOpen}
+        onOpenChange={setQuickAddModalOpen}
+        onSuccess={() => {
+          fetchMaterials();
+        }}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>

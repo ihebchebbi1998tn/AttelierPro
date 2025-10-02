@@ -110,7 +110,7 @@ const GestionRH = () => {
         setStats({
           totalEmployees: parseInt(overviewData.total_employees) || 0,
           activeEmployees: parseInt(overviewData.active_employees) || 0,
-          onLeave: parseInt(overviewData.pending_holidays) || 0,
+          onLeave: parseInt(overviewData.on_holiday_today) || 0,
           totalHoursThisWeek: Math.round(totalHoursThisWeek),
           totalSalaryThisMonth: Math.round(totalSalaryThisMonth)
         });
