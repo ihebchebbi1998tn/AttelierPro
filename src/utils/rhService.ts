@@ -23,6 +23,11 @@ export interface Employee {
   photo?: string;
   role?: string;
   age?: number;
+  carte_identite?: string;
+  sexe?: 'homme' | 'femme';
+  cnss_code?: string;
+  nombre_enfants?: number;
+  date_naissance?: string;
   created_at: string;
   updated_at?: string;
 }
@@ -38,6 +43,11 @@ export interface CreateEmployeeData {
   photo?: string;
   role?: string;
   age?: number;
+  carte_identite?: string;
+  sexe?: 'homme' | 'femme';
+  cnss_code?: string;
+  nombre_enfants?: number;
+  date_naissance?: string;
 }
 
 // Schedule interfaces
@@ -195,18 +205,66 @@ export const employeeService = {
     if (filters?.status && filters.status !== 'all') params.append('status', filters.status);
     if (filters?.search) params.append('search', filters.search);
 
-    const response = await axios.get<ApiResponse<Employee[]>>(
-      `${BASE_URL}/rh_employees.php?${params.toString()}`
+    console.log('🔍 Fetching employees with params:', params.toString());
+    const response = await axios.get(
+      `${BASE_URL}/rh_employees.php?${params.toString()}`,
+      {
+        transformResponse: [(data) => {
+          // If data is already an object, return it
+          if (typeof data === 'object') return data;
+          
+          // If data is a string, clean it and parse
+          if (typeof data === 'string') {
+            console.log('⚠️ Response is string, cleaning...');
+            // Remove any content before the first {
+            const jsonStart = data.indexOf('{');
+            if (jsonStart > 0) {
+              console.log('⚠️ Removing leading characters:', data.substring(0, jsonStart));
+              data = data.substring(jsonStart);
+            }
+            try {
+              return JSON.parse(data);
+            } catch (e) {
+              console.error('❌ JSON parse error:', e);
+              console.error('❌ Data:', data);
+              return { success: false, data: [] };
+            }
+          }
+          
+          return data;
+        }]
+      }
     );
-    return response.data.data || [];
+    console.log('📦 Cleaned API response:', response.data);
+    console.log('📦 response.data.data:', response.data.data);
+    console.log('📦 response.data.data is array?', Array.isArray(response.data.data));
+    
+    // Convert actif string to boolean
+    const employees = (response.data.data || []).map((emp: any) => ({
+      ...emp,
+      actif: emp.actif === '1' || emp.actif === true,
+      age: emp.age ? Number(emp.age) : undefined,
+      nombre_enfants: emp.nombre_enfants ? Number(emp.nombre_enfants) : 0
+    }));
+    console.log('✅ Processed employees:', employees);
+    console.log('✅ Processed employees length:', employees.length);
+    return employees;
   },
 
   // Get single employee
   getById: async (id: number): Promise<Employee | null> => {
-    const response = await axios.get<ApiResponse<Employee>>(
+    const response = await axios.get<ApiResponse<any>>(
       `${BASE_URL}/rh_employees.php?id=${id}`
     );
-    return response.data.data || null;
+    if (!response.data.data) return null;
+    // Convert actif string to boolean
+    const emp = response.data.data;
+    return {
+      ...emp,
+      actif: emp.actif === '1' || emp.actif === true,
+      age: emp.age ? Number(emp.age) : undefined,
+      nombre_enfants: emp.nombre_enfants ? Number(emp.nombre_enfants) : 0
+    };
   },
 
   // Create new employee

@@ -114,7 +114,12 @@ const Employes = () => {
     statut_civil: "autre",
     actif: true,
     role: "",
-    age: undefined
+    age: undefined,
+    carte_identite: "",
+    sexe: undefined,
+    cnss_code: "",
+    nombre_enfants: 0,
+    date_naissance: ""
   });
 
   const regions = [
@@ -159,17 +164,20 @@ const Employes = () => {
 
   const loadEmployees = async () => {
     try {
+      console.log('🚀 loadEmployees called');
       setLoading(true);
       const data = await employeeService.getAll({
         region: regionFilter !== "all" ? regionFilter : undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
         search: searchTerm || undefined
       });
+      console.log('👥 Employees loaded:', data.length, data);
       setEmployees(data);
       
       // Load status for each employee
       await loadEmployeeStatus(data);
     } catch (error) {
+      console.error('❌ Error loading employees:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les employés",
@@ -262,7 +270,12 @@ const Employes = () => {
           statut_civil: "autre",
           actif: true,
           role: "",
-          age: undefined
+          age: undefined,
+          carte_identite: "",
+          sexe: undefined,
+          cnss_code: "",
+          nombre_enfants: 0,
+          date_naissance: ""
         });
         setSelectedPhoto(null);
         setPhotoPreview(null);
@@ -303,7 +316,12 @@ const Employes = () => {
         statut_civil: isEditingEmployee.statut_civil,
         actif: isEditingEmployee.actif,
         role: isEditingEmployee.role,
-        age: isEditingEmployee.age
+        age: isEditingEmployee.age,
+        carte_identite: isEditingEmployee.carte_identite,
+        sexe: isEditingEmployee.sexe,
+        cnss_code: isEditingEmployee.cnss_code,
+        nombre_enfants: isEditingEmployee.nombre_enfants,
+        date_naissance: isEditingEmployee.date_naissance
       });
       
       if (result.success) {
@@ -378,8 +396,20 @@ const Employes = () => {
       (statusFilter === "actif" && employee.actif) ||
       (statusFilter === "inactif" && !employee.actif);
     
+    console.log('🔎 Filtering:', {
+      total: employees.length,
+      searchTerm,
+      regionFilter,
+      statusFilter,
+      matchesSearch,
+      matchesRegion,
+      matchesStatus
+    });
+    
     return matchesSearch && matchesRegion && matchesStatus;
   });
+  
+  console.log('📊 Filtered employees count:', filteredEmployees.length);
 
   const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -730,18 +760,76 @@ const Employes = () => {
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="age" className="text-right">Âge</Label>
+                <Label htmlFor="carte_identite" className="text-right">CIN</Label>
                 <Input
-                  id="age"
-                  type="number"
-                  value={newEmployee.age || ""}
-                  onChange={(e) => setNewEmployee({...newEmployee, age: e.target.value ? parseInt(e.target.value) : undefined})}
+                  id="carte_identite"
+                  value={newEmployee.carte_identite}
+                  onChange={(e) => setNewEmployee({...newEmployee, carte_identite: e.target.value})}
                   className="col-span-3"
-                  placeholder="Optionnel"
-                  min="16"
-                  max="100"
+                  placeholder="Numéro de carte d'identité"
                 />
               </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="sexe" className="text-right">Sexe</Label>
+                <Select
+                  value={newEmployee.sexe}
+                  onValueChange={(value) => setNewEmployee({...newEmployee, sexe: value as 'homme' | 'femme'})}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Sélectionner le sexe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="homme">Homme</SelectItem>
+                    <SelectItem value="femme">Femme</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="cnss_code" className="text-right">Code CNSS</Label>
+                <Input
+                  id="cnss_code"
+                  value={newEmployee.cnss_code}
+                  onChange={(e) => setNewEmployee({...newEmployee, cnss_code: e.target.value})}
+                  className="col-span-3"
+                  placeholder="Code de sécurité sociale"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="nombre_enfants" className="text-right">Enfants</Label>
+                <Input
+                  id="nombre_enfants"
+                  type="number"
+                  value={newEmployee.nombre_enfants || 0}
+                  onChange={(e) => setNewEmployee({...newEmployee, nombre_enfants: parseInt(e.target.value) || 0})}
+                  className="col-span-3"
+                  placeholder="Nombre d'enfants"
+                  min="0"
+                  max="20"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="date_naissance" className="text-right">Date de naissance</Label>
+                <Input
+                  id="date_naissance"
+                  type="date"
+                  value={newEmployee.date_naissance}
+                  onChange={(e) => {
+                    const dateNaissance = e.target.value;
+                    const age = dateNaissance ? Math.floor((new Date().getTime() - new Date(dateNaissance).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : undefined;
+                    setNewEmployee({...newEmployee, date_naissance: dateNaissance, age});
+                  }}
+                  className="col-span-3"
+                  max={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+              {newEmployee.date_naissance && newEmployee.age && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right text-muted-foreground">Âge calculé</Label>
+                  <div className="col-span-3 text-sm text-muted-foreground">
+                    {newEmployee.age} ans
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="adresse" className="text-right">Adresse</Label>
                 <Textarea
@@ -1427,18 +1515,76 @@ const Employes = () => {
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-age" className="text-right">Âge</Label>
+                <Label htmlFor="edit-carte_identite" className="text-right">CIN</Label>
                 <Input
-                  id="edit-age"
-                  type="number"
-                  value={isEditingEmployee.age || ""}
-                  onChange={(e) => setIsEditingEmployee({...isEditingEmployee, age: e.target.value ? parseInt(e.target.value) : undefined})}
+                  id="edit-carte_identite"
+                  value={isEditingEmployee.carte_identite || ""}
+                  onChange={(e) => setIsEditingEmployee({...isEditingEmployee, carte_identite: e.target.value})}
                   className="col-span-3"
-                  placeholder="Optionnel"
-                  min="16"
-                  max="100"
+                  placeholder="Numéro de carte d'identité"
                 />
               </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-sexe" className="text-right">Sexe</Label>
+                <Select
+                  value={isEditingEmployee.sexe || ""}
+                  onValueChange={(value) => setIsEditingEmployee({...isEditingEmployee, sexe: value as 'homme' | 'femme'})}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Sélectionner le sexe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="homme">Homme</SelectItem>
+                    <SelectItem value="femme">Femme</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-cnss_code" className="text-right">Code CNSS</Label>
+                <Input
+                  id="edit-cnss_code"
+                  value={isEditingEmployee.cnss_code || ""}
+                  onChange={(e) => setIsEditingEmployee({...isEditingEmployee, cnss_code: e.target.value})}
+                  className="col-span-3"
+                  placeholder="Code de sécurité sociale"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-nombre_enfants" className="text-right">Enfants</Label>
+                <Input
+                  id="edit-nombre_enfants"
+                  type="number"
+                  value={isEditingEmployee.nombre_enfants || 0}
+                  onChange={(e) => setIsEditingEmployee({...isEditingEmployee, nombre_enfants: parseInt(e.target.value) || 0})}
+                  className="col-span-3"
+                  placeholder="Nombre d'enfants"
+                  min="0"
+                  max="20"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-date_naissance" className="text-right">Date de naissance</Label>
+                <Input
+                  id="edit-date_naissance"
+                  type="date"
+                  value={isEditingEmployee.date_naissance || ""}
+                  onChange={(e) => {
+                    const dateNaissance = e.target.value;
+                    const age = dateNaissance ? Math.floor((new Date().getTime() - new Date(dateNaissance).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : undefined;
+                    setIsEditingEmployee({...isEditingEmployee, date_naissance: dateNaissance, age});
+                  }}
+                  className="col-span-3"
+                  max={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+              {isEditingEmployee.date_naissance && isEditingEmployee.age && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right text-muted-foreground">Âge calculé</Label>
+                  <div className="col-span-3 text-sm text-muted-foreground">
+                    {isEditingEmployee.age} ans
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-adresse" className="text-right">Adresse</Label>
                 <Textarea

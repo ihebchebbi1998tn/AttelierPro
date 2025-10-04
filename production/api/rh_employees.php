@@ -65,8 +65,8 @@ try {
             }
             
             $stmt = $db->prepare("
-                INSERT INTO production_employees (nom, prenom, telephone, adresse, region, statut_civil, actif, role, age) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO production_employees (nom, prenom, telephone, adresse, region, statut_civil, actif, role, age, carte_identite, sexe, cnss_code, nombre_enfants, date_naissance) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $result = $stmt->execute([
@@ -78,7 +78,12 @@ try {
                 $input['statut_civil'] ?? 'autre',
                 $input['actif'] ?? 1,
                 $input['role'] ?? null,
-                $input['age'] ?? null
+                $input['age'] ?? null,
+                $input['carte_identite'] ?? null,
+                $input['sexe'] ?? null,
+                $input['cnss_code'] ?? null,
+                $input['nombre_enfants'] ?? 0,
+                $input['date_naissance'] ?? null
             ]);
             
             if ($result) {
@@ -98,7 +103,7 @@ try {
             
             $stmt = $db->prepare("
                 UPDATE production_employees 
-                SET nom = ?, prenom = ?, telephone = ?, adresse = ?, region = ?, statut_civil = ?, actif = ?, role = ?, age = ?
+                SET nom = ?, prenom = ?, telephone = ?, adresse = ?, region = ?, statut_civil = ?, actif = ?, role = ?, age = ?, carte_identite = ?, sexe = ?, cnss_code = ?, nombre_enfants = ?, date_naissance = ?
                 WHERE id = ?
             ");
             
@@ -112,6 +117,11 @@ try {
                 $input['actif'] ?? 1,
                 $input['role'] ?? null,
                 $input['age'] ?? null,
+                $input['carte_identite'] ?? null,
+                $input['sexe'] ?? null,
+                $input['cnss_code'] ?? null,
+                $input['nombre_enfants'] ?? 0,
+                $input['date_naissance'] ?? null,
                 $_GET['id']
             ]);
             

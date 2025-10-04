@@ -71,6 +71,7 @@ interface BatchMaterial {
   material_id: number;
   nom_matiere: string;
   quantity_used: number;
+  quantity_filled?: number | null;
   quantity_type_name: string;
   quantity_unit: string;
   unit_cost: number;
@@ -136,6 +137,12 @@ const BatchDetails = () => {
   const [newNoteText, setNewNoteText] = useState('');
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [editingNoteText, setEditingNoteText] = useState('');
+  
+  // Materials quantities state
+  const [materialsQuantities, setMaterialsQuantities] = useState<Record<number, number>>({});
+  const [savingQuantities, setSavingQuantities] = useState(false);
+  const [quantitiesSaved, setQuantitiesSaved] = useState(false); // Track if quantities have been saved
+  const [showSaveQuantitiesModal, setShowSaveQuantitiesModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -1411,6 +1418,24 @@ const BatchDetails = () => {
         console.log('🔍 DEBUG - Materials used:', data.data.materials_used);
         setBatch(data.data);
         
+        // Initialize materials quantities from batch data
+        if (data.data.materials_used) {
+          const initialQuantities: Record<number, number> = {};
+          let hasAllQuantities = true;
+          
+          data.data.materials_used.forEach((material: BatchMaterial) => {
+            if (material.quantity_filled !== null && material.quantity_filled !== undefined && material.quantity_filled > 0) {
+              initialQuantities[material.material_id] = material.quantity_filled;
+            } else {
+              hasAllQuantities = false;
+            }
+          });
+          
+          setMaterialsQuantities(initialQuantities);
+          // If all quantities are already filled from database, mark as saved
+          setQuantitiesSaved(hasAllQuantities && Object.keys(initialQuantities).length === data.data.materials_used.length);
+        }
+        
         // Load status history after batch is loaded
         loadStatusHistory();
         
@@ -1647,6 +1672,159 @@ const BatchDetails = () => {
     }
   };
 
+  // Materials quantities functions
+  const handleSaveQuantitiesClick = () => {
+    // Show confirmation modal
+    setShowSaveQuantitiesModal(true);
+  };
+  
+  const confirmSaveMaterialsQuantities = async () => {
+    if (!batch) return;
+    
+    // Validate all materials have quantities filled
+    if (!areAllMaterialsQuantitiesFilled()) {
+      toast({
+        title: "Erreur de validation",
+        description: "Veuillez remplir les quantités réelles pour tous les matériaux",
+        variant: "destructive",
+      });
+      setShowSaveQuantitiesModal(false);
+      return;
+    }
+    
+    setShowSaveQuantitiesModal(false);
+    setSavingQuantities(true);
+    
+    try {
+      console.log('Saving materials quantities:', {
+        batch_id: batch.id,
+        materials_quantities: materialsQuantities
+      });
+      
+      // Step 1: Save the quantities to batch
+      const saveResponse = await fetch('https://luccibyey.com.tn/production/api/update_batch_materials_quantities.php', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          batch_id: batch.id,
+          materials_quantities: materialsQuantities
+        }),
+      });
+      
+      if (!saveResponse.ok) {
+        throw new Error(`HTTP error! status: ${saveResponse.status}`);
+      }
+      
+      const saveData = await saveResponse.json();
+      console.log('Save quantities response:', saveData);
+      
+      if (!saveData.success) {
+        throw new Error(saveData.error || "Erreur lors de la sauvegarde des quantités");
+      }
+      
+      // Step 2: Deduct stock using actual filled quantities (not estimated)
+      console.log('Deducting stock with actual quantities:', {
+        action: 'deduct_stock_with_actual_quantities',
+        batch_id: batch.id,
+        materials_quantities: materialsQuantities,
+        production_number: batch.batch_reference
+      });
+      
+      const deductResponse = await fetch('https://luccibyey.com.tn/production/api/production_stock_deduction.php', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'deduct_stock_with_actual_quantities',
+          batch_id: batch.id,
+          materials_quantities: materialsQuantities,
+          production_number: batch.batch_reference,
+          user_id: 1
+        }),
+      });
+      
+      if (!deductResponse.ok) {
+        throw new Error(`Stock deduction HTTP error! status: ${deductResponse.status}`);
+      }
+      
+      const deductData = await deductResponse.json();
+      console.log('Deduct stock response:', deductData);
+      
+      if (!deductData.success) {
+        // Quantities saved but stock deduction failed
+        toast({
+          title: "Avertissement",
+          description: deductData.message || "Quantités sauvegardées mais le stock n'a pas pu être déduit. Veuillez vérifier le stock.",
+          variant: "destructive",
+        });
+        setQuantitiesSaved(true);
+        await fetchBatchDetails(batch.id);
+        return;
+      }
+      
+      // Both operations succeeded
+      setQuantitiesSaved(true);
+      
+      const transactionCount = deductData.transactions?.length || 0;
+      toast({
+        title: "Succès",
+        description: `Quantités sauvegardées avec succès. ${transactionCount} transaction(s) de stock créée(s).`,
+      });
+      
+      // Refresh batch details to show updated data
+      await fetchBatchDetails(batch.id);
+      
+    } catch (error) {
+      console.error('Error in confirmSaveMaterialsQuantities:', error);
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Erreur lors de la sauvegarde des quantités et de la déduction du stock",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingQuantities(false);
+    }
+  };
+  
+  const handleMaterialQuantityChange = (materialId: number, value: string) => {
+    // Mark as not saved when user makes changes
+    setQuantitiesSaved(false);
+    
+    // Allow empty string for clearing the input
+    if (value === '') {
+      setMaterialsQuantities(prev => ({
+        ...prev,
+        [materialId]: 0
+      }));
+      return;
+    }
+    
+    // Parse the value - supports decimals like 9.5, 10.75, etc.
+    const numValue = parseFloat(value);
+    
+    // Only update if it's a valid number
+    if (!isNaN(numValue) && numValue >= 0) {
+      setMaterialsQuantities(prev => ({
+        ...prev,
+        [materialId]: numValue
+      }));
+    }
+  };
+  
+  const areAllMaterialsQuantitiesFilled = () => {
+    if (!batch?.materials_used) return false;
+    
+    return batch.materials_used.every(material => {
+      const quantity = materialsQuantities[material.material_id];
+      return quantity !== undefined && quantity !== null && quantity > 0;
+    });
+  };
+
   // Batch notes functions
   const loadBatchNotes = async () => {
     if (!id) return;
@@ -1847,7 +2025,25 @@ const BatchDetails = () => {
     }
   };
 
-  const confirmStatusChange = () => {
+  const confirmStatusChange = async () => {
+    if (!pendingStatusChange || !batch) return;
+    
+    // If changing to en_cours from planifie, just validate quantities are saved
+    // Stock deduction already happened when saving quantities
+    if (pendingStatusChange === 'en_cours' && batch.status === 'planifie') {
+      if (!quantitiesSaved) {
+        toast({
+          title: "Quantités non sauvegardées",
+          description: "Veuillez sauvegarder les quantités pour tous les matériaux avant de passer en cours",
+          variant: "destructive",
+        });
+        setShowStatusConfirmModal(false);
+        setPendingStatusChange(null);
+        return;
+      }
+    }
+    
+    // Proceed with status update
     if (pendingStatusChange) {
       updateStatus(pendingStatusChange);
       setPendingStatusChange(null);
@@ -2092,6 +2288,134 @@ const BatchDetails = () => {
         </Card>
       </div>
 
+      {/* Materials Quantities Alert & Table - Above Status (Only if planifie and not saved) */}
+      {batch.status === 'planifie' && batch.materials_used && batch.materials_used.length > 0 && !quantitiesSaved && (
+        <Card className="border-destructive/50 shadow-lg bg-destructive/5">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <CardTitle className="flex items-center gap-2 text-lg text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  Action Requise: Configuration des Matériaux
+                </CardTitle>
+                <div className="mt-3 p-3 bg-destructive/10 border border-destructive/30 rounded-md flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-destructive">Quantités non renseignées</p>
+                    <p className="text-xs text-destructive/80 mt-1">
+                      Veuillez remplir les quantités pour tous les matériaux et sauvegarder avant de passer le batch en cours.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <Button 
+                onClick={handleSaveQuantitiesClick}
+                disabled={savingQuantities || !areAllMaterialsQuantitiesFilled()}
+                size="lg"
+                className="bg-primary hover:bg-primary/90"
+              >
+                {savingQuantities ? 'Sauvegarde...' : 'Sauvegarder les quantités'}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-semibold">Matériau</TableHead>
+                    <TableHead className="font-semibold">Couleur</TableHead>
+                    <TableHead className="font-semibold">Qté Réelle Utilisée</TableHead>
+                    <TableHead className="font-semibold">Unité</TableHead>
+                    <TableHead className="font-semibold">Commentaire</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {batch.materials_used.map((material) => {
+                    const quantityValue = materialsQuantities[material.material_id] ?? material.quantity_filled ?? '';
+                    
+                    return (
+                      <TableRow key={material.id} className="hover:bg-muted/20">
+                        <TableCell className="font-medium">{material.nom_matiere}</TableCell>
+                        <TableCell>
+                          <span className="text-sm">{material.couleur || 'Non spécifiée'}</span>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={quantityValue}
+                            onChange={(e) => handleMaterialQuantityChange(material.material_id, e.target.value)}
+                            className={`w-28 ${!quantityValue || quantityValue === 0 ? 'border-destructive' : ''}`}
+                            placeholder="0"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {material.quantity_type_name}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {material.commentaire || '-'}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-3">
+              {batch.materials_used.map((material) => {
+                const quantityValue = materialsQuantities[material.material_id] ?? material.quantity_filled ?? '';
+                
+                return (
+                  <Card key={material.id} className="border shadow-sm">
+                    <CardContent className="p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">{material.nom_matiere}</p>
+                          <p className="text-xs text-muted-foreground">{material.couleur || 'Non spécifiée'}</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs flex-shrink-0">
+                          {material.quantity_type_name}
+                        </Badge>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs text-muted-foreground">Qté réelle utilisée:</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={quantityValue}
+                          onChange={(e) => handleMaterialQuantityChange(material.material_id, e.target.value)}
+                          className={`w-full ${!quantityValue || quantityValue === 0 ? 'border-destructive' : ''}`}
+                          placeholder="0"
+                        />
+                      </div>
+                      {material.commentaire && (
+                        <div className="pt-1 border-t">
+                          <p className="text-xs text-muted-foreground">{material.commentaire}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 p-3 bg-muted/30 rounded-md">
+              <p className="text-xs text-muted-foreground">
+                <span className="font-semibold">Note:</span> Les quantités estimées sont calculées automatiquement à partir de la configuration produit. Remplissez les quantités réelles que vous allez utiliser pour cette production.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Progress Timeline */}
       <Card>
         <CardHeader>
@@ -2111,7 +2435,15 @@ const BatchDetails = () => {
               {['planifie', 'en_cours', 'termine', 'en_a_collecter', 'en_magasin'].map((status, index) => {
                 const isCurrentStatus = batch.status === status;
                 const isCompleted = getProgressPercentage(batch.status) >= getProgressPercentage(status);
-                const canUpdate = canUpdateToStatus(status, batch.status);
+                
+                // Special handling - if materials not saved and batch is planifie, disable en_cours and all subsequent statuses
+                let canUpdate = canUpdateToStatus(status, batch.status);
+                if (batch.status === 'planifie' && !quantitiesSaved) {
+                  // Disable en_cours and all statuses after it
+                  if (['en_cours', 'termine', 'en_a_collecter', 'en_magasin'].includes(status)) {
+                    canUpdate = false;
+                  }
+                }
                 
                 return (
                   <button
@@ -2340,8 +2672,40 @@ const BatchDetails = () => {
                   <Package className="h-4 w-4 md:h-5 md:w-5" />
                   Matériaux Utilisés ({batch.materials_used.length})
                 </CardTitle>
+                {batch.status === 'planifie' && !quantitiesSaved && (
+                  <div className="mt-4 p-3 bg-destructive/10 border border-destructive/30 rounded-md flex items-start gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-destructive">Quantités non renseignées</p>
+                      <p className="text-xs text-destructive/80 mt-1">
+                        Veuillez remplir les quantités pour tous les matériaux et sauvegarder avant de passer le batch en cours.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="p-0">
+                {/* Save Button at Top - Only visible when not saved */}
+                {batch.status === 'planifie' && !quantitiesSaved && (
+                  <div className="p-4 bg-primary/5 border-b border-primary/20 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">
+                        Remplissez les quantités réelles utilisées
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Les quantités estimées sont calculées automatiquement à partir de la configuration produit
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={handleSaveQuantitiesClick}
+                      disabled={savingQuantities || !areAllMaterialsQuantitiesFilled()}
+                      className="w-full md:w-auto"
+                    >
+                      {savingQuantities ? 'Sauvegarde...' : 'Sauvegarder les quantités'}
+                    </Button>
+                  </div>
+                )}
+                
                 {/* Desktop Table View */}
                 <div className="hidden md:block overflow-x-auto">
                   <Table>
@@ -2349,20 +2713,37 @@ const BatchDetails = () => {
                       <TableRow className="bg-muted/50">
                         <TableHead className="font-semibold">Matériau</TableHead>
                         <TableHead className="font-semibold">Couleur</TableHead>
-                        <TableHead className="font-semibold">Quantité</TableHead>
+                        <TableHead className="font-semibold">Qté Réelle Utilisée</TableHead>
                         <TableHead className="font-semibold">Unité</TableHead>
                         <TableHead className="font-semibold">Commentaire</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {batch.materials_used.map((material) => {
+                        const canEdit = batch.status === 'planifie';
+                        const quantityValue = materialsQuantities[material.material_id] ?? material.quantity_filled ?? '';
+                        
                         return (
                           <TableRow key={material.id} className="hover:bg-muted/20">
                             <TableCell className="font-medium">{material.nom_matiere}</TableCell>
                             <TableCell>
                               <span className="text-sm">{material.couleur || 'Non spécifiée'}</span>
                             </TableCell>
-                            <TableCell>{material.quantity_used}</TableCell>
+                            <TableCell>
+                              {canEdit ? (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={quantityValue}
+                                  onChange={(e) => handleMaterialQuantityChange(material.material_id, e.target.value)}
+                                  className={`w-28 ${!quantityValue || quantityValue === 0 ? 'border-destructive' : ''}`}
+                                  placeholder="0"
+                                />
+                              ) : (
+                                <span className="font-medium">{quantityValue || '-'}</span>
+                              )}
+                            </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="text-xs">
                                 {material.quantity_type_name}
@@ -2376,34 +2757,78 @@ const BatchDetails = () => {
                       })}
                     </TableBody>
                   </Table>
+                  
+                  {/* Bottom Save Button (Secondary) - Only when not saved */}
+                  {batch.status === 'planifie' && !quantitiesSaved && (
+                    <div className="p-4 bg-muted/30 border-t flex justify-end">
+                      <Button 
+                        onClick={handleSaveQuantitiesClick}
+                        disabled={savingQuantities || !areAllMaterialsQuantitiesFilled()}
+                        variant="outline"
+                      >
+                        {savingQuantities ? 'Sauvegarde...' : 'Sauvegarder'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Mobile Card View */}
                 <div className="md:hidden space-y-3 p-3">
-                  {batch.materials_used.map((material) => (
-                    <Card key={material.id} className="border shadow-sm">
-                      <CardContent className="p-3 space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm truncate">{material.nom_matiere}</p>
-                            <p className="text-xs text-muted-foreground">{material.couleur || 'Non spécifiée'}</p>
+                  {batch.materials_used.map((material) => {
+                    const canEdit = batch.status === 'planifie';
+                    const quantityValue = materialsQuantities[material.material_id] ?? material.quantity_filled ?? '';
+                    
+                    return (
+                      <Card key={material.id} className="border shadow-sm">
+                        <CardContent className="p-3 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm truncate">{material.nom_matiere}</p>
+                              <p className="text-xs text-muted-foreground">{material.couleur || 'Non spécifiée'}</p>
+                            </div>
+                            <Badge variant="outline" className="text-xs flex-shrink-0">
+                              {material.quantity_type_name}
+                            </Badge>
                           </div>
-                          <Badge variant="outline" className="text-xs flex-shrink-0">
-                            {material.quantity_type_name}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">Quantité:</span>
-                          <span className="text-sm font-semibold">{material.quantity_used}</span>
-                        </div>
-                        {material.commentaire && (
-                          <div className="pt-1 border-t">
-                            <p className="text-xs text-muted-foreground">{material.commentaire}</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">Quantité utilisée:</span>
+                            {canEdit ? (
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={quantityValue}
+                                onChange={(e) => handleMaterialQuantityChange(material.material_id, e.target.value)}
+                                className={`w-24 ${!quantityValue || quantityValue === 0 ? 'border-destructive' : ''}`}
+                                placeholder="0"
+                              />
+                            ) : (
+                              <span className="text-sm font-semibold">{quantityValue || '-'}</span>
+                            )}
                           </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                          {material.commentaire && (
+                            <div className="pt-1 border-t">
+                              <p className="text-xs text-muted-foreground">{material.commentaire}</p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                  
+                  {/* Bottom Save Button for Mobile (Secondary) - Only when not saved */}
+                  {batch.status === 'planifie' && !quantitiesSaved && (
+                    <div className="px-3 pb-3">
+                      <Button 
+                        onClick={handleSaveQuantitiesClick}
+                        disabled={savingQuantities || !areAllMaterialsQuantitiesFilled()}
+                        className="w-full"
+                        variant="outline"
+                      >
+                        {savingQuantities ? 'Sauvegarde...' : 'Sauvegarder'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -2606,6 +3031,43 @@ const BatchDetails = () => {
             </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* Save Quantities Confirmation Modal */}
+      <AlertDialog open={showSaveQuantitiesModal} onOpenChange={setShowSaveQuantitiesModal}>
+        <AlertDialogContent className="bg-background z-50">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Confirmer la sauvegarde des quantités
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous êtes sur le point de sauvegarder les quantités de matériaux pour ce batch de production.
+              <br />
+              <br />
+              <strong>Important:</strong> Cette action va automatiquement:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Enregistrer les quantités saisies</li>
+                <li>Déduire ces quantités du stock disponible</li>
+                <li>Créer des transactions de stock pour traçabilité</li>
+              </ul>
+              <br />
+              Voulez-vous continuer?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowSaveQuantitiesModal(false)}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmSaveMaterialsQuantities}
+              className="bg-primary hover:bg-primary/90"
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Confirmer et sauvegarder
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       {/* Status Change Confirmation Modal */}
       <AlertDialog open={showStatusConfirmModal} onOpenChange={setShowStatusConfirmModal}>

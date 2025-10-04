@@ -69,6 +69,15 @@ try {
                             $totalPlannedPieces = array_sum(array_map('intval', $sizesData));
                         }
                     }
+                    
+                    // Decode materials_quantities if exists
+                    $materialsQuantitiesData = [];
+                    if (!empty($batch['materials_quantities'])) {
+                        $decoded = json_decode($batch['materials_quantities'], true);
+                        if (is_array($decoded)) {
+                            $materialsQuantitiesData = $decoded;
+                        }
+                    }
 
                     // Get materials configuration based on product type
                     if ($batch['product_type'] === 'soustraitance') {
@@ -129,6 +138,7 @@ try {
                                 'quantity_used' => 0,
                                 'unit_cost' => $row['unit_cost'],
                                 'total_cost' => 0,
+                                'quantity_filled' => isset($materialsQuantitiesData[$mid]) ? (float)$materialsQuantitiesData[$mid] : null,
                             ];
                         }
                         $sizeSpecific = $row['size_specific'];

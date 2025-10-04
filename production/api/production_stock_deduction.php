@@ -30,7 +30,131 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $data['action'] ?? '';
         $product_type = $data['product_type'] ?? 'regular';
     
-    if ($action === 'deduct_stock_production') {
+    if ($action === 'deduct_stock_with_actual_quantities') {
+        // New action: Deduct stock using actual material quantities filled by user
+        $batch_id = $data['batch_id'] ?? null;
+        $materials_quantities = $data['materials_quantities'] ?? [];
+        $production_number = $data['production_number'] ?? null;
+        $user_id = $data['user_id'] ?? 1;
+        
+        if (!$batch_id || empty($materials_quantities)) {
+            echo json_encode(['success' => false, 'message' => 'Batch ID et quantités matériaux requis']);
+            exit;
+        }
+        
+        try {
+            // Begin transaction
+            $db->beginTransaction();
+            
+            $transactions = [];
+            $totalCost = 0;
+            $processedMaterials = [];
+            
+            foreach ($materials_quantities as $material_id => $quantity_to_deduct) {
+                $material_id = intval($material_id);
+                $quantity_to_deduct = floatval($quantity_to_deduct);
+                
+                // Skip if quantity is 0 or negative
+                if ($quantity_to_deduct <= 0) {
+                    continue;
+                }
+                
+                // Skip if already processed
+                if (isset($processedMaterials[$material_id])) {
+                    continue;
+                }
+                
+                // Get material details
+                $stmt = $db->prepare("
+                    SELECT m.*, qt.nom as quantity_type_name, qt.unite, qt.id as quantity_type_id
+                    FROM production_matieres m
+                    LEFT JOIN production_quantity_types qt ON m.quantity_type_id = qt.id
+                    WHERE m.id = ?
+                    FOR UPDATE
+                ");
+                $stmt->execute([$material_id]);
+                $material = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$material) {
+                    throw new Exception("Matériau ID {$material_id} introuvable");
+                }
+                
+                $current_stock = floatval($material['quantite_stock']);
+                $unit_price = floatval($material['prix_unitaire']);
+                
+                // Check if there's enough stock
+                if ($current_stock < $quantity_to_deduct) {
+                    throw new Exception("Stock insuffisant pour {$material['nom']} ({$material['couleur']}). Disponible: {$current_stock} {$material['unite']}, Requis: {$quantity_to_deduct} {$material['unite']}");
+                }
+                
+                // Calculate total cost
+                $material_total_cost = $quantity_to_deduct * $unit_price;
+                $totalCost += $material_total_cost;
+                
+                // Deduct from stock
+                $updateStmt = $db->prepare("
+                    UPDATE production_matieres 
+                    SET quantite_stock = quantite_stock - ?
+                    WHERE id = ?
+                ");
+                $updateStmt->execute([$quantity_to_deduct, $material_id]);
+                
+                // Create transaction record
+                $transactionStmt = $db->prepare("
+                    INSERT INTO production_transactions_stock 
+                    (material_id, type_mouvement, quantite, quantity_type_id, prix_unitaire, cout_total, motif, reference_commande, notes, user_id, date_transaction)
+                    VALUES (?, 'out', ?, ?, ?, ?, 'Production', ?, ?, ?, NOW())
+                ");
+                
+                $reference = $production_number ?? "BATCH-{$batch_id}";
+                $notes = "Déduction stock pour production - Lot: {$reference}, Matière: {$material['nom']} ({$material['couleur']}), Quantité réelle utilisée: {$quantity_to_deduct} {$material['unite']}";
+                
+                $transactionStmt->execute([
+                    $material_id,
+                    $quantity_to_deduct,
+                    $material['quantity_type_id'],
+                    $unit_price,
+                    $material_total_cost,
+                    $reference,
+                    $notes,
+                    $user_id
+                ]);
+                
+                // Mark as processed
+                $processedMaterials[$material_id] = true;
+                
+                // Calculate new stock
+                $new_stock = $current_stock - $quantity_to_deduct;
+                
+                $transactions[] = [
+                    'material_id' => $material_id,
+                    'material_name' => $material['nom'],
+                    'material_color' => $material['couleur'],
+                    'quantity_deducted' => $quantity_to_deduct,
+                    'unit' => $material['unite'],
+                    'unit_price' => $unit_price,
+                    'total_cost' => $material_total_cost,
+                    'new_stock' => $new_stock
+                ];
+            }
+            
+            // Commit transaction
+            $db->commit();
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Stock déduit avec succès selon les quantités réelles utilisées',
+                'transactions' => $transactions,
+                'total_cost' => $totalCost
+            ]);
+            
+        } catch (Exception $e) {
+            // Rollback transaction on error
+            $db->rollback();
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        
+    } elseif ($action === 'deduct_stock_production') {
         $product_id = $data['product_id'] ?? null;
         $planned_quantities = $data['planned_quantities'] ?? [];
         $production_batch_id = $data['production_batch_id'] ?? null;
