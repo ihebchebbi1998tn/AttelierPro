@@ -11,7 +11,9 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { 
@@ -43,12 +45,14 @@ import {
   Plus,
   Edit,
   Trash2,
-  Send
+  Send,
+  AlertCircle
 } from 'lucide-react';
 import { getProductImageUrl, getProductImages } from "@/utils/imageUtils";
 import BatchReport from '@/components/BatchReport';
 import BatchImageUpload from '@/components/BatchImageUpload';
 import BatchAttachmentUpload from '@/components/BatchAttachmentUpload';
+import { BatchLeftoversView } from '@/components/BatchLeftoversView';
 
 // Helper function to parse sizes breakdown
 const parseSizesBreakdown = (sizesBreakdownString: string | undefined) => {
@@ -143,11 +147,15 @@ const BatchDetails = () => {
   const [savingQuantities, setSavingQuantities] = useState(false);
   const [quantitiesSaved, setQuantitiesSaved] = useState(false); // Track if quantities have been saved
   const [showSaveQuantitiesModal, setShowSaveQuantitiesModal] = useState(false);
+  const [showLeftoversSection, setShowLeftoversSection] = useState(false);
+  const [leftovers, setLeftovers] = useState<{[key: string]: { quantity: number, reusable: boolean, notes: string }}>({});
+  const [savedLeftovers, setSavedLeftovers] = useState<any[]>([]);
 
   useEffect(() => {
     if (id) {
       fetchBatchDetails(parseInt(id));
       fetchBatchCompleteReport(id);
+      fetchSavedLeftovers();
       // Images and attachments are now fetched within fetchBatchDetails
       
       // Mark batch as seen when viewing details
@@ -1792,8 +1800,10 @@ const BatchDetails = () => {
   };
   
   const handleMaterialQuantityChange = (materialId: number, value: string) => {
-    // Mark as not saved when user makes changes
-    setQuantitiesSaved(false);
+    // Mark as not saved when user makes changes (only if not yet in production)
+    if (batch.status !== 'en_cours') {
+      setQuantitiesSaved(false);
+    }
     
     // Allow empty string for clearing the input
     if (value === '') {
@@ -1823,6 +1833,90 @@ const BatchDetails = () => {
       const quantity = materialsQuantities[material.material_id];
       return quantity !== undefined && quantity !== null && quantity > 0;
     });
+  };
+
+  // Leftovers handlers
+  const handleLeftoverChange = (materialId: string, field: 'quantity' | 'reusable' | 'notes', value: any) => {
+    setLeftovers(prev => ({
+      ...prev,
+      [materialId]: {
+        ...prev[materialId],
+        quantity: prev[materialId]?.quantity || 0,
+        reusable: prev[materialId]?.reusable || false,
+        notes: prev[materialId]?.notes || '',
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSaveLeftovers = async () => {
+    try {
+      // Save leftovers
+      const leftoversArray = Object.entries(leftovers).map(([materialId, data]) => ({
+        material_id: materialId,
+        ...data
+      }));
+
+      await fetch('https://luccibyey.com.tn/production/api/production_batch_leftovers.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save',
+          batch_id: id,
+          leftovers: leftoversArray
+        })
+      });
+
+      // Now proceed with status change to 'termine'
+      const statusResponse = await fetch('https://luccibyey.com.tn/production/api/update_batch_status.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          batch_id: id,
+          new_status: 'termine',
+          changed_by: 'Current User',
+          comments: 'Leftovers recorded'
+        })
+      });
+      
+      const statusData = await statusResponse.json();
+      if (!statusData.success) {
+        throw new Error(statusData.error || 'Erreur lors de la mise à jour du statut');
+      }
+      
+      setShowLeftoversSection(false);
+      setLeftovers({});
+      toast({ title: "Lot terminé avec succès" });
+      await fetchBatchDetails(parseInt(id!));
+      await fetchSavedLeftovers();
+    } catch (error) {
+      console.error('Error saving leftovers:', error);
+      toast({ 
+        title: "Erreur lors de l'enregistrement des déchets", 
+        variant: "destructive",
+        description: error instanceof Error ? error.message : 'Une erreur est survenue'
+      });
+    }
+  };
+
+  const fetchSavedLeftovers = async () => {
+    if (!id) return;
+    
+    try {
+      const response = await fetch(`https://luccibyey.com.tn/production/api/production_batch_leftovers.php?batch_id=${id}`);
+      const data = await response.json();
+      
+      if (Array.isArray(data)) {
+        setSavedLeftovers(data);
+      }
+    } catch (error) {
+      console.error('Error fetching saved leftovers:', error);
+    }
+  };
+
+  const handleCancelLeftovers = () => {
+    setShowLeftoversSection(false);
+    setLeftovers({});
   };
 
   // Batch notes functions
@@ -2014,6 +2108,16 @@ const BatchDetails = () => {
     const statusOrder = ['planifie', 'en_cours', 'termine', 'en_a_collecter', 'en_magasin'];
     const currentIndex = statusOrder.indexOf(batch.status);
     const targetIndex = statusOrder.indexOf(targetStatus);
+    
+    // If trying to move to 'termine', show leftovers section first
+    if (targetStatus === 'termine' && batch.status === 'en_cours') {
+      setShowLeftoversSection(true);
+      toast({ 
+        title: "Action requise", 
+        description: "Veuillez remplir les informations sur les déchets ou restes de matériaux avant de terminer le lot."
+      });
+      return;
+    }
     
     // If going backwards or same status, show confirmation
     if (targetIndex <= currentIndex && targetStatus !== batch.status) {
@@ -2487,6 +2591,159 @@ const BatchDetails = () => {
         </CardContent>
       </Card>
 
+      {/* Leftovers Section - appears when status is being changed to 'termine' */}
+      {showLeftoversSection && batch.materials_used && batch.materials_used.length > 0 && (
+        <Card className="border-warning shadow-lg bg-warning/5">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <CardTitle className="flex items-center gap-2 text-lg text-warning">
+                  <AlertTriangle className="h-5 w-5" />
+                  Gestion des Surplus de Matériaux
+                </CardTitle>
+                <div className="mt-3 p-3 bg-warning/10 border border-warning/30 rounded-md flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-warning">Action requise avant finalisation</p>
+                    <p className="text-xs text-warning/80 mt-1">
+                      Veuillez indiquer les quantités de déchets ou restes pour chaque matériau utilisé dans ce lot.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-semibold">Matériau</TableHead>
+                    <TableHead className="font-semibold">Qté Utilisée</TableHead>
+                    <TableHead className="font-semibold">Qté Déchet/Reste</TableHead>
+                    <TableHead className="font-semibold text-center">Réutilisable</TableHead>
+                    <TableHead className="font-semibold">Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {batch.materials_used.map((material) => (
+                    <TableRow key={material.material_id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{material.nom_matiere}</p>
+                          {material.couleur && (
+                            <p className="text-xs text-muted-foreground">{material.couleur}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-mono">
+                          {material.quantity_filled || material.quantity_used} {material.quantity_unit}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          step="0.001"
+                          min="0"
+                          value={leftovers[material.material_id]?.quantity || ''}
+                          onChange={(e) => handleLeftoverChange(material.material_id.toString(), 'quantity', parseFloat(e.target.value) || 0)}
+                          placeholder="0.000"
+                          className="w-32"
+                        />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center">
+                          <input
+                            type="checkbox"
+                            checked={leftovers[material.material_id]?.reusable || false}
+                            onChange={(e) => handleLeftoverChange(material.material_id.toString(), 'reusable', e.target.checked)}
+                            className="h-4 w-4"
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={leftovers[material.material_id]?.notes || ''}
+                          onChange={(e) => handleLeftoverChange(material.material_id.toString(), 'notes', e.target.value)}
+                          placeholder="Notes optionnelles"
+                          className="w-48"
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-3">
+              {batch.materials_used.map((material) => (
+                <Card key={material.material_id} className="p-4">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="font-medium">{material.nom_matiere}</p>
+                      {material.couleur && (
+                        <p className="text-xs text-muted-foreground">{material.couleur}</p>
+                      )}
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Qté utilisée: <span className="font-mono">{material.quantity_filled || material.quantity_used} {material.quantity_unit}</span>
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium">Qté Déchet/Reste ({material.quantity_unit})</label>
+                      <Input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        value={leftovers[material.material_id]?.quantity || ''}
+                        onChange={(e) => handleLeftoverChange(material.material_id.toString(), 'quantity', parseFloat(e.target.value) || 0)}
+                        placeholder="0.000"
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`reusable-mobile-${material.material_id}`}
+                        checked={leftovers[material.material_id]?.reusable || false}
+                        onChange={(e) => handleLeftoverChange(material.material_id.toString(), 'reusable', e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      <label htmlFor={`reusable-mobile-${material.material_id}`} className="text-sm">
+                        Réutilisable
+                      </label>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium">Notes</label>
+                      <Input
+                        value={leftovers[material.material_id]?.notes || ''}
+                        onChange={(e) => handleLeftoverChange(material.material_id.toString(), 'notes', e.target.value)}
+                        placeholder="Notes optionnelles"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            <div className="flex gap-2 justify-end pt-4 border-t">
+              <Button variant="outline" onClick={handleCancelLeftovers}>
+                Annuler
+              </Button>
+              <Button onClick={handleSaveLeftovers} className="bg-primary hover:bg-primary/90">
+                Enregistrer et Terminer le Lot
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Detailed Information Tabs */}
       <Tabs defaultValue="overview" className="space-y-4 md:space-y-6">
         <TabsList className="grid w-full grid-cols-3 bg-muted p-1 gap-1">
@@ -2665,6 +2922,11 @@ const BatchDetails = () => {
         </TabsContent>
 
         <TabsContent value="materials" className="space-y-4 md:space-y-6">
+          {/* Leftovers Section - Show only if batch is termine */}
+          {batch.status === 'termine' && (
+            <BatchLeftoversView batchId={batch.id} batchStatus={batch.status} />
+          )}
+          
           {batch.materials_used && batch.materials_used.length > 0 ? (
             <Card>
               <CardHeader className="pb-3 md:pb-4 px-3 md:px-6 pt-3 md:pt-6">
@@ -2685,15 +2947,15 @@ const BatchDetails = () => {
                 )}
               </CardHeader>
               <CardContent className="p-0">
-                {/* Save Button at Top - Only visible when not saved */}
-                {batch.status === 'planifie' && !quantitiesSaved && (
+                {/* Save Button at Top - visible when batch is planifie */}
+                {batch.status === 'planifie' && (
                   <div className="p-4 bg-primary/5 border-b border-primary/20 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                     <div className="flex-1">
                       <p className="text-sm font-medium">
-                        Remplissez les quantités réelles utilisées
+                        {quantitiesSaved ? 'Modifier les quantités réelles utilisées' : 'Remplissez les quantités réelles utilisées'}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Les quantités estimées sont calculées automatiquement à partir de la configuration produit
+                        {quantitiesSaved ? 'Vous pouvez modifier les quantités avant de passer en production' : 'Les quantités estimées sont calculées automatiquement à partir de la configuration produit'}
                       </p>
                     </div>
                     <Button 
@@ -2701,7 +2963,7 @@ const BatchDetails = () => {
                       disabled={savingQuantities || !areAllMaterialsQuantitiesFilled()}
                       className="w-full md:w-auto"
                     >
-                      {savingQuantities ? 'Sauvegarde...' : 'Sauvegarder les quantités'}
+                      {savingQuantities ? 'Sauvegarde...' : (quantitiesSaved ? 'Mettre à jour les quantités' : 'Sauvegarder les quantités')}
                     </Button>
                   </div>
                 )}
@@ -2714,14 +2976,17 @@ const BatchDetails = () => {
                         <TableHead className="font-semibold">Matériau</TableHead>
                         <TableHead className="font-semibold">Couleur</TableHead>
                         <TableHead className="font-semibold">Qté Réelle Utilisée</TableHead>
+                        <TableHead className="font-semibold">Qté Déchet/Reste</TableHead>
+                        <TableHead className="font-semibold">Réutilisable</TableHead>
                         <TableHead className="font-semibold">Unité</TableHead>
                         <TableHead className="font-semibold">Commentaire</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {batch.materials_used.map((material) => {
-                        const canEdit = batch.status === 'planifie';
+                        const canEdit = batch.status === 'planifie' || (quantitiesSaved && batch.status !== 'en_cours');
                         const quantityValue = materialsQuantities[material.material_id] ?? material.quantity_filled ?? '';
+                        const leftoverData = savedLeftovers.find(l => String(l.material_id) === String(material.material_id));
                         
                         return (
                           <TableRow key={material.id} className="hover:bg-muted/20">
@@ -2745,12 +3010,32 @@ const BatchDetails = () => {
                               )}
                             </TableCell>
                             <TableCell>
+                              {leftoverData ? (
+                                <span className="font-medium">{parseFloat(leftoverData.leftover_quantity).toFixed(2)}</span>
+                              ) : '-'}
+                            </TableCell>
+                            <TableCell>
+                              {leftoverData ? (
+                                leftoverData.is_reusable == 1 || leftoverData.is_reusable === true ? (
+                                  <Badge variant="default" className="bg-green-500">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Oui
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary">
+                                    <X className="h-3 w-3 mr-1" />
+                                    Non
+                                  </Badge>
+                                )
+                              ) : '-'}
+                            </TableCell>
+                            <TableCell>
                               <Badge variant="outline" className="text-xs">
                                 {material.quantity_type_name}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
-                              {material.commentaire || '-'}
+                              {leftoverData?.notes || material.commentaire || '-'}
                             </TableCell>
                           </TableRow>
                         );
@@ -2758,15 +3043,15 @@ const BatchDetails = () => {
                     </TableBody>
                   </Table>
                   
-                  {/* Bottom Save Button (Secondary) - Only when not saved */}
-                  {batch.status === 'planifie' && !quantitiesSaved && (
+                  {/* Bottom Save Button (Secondary) - Show when planifie OR when quantities can be edited before en_cours */}
+                  {batch.status === 'planifie' && (
                     <div className="p-4 bg-muted/30 border-t flex justify-end">
                       <Button 
                         onClick={handleSaveQuantitiesClick}
                         disabled={savingQuantities || !areAllMaterialsQuantitiesFilled()}
                         variant="outline"
                       >
-                        {savingQuantities ? 'Sauvegarde...' : 'Sauvegarder'}
+                        {savingQuantities ? 'Sauvegarde...' : (quantitiesSaved ? 'Mettre à jour' : 'Sauvegarder')}
                       </Button>
                     </div>
                   )}
@@ -2775,8 +3060,9 @@ const BatchDetails = () => {
                 {/* Mobile Card View */}
                 <div className="md:hidden space-y-3 p-3">
                   {batch.materials_used.map((material) => {
-                    const canEdit = batch.status === 'planifie';
+                    const canEdit = batch.status === 'planifie' || (quantitiesSaved && batch.status !== 'en_cours');
                     const quantityValue = materialsQuantities[material.material_id] ?? material.quantity_filled ?? '';
+                    const leftoverData = savedLeftovers.find(l => String(l.material_id) === String(material.material_id));
                     
                     return (
                       <Card key={material.id} className="border shadow-sm">
@@ -2806,7 +3092,34 @@ const BatchDetails = () => {
                               <span className="text-sm font-semibold">{quantityValue || '-'}</span>
                             )}
                           </div>
-                          {material.commentaire && (
+                          {leftoverData && (
+                            <>
+                              <div className="flex items-center gap-2 pt-1 border-t">
+                                <span className="text-xs text-muted-foreground">Déchet/Reste:</span>
+                                <span className="text-sm font-semibold">{parseFloat(leftoverData.leftover_quantity).toFixed(2)} {material.quantity_type_name}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">Réutilisable:</span>
+                                {leftoverData.is_reusable == 1 || leftoverData.is_reusable === true ? (
+                                  <Badge variant="default" className="bg-green-500 text-xs">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Oui
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-xs">
+                                    <X className="h-3 w-3 mr-1" />
+                                    Non
+                                  </Badge>
+                                )}
+                              </div>
+                              {leftoverData.notes && (
+                                <div className="pt-1 border-t">
+                                  <p className="text-xs text-muted-foreground italic">{leftoverData.notes}</p>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          {material.commentaire && !leftoverData && (
                             <div className="pt-1 border-t">
                               <p className="text-xs text-muted-foreground">{material.commentaire}</p>
                             </div>
@@ -2816,8 +3129,8 @@ const BatchDetails = () => {
                     );
                   })}
                   
-                  {/* Bottom Save Button for Mobile (Secondary) - Only when not saved */}
-                  {batch.status === 'planifie' && !quantitiesSaved && (
+                  {/* Bottom Save Button for Mobile (Secondary) - Show when planifie */}
+                  {batch.status === 'planifie' && (
                     <div className="px-3 pb-3">
                       <Button 
                         onClick={handleSaveQuantitiesClick}
@@ -2825,7 +3138,7 @@ const BatchDetails = () => {
                         className="w-full"
                         variant="outline"
                       >
-                        {savingQuantities ? 'Sauvegarde...' : 'Sauvegarder'}
+                        {savingQuantities ? 'Sauvegarde...' : (quantitiesSaved ? 'Mettre à jour' : 'Sauvegarder')}
                       </Button>
                     </div>
                   )}
@@ -3433,6 +3746,7 @@ const BatchDetails = () => {
           </div>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 };

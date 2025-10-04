@@ -209,6 +209,31 @@ try {
                         $batch['batch_attachments'] = [];
                     }
 
+                    // Récupérer les déchets/restes (leftovers) du batch
+                    try {
+                        $leftoversStmt = $db->prepare("
+                            SELECT 
+                                l.*,
+                                m.nom as nom_matiere,
+                                m.reference as code_matiere,
+                                m.quantite_stock as current_stock,
+                                qt.nom as quantity_type_name,
+                                qt.unite as quantity_unit
+                            FROM production_batch_leftovers l
+                            JOIN production_matieres m ON l.material_id = m.id
+                            LEFT JOIN production_quantity_types qt ON m.quantity_type_id = qt.id
+                            WHERE l.batch_id = :batch_id
+                            ORDER BY l.created_at DESC
+                        ");
+                        $leftoversStmt->bindValue(':batch_id', $_GET['id'], PDO::PARAM_INT);
+                        $leftoversStmt->execute();
+                        $leftovers = $leftoversStmt->fetchAll();
+                        $batch['batch_leftovers'] = $leftovers;
+                    } catch (Exception $e) {
+                        // If leftovers table doesn't exist, set empty array
+                        $batch['batch_leftovers'] = [];
+                    }
+
                     echo json_encode(['success' => true, 'data' => $batch]);
                 } else {
                     echo json_encode(['success' => false, 'message' => 'Batch non trouvé']);

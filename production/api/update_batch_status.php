@@ -112,18 +112,7 @@ try {
                 exit;
             }
             
-            // Auto-deduct stock using the filled quantities
-            $sizesData = [];
-            if (!empty($batchData['sizes_breakdown'])) {
-                $sizesData = json_decode($batchData['sizes_breakdown'], true) ?: [];
-            }
-            
-            // Call the stock deduction logic
-            require_once 'production_stock_deduction.php';
-            
-            // We'll trigger the deduction via the API endpoint internally
-            // For now, we'll allow the status change and let the frontend handle deduction
-            // Or we can implement the deduction logic here directly
+            // Auto-deduct stock - handled by frontend after status change
         }
         
         // Start transaction

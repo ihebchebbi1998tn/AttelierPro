@@ -21,11 +21,41 @@ try {
         $materials_quantities = $input['materials_quantities'] ?? null;
         
         // Validation
-        if (!$batch_id || !$materials_quantities) {
+        if (!$batch_id) {
             http_response_code(400);
-            echo json_encode(['error' => 'batch_id and materials_quantities are required']);
+            echo json_encode(['error' => 'batch_id is required']);
             exit;
         }
+        
+        if (!$materials_quantities || !is_array($materials_quantities)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'materials_quantities must be a valid array']);
+            exit;
+        }
+        
+        // Check if batch exists
+        $checkStmt = $pdo->prepare("SELECT id, status FROM production_batches WHERE id = ?");
+        $checkStmt->execute([$batch_id]);
+        $batch = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$batch) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Batch not found']);
+            exit;
+        }
+        
+        // Allow updates only if batch is not yet in production (status is 'planifie')
+        // This prevents accidental changes after stock has been deducted
+        if ($batch['status'] === 'en_cours' || $batch['status'] === 'termine') {
+            http_response_code(400);
+            echo json_encode([
+                'error' => 'Cannot update material quantities for batches in production or completed',
+                'current_status' => $batch['status']
+            ]);
+            exit;
+        }
+        
+        error_log("Updating materials quantities for batch {$batch_id}: " . json_encode($materials_quantities));
         
         // Update batch with materials quantities
         $updateStmt = $pdo->prepare("
@@ -35,9 +65,13 @@ try {
         ");
         $updateStmt->execute([json_encode($materials_quantities), $batch_id]);
         
+        error_log("Successfully updated materials quantities for batch {$batch_id}");
+        
         echo json_encode([
             'success' => true,
-            'message' => 'Materials quantities updated successfully'
+            'message' => 'Materials quantities updated successfully',
+            'batch_id' => $batch_id,
+            'rows_affected' => $updateStmt->rowCount()
         ]);
         
     } else {
