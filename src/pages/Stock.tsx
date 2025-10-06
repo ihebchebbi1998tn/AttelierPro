@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { authService } from "@/lib/authService";
 import materialPlaceholder from "@/assets/material-placeholder.png";
 import { 
   Package2, 
@@ -75,6 +76,18 @@ const Stock = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   
+  const currentUser = authService.getCurrentUser();
+  const isSousTraitance = currentUser?.user_type === 'sous_traitance' || currentUser?.role === 'sous_traitance';
+  
+  // Auto-select 'extern' location for sous-traitance users
+  useEffect(() => {
+    if (isSousTraitance && !selectedLocation) {
+      setSelectedLocation('extern');
+    }
+  }, [isSousTraitance]);
+
+  
+
   // Initialize category filter from URL params
   useEffect(() => {
     const categoryParam = searchParams.get('category');
@@ -114,7 +127,17 @@ const Stock = () => {
   const fetchMaterials = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('https://luccibyey.com.tn/production/api/matieres.php?stock_levels');
+      
+      // Get auth token and include in request
+      const token = localStorage.getItem('authToken');
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch('https://luccibyey.com.tn/production/api/matieres.php?stock_levels', {
+        headers
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -577,63 +600,67 @@ const Stock = () => {
           {/* Location Selection Cards */}
           <div className="container mx-auto px-3 md:px-6 py-6 md:py-12">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 max-w-6xl mx-auto">
-              {/* Lucci By Ey */}
-              <Card 
-                className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02] overflow-hidden"
-                onClick={() => setSelectedLocation('lucci')}
-              >
-                <CardHeader className="p-0">
-                  <div className="relative h-32 md:h-48 overflow-hidden bg-white flex items-center justify-center">
-                    <img 
-                      src="/lucci-by-ey-logo.png"
-                      alt="Lucci By Ey"
-                      className="max-h-20 md:max-h-32 w-auto object-contain p-3 md:p-6 transition-transform duration-300 group-hover:scale-110"
-                      onError={(e) => {
-                        e.currentTarget.src = '/placeholder.svg';
-                      }}
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="p-3 md:p-4">
-                  <CardTitle className="text-base md:text-lg font-bold text-center group-hover:text-primary transition-colors">
-                    Lucci By Ey
-                  </CardTitle>
-                  <div className="text-center mt-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {stockItems.filter(item => item.location === 'Lucci By Ey').length} matières
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Lucci By Ey - Hidden for sous-traitance */}
+              {!isSousTraitance && (
+                <Card 
+                  className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02] overflow-hidden"
+                  onClick={() => setSelectedLocation('lucci')}
+                >
+                  <CardHeader className="p-0">
+                    <div className="relative h-32 md:h-48 overflow-hidden bg-white flex items-center justify-center">
+                      <img 
+                        src="/lucci-by-ey-logo.png"
+                        alt="Lucci By Ey"
+                        className="max-h-20 md:max-h-32 w-auto object-contain p-3 md:p-6 transition-transform duration-300 group-hover:scale-110"
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder.svg';
+                        }}
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-3 md:p-4">
+                    <CardTitle className="text-base md:text-lg font-bold text-center group-hover:text-primary transition-colors">
+                      Lucci By Ey
+                    </CardTitle>
+                    <div className="text-center mt-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {stockItems.filter(item => item.location === 'Lucci By Ey').length} matières
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-              {/* Spada di Battaglia */}
-              <Card 
-                className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02] overflow-hidden"
-                onClick={() => setSelectedLocation('spada')}
-              >
-                <CardHeader className="p-0">
-                  <div className="relative h-32 md:h-48 overflow-hidden bg-white flex items-center justify-center">
-                    <img 
-                      src="/spada-di-battaglia-logo.png"
-                      alt="Spada di Battaglia"
-                      className="max-h-20 md:max-h-32 w-auto object-contain p-3 md:p-6 transition-transform duration-300 group-hover:scale-110"
-                      onError={(e) => {
-                        e.currentTarget.src = '/placeholder.svg';
-                      }}
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="p-3 md:p-4">
-                  <CardTitle className="text-base md:text-lg font-bold text-center group-hover:text-primary transition-colors">
-                    Spada di Battaglia
-                  </CardTitle>
-                   <div className="text-center mt-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {stockItems.filter(item => item.location === 'Spada').length} matières
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Spada di Battaglia - Hidden for sous-traitance */}
+              {!isSousTraitance && (
+                <Card 
+                  className="group cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02] overflow-hidden"
+                  onClick={() => setSelectedLocation('spada')}
+                >
+                  <CardHeader className="p-0">
+                    <div className="relative h-32 md:h-48 overflow-hidden bg-white flex items-center justify-center">
+                      <img 
+                        src="/spada-di-battaglia-logo.png"
+                        alt="Spada di Battaglia"
+                        className="max-h-20 md:max-h-32 w-auto object-contain p-3 md:p-6 transition-transform duration-300 group-hover:scale-110"
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder.svg';
+                        }}
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-3 md:p-4">
+                    <CardTitle className="text-base md:text-lg font-bold text-center group-hover:text-primary transition-colors">
+                      Spada di Battaglia
+                    </CardTitle>
+                     <div className="text-center mt-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {stockItems.filter(item => item.location === 'Spada').length} matières
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Extern */}
               <Card 

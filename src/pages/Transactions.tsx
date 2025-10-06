@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import { 
   Search,
@@ -21,7 +22,8 @@ import {
   FileText,
   Hash,
   Tag,
-  BarChart3
+  BarChart3,
+  XCircle
 } from "lucide-react";
 
 interface Transaction {
@@ -36,6 +38,7 @@ interface Transaction {
   user_name: string;
   transaction_date: string;
   note?: string;
+  is_cancelled?: boolean;
 }
 
 const Transactions = () => {
@@ -45,9 +48,11 @@ const Transactions = () => {
   const [typeFilter, setTypeFilter] = useState("all");
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   // Fetch transactions from API
   useEffect(() => {
@@ -257,6 +262,57 @@ const Transactions = () => {
     return "Manuel";
   };
 
+  const handleCancelTransaction = async (transaction: Transaction, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!confirm(`Êtes-vous sûr de vouloir annuler cette transaction?\n\nCela ${transaction.type === 'out' ? 'restaurera' : 'déduira'} ${transaction.quantity} unités de stock pour ${transaction.material_title}.`)) {
+      return;
+    }
+
+    try {
+      setCancellingId(transaction.transaction_id);
+      const userId = localStorage.getItem('userId') || '1';
+      
+      const response = await fetch('https://luccibyey.com.tn/production/api/transactions_stock.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'cancelTransaction',
+          transaction_id: transaction.transaction_id,
+          user_id: userId
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Transaction annulée",
+          description: `Le stock a été restauré. ${transaction.type === 'out' ? '+' : '-'}${transaction.quantity} pour ${transaction.material_title}`,
+        });
+        // Reload page to refresh all stock displays
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        toast({
+          title: "Erreur",
+          description: data.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error cancelling transaction:', error);
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de l'annulation de la transaction",
+        variant: "destructive"
+      });
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4 md:space-y-6 p-3 md:p-0">
@@ -364,59 +420,78 @@ const Transactions = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTransactions.map((transaction) => (
-              <TableRow 
-                key={transaction.transaction_id} 
-                className="hover:bg-muted/30 cursor-pointer transition-colors"
-                onClick={() => handleTransactionClick(transaction)}
-              >
-                <TableCell className="font-medium text-sm">
-                  {formatDate(transaction.transaction_date)}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center text-xs font-medium">
-                      {transaction.user_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                    </div>
-                    <span className="text-sm">{transaction.user_name}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded-md ${
-                      transaction.type === "in" ? "bg-green-500/10" : "bg-red-500/10"
-                    }`}>
-                      {getTypeIcon(transaction.type)}
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium">
-                        {getEventDescription(transaction)}
+            {filteredTransactions.map((transaction) => {
+              const isCancelled = transaction.note?.includes('[ANNULÉE]');
+              return (
+                <TableRow 
+                  key={transaction.transaction_id} 
+                  className={`hover:bg-muted/30 cursor-pointer transition-colors ${isCancelled ? 'opacity-50' : ''}`}
+                  onClick={() => handleTransactionClick(transaction)}
+                >
+                  <TableCell className="font-medium text-sm">
+                    {formatDate(transaction.transaction_date)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center text-xs font-medium">
+                        {transaction.user_name.split(' ').map(n => n[0]).join('').toUpperCase()}
                       </div>
-                      {transaction.material_color && (
-                        <div className="text-xs text-muted-foreground">
-                          Couleur: {transaction.material_color}
+                      <span className="text-sm">{transaction.user_name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className={`p-1.5 rounded-md ${
+                        transaction.type === "in" ? "bg-green-500/10" : "bg-red-500/10"
+                      }`}>
+                        {getTypeIcon(transaction.type)}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium flex items-center gap-2">
+                          {getEventDescription(transaction)}
+                          {isCancelled && (
+                            <Badge variant="destructive" className="text-xs">Annulée</Badge>
+                          )}
                         </div>
-                      )}
-                      <div className="text-xs text-muted-foreground">
-                        ID: #{transaction.material_id}
+                        {transaction.material_color && (
+                          <div className="text-xs text-muted-foreground">
+                            Couleur: {transaction.material_color}
+                          </div>
+                        )}
+                        <div className="text-xs text-muted-foreground">
+                          ID: #{transaction.material_id}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Badge 
-                    variant="outline"
-                    className={`${
-                      transaction.type === "in" 
-                        ? "bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20" 
-                        : "bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20"
-                    }`}
-                  >
-                    {transaction.type === "in" ? "+" : "-"}{transaction.quantity}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Badge 
+                        variant="outline"
+                        className={`${
+                          transaction.type === "in" 
+                            ? "bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20" 
+                            : "bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20"
+                        }`}
+                      >
+                        {transaction.type === "in" ? "+" : "-"}{transaction.quantity}
+                      </Badge>
+                      {!isCancelled && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleCancelTransaction(transaction, e)}
+                          disabled={cancellingId === transaction.transaction_id}
+                          className="h-8 px-2"
+                        >
+                          <XCircle className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

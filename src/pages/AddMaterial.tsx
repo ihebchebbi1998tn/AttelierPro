@@ -38,6 +38,7 @@ import {
 import QuantityTypesModal from "@/components/QuantityTypesModal";
 import SupplierSelector from "@/components/SupplierSelector";
 import ImageCapture from "@/components/ImageCapture";
+import { authService } from "@/lib/authService";
 
     const materialSchema = z.object({
       reference: z.string().optional(),
@@ -89,6 +90,9 @@ interface QuantityType {
 const AddMaterial = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const currentUser = authService.getCurrentUser();
+  const isSousTraitance = currentUser?.user_type === 'sous_traitance';
+  
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>(materialPlaceholder);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -124,7 +128,7 @@ const AddMaterial = () => {
       lowest_quantity_needed: undefined,
       medium_quantity_needed: undefined,
       good_quantity_needed: undefined,
-      location: "lucci by ey",
+      location: isSousTraitance ? "extern" : "lucci by ey",
       category_id: undefined,
       id_fournisseur: undefined,
       materiere_type: "intern",
@@ -565,7 +569,11 @@ const AddMaterial = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Emplacement</FormLabel>
-                         <Select onValueChange={field.onChange} defaultValue={field.value || "lucci by ey"}>
+                         <Select 
+                           onValueChange={field.onChange} 
+                           defaultValue={field.value || (isSousTraitance ? "extern" : "lucci by ey")}
+                           disabled={isSousTraitance}
+                         >
                            <FormControl>
                              <SelectTrigger>
                                <SelectValue placeholder="Choisir l'emplacement" />
@@ -577,6 +585,11 @@ const AddMaterial = () => {
                              <SelectItem value="extern">Extern</SelectItem>
                            </SelectContent>
                         </Select>
+                        {isSousTraitance && (
+                          <p className="text-xs text-muted-foreground">
+                            Emplacement fixé pour les utilisateurs sous-traitance
+                          </p>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -660,98 +673,100 @@ const AddMaterial = () => {
                   </Button>
                 </div>
 
-                {/* Material Type and External Customer */}
-                <div className="space-y-4 mt-4 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800">
-                  <h3 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">Type de matière</h3>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-4">
-                    Spécifiez si cette matière vous appartient ou si elle appartient à un client externe
-                  </p>
-                  
-                  <FormField
-                    control={form.control}
-                    name="materiere_type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Type *</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner le type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="intern">Interne (Notre matière)</SelectItem>
-                            <SelectItem value="extern">Externe (Matière client)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {form.watch("materiere_type") === "extern" && (
+                {/* Material Type and External Customer - Hidden for sous_traitance */}
+                {!isSousTraitance && (
+                  <div className="space-y-4 mt-4 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800">
+                    <h3 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">Type de matière</h3>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-4">
+                      Spécifiez si cette matière vous appartient ou si elle appartient à un client externe
+                    </p>
+                    
                     <FormField
                       control={form.control}
-                      name="extern_customer_id"
+                      name="materiere_type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Client propriétaire *</FormLabel>
-                          <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  aria-expanded={customerPopoverOpen}
-                                  className="w-full justify-between"
-                                >
-                                  {field.value 
-                                    ? availableCustomers.find((customer) => customer.id === field.value)?.nom 
-                                    : "Sélectionner un client..."}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-full p-0 z-50 bg-popover" align="start">
-                              <Command className="w-full">
-                                <CommandInput 
-                                  placeholder="Rechercher un client..." 
-                                  className="h-9 text-sm border-0 focus:ring-0 focus:outline-none"
-                                />
-                                <CommandEmpty>
-                                  {availableCustomers.length === 0 ? "Aucun client disponible" : "Aucun client trouvé"}
-                                </CommandEmpty>
-                                <CommandGroup className="max-h-64 overflow-y-auto">
-                                  {availableCustomers.map((customer) => (
-                                    <CommandItem
-                                      key={customer.id}
-                                      value={customer.nom}
-                                      onSelect={() => {
-                                        field.onChange(customer.id);
-                                        setCustomerPopoverOpen(false);
-                                      }}
-                                      className="cursor-pointer"
-                                    >
-                                      <div className="flex items-center justify-between w-full">
-                                        <span className="font-medium text-sm">{customer.nom}</span>
-                                        <Check
-                                          className={`ml-auto h-4 w-4 ${
-                                            field.value === customer.id ? "opacity-100" : "opacity-0"
-                                          }`}
-                                        />
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
+                          <FormLabel>Type *</FormLabel>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner le type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="intern">Interne (Notre matière)</SelectItem>
+                              <SelectItem value="extern">Externe (Matière client)</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                  )}
-                </div>
+
+                    {form.watch("materiere_type") === "extern" && (
+                      <FormField
+                        control={form.control}
+                        name="extern_customer_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Client propriétaire *</FormLabel>
+                            <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={customerPopoverOpen}
+                                    className="w-full justify-between"
+                                  >
+                                    {field.value 
+                                      ? availableCustomers.find((customer) => customer.id === field.value)?.nom 
+                                      : "Sélectionner un client..."}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-full p-0 z-50 bg-popover" align="start">
+                                <Command className="w-full">
+                                  <CommandInput 
+                                    placeholder="Rechercher un client..." 
+                                    className="h-9 text-sm border-0 focus:ring-0 focus:outline-none"
+                                  />
+                                  <CommandEmpty>
+                                    {availableCustomers.length === 0 ? "Aucun client disponible" : "Aucun client trouvé"}
+                                  </CommandEmpty>
+                                  <CommandGroup className="max-h-64 overflow-y-auto">
+                                    {availableCustomers.map((customer) => (
+                                      <CommandItem
+                                        key={customer.id}
+                                        value={customer.nom}
+                                        onSelect={() => {
+                                          field.onChange(customer.id);
+                                          setCustomerPopoverOpen(false);
+                                        }}
+                                        className="cursor-pointer"
+                                      >
+                                        <div className="flex items-center justify-between w-full">
+                                          <span className="font-medium text-sm">{customer.nom}</span>
+                                          <Check
+                                            className={`ml-auto h-4 w-4 ${
+                                              field.value === customer.id ? "opacity-100" : "opacity-0"
+                                            }`}
+                                          />
+                                        </div>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -916,117 +931,6 @@ const AddMaterial = () => {
             </CardHeader>
             {showAdvanced && (
               <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="is_replacable"
-                  render={({ field }) => (
-                     <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border bg-card p-4">
-                       <div className="space-y-0.5">
-                         <FormLabel className="text-base font-medium">Matériau remplaçable</FormLabel>
-                         <div className="text-sm text-muted-foreground">
-                           Ce matériau peut être substitué par un autre en cas de rupture
-                         </div>
-                       </div>
-                       <FormControl>
-                         <Switch
-                           checked={field.value}
-                           onCheckedChange={field.onChange}
-                           className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-input"
-                         />
-                       </FormControl>
-                     </FormItem>
-                  )}
-                />
-
-                {form.watch("is_replacable") && (
-                  <FormField
-                    control={form.control}
-                    name="replacable_material_id"
-                    render={({ field }) => {
-                      const selectedMaterial = availableMaterials.find(
-                        material => material.id === field.value
-                      );
-
-                      return (
-                        <FormItem>
-                          <FormLabel>Matériau de remplacement *</FormLabel>
-                          
-                           <Popover open={replacementPopoverOpen} onOpenChange={setReplacementPopoverOpen}>
-                             <PopoverTrigger asChild>
-                               <FormControl>
-                                 <Button
-                                   variant="outline"
-                                   role="combobox"
-                                   className={`w-full justify-between ${!field.value && "text-muted-foreground"}`}
-                                 >
-                                   {selectedMaterial ? (
-                                     <div className="flex flex-col items-start">
-                                       <span className="font-medium">{selectedMaterial.title}</span>
-                                       <div className="flex gap-2 text-xs text-muted-foreground">
-                                         {selectedMaterial.reference && <span>Réf: {selectedMaterial.reference}</span>}
-                                         {selectedMaterial.color && <span>• {selectedMaterial.color}</span>}
-                                         {selectedMaterial.category_name && <span>• {selectedMaterial.category_name}</span>}
-                                       </div>
-                                     </div>
-                                   ) : (
-                                     "Sélectionner un matériau de remplacement"
-                                   )}
-                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                 </Button>
-                               </FormControl>
-                             </PopoverTrigger>
-                             <PopoverContent className="w-full p-0 z-50 bg-popover" align="start">
-                               <Command className="w-full">
-                                 <CommandInput 
-                                   placeholder="Rechercher un matériau..." 
-                                   className="h-9 text-sm border-0 focus:ring-0 focus:outline-none"
-                                 />
-                                 <CommandEmpty>
-                                   {availableMaterials.length === 0 ? "Aucun matériau disponible" : "Aucun matériau trouvé"}
-                                 </CommandEmpty>
-                                 <CommandGroup className="max-h-64 overflow-y-auto">
-                                   {availableMaterials.map((material) => (
-                                     <CommandItem
-                                       key={material.id}
-                                       value={`${material.title} ${material.reference || ''} ${material.color || ''} ${material.category_name || ''}`}
-                                       onSelect={() => {
-                                         field.onChange(material.id);
-                                         setReplacementPopoverOpen(false);
-                                       }}
-                                       className="cursor-pointer"
-                                     >
-                                       <div className="flex items-center justify-between w-full">
-                                         <div className="flex flex-col">
-                                           <span className="font-medium text-sm">{material.title}</span>
-                                           <div className="flex gap-2 text-xs text-muted-foreground">
-                                             {material.reference && <span>Réf: {material.reference}</span>}
-                                             {material.color && <span>• Couleur: {material.color}</span>}
-                                             {material.category_name && <span>• {material.category_name}</span>}
-                                           </div>
-                                         </div>
-                                         <Check
-                                           className={`ml-auto h-4 w-4 ${
-                                             field.value === material.id ? "opacity-100" : "opacity-0"
-                                           }`}
-                                         />
-                                       </div>
-                                     </CommandItem>
-                                   ))}
-                                 </CommandGroup>
-                               </Command>
-                             </PopoverContent>
-                           </Popover>
-                          
-                          <div className="text-xs text-muted-foreground">
-                            Ce matériau sera utilisé automatiquement si le stock principal est épuisé
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      );
-                    }}
-                  />
-                )}
-
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-base font-medium">Attributs personnalisés</Label>

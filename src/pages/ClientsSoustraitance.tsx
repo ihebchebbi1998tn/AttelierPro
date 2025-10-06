@@ -22,6 +22,9 @@ interface SoustraitanceClient {
   phone: string;
   address: string;
   website?: string;
+  password?: string;
+  is_active?: number;
+  last_login?: string;
   created_date: string;
   updated_date: string;
 }

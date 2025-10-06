@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { authService } from "@/lib/authService";
 import { 
   Package2, 
   ShoppingCart,
@@ -48,6 +49,9 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const currentUser = authService.getCurrentUser();
+  const isSousTraitance = currentUser?.user_type === 'sous_traitance' || currentUser?.role === 'sous_traitance';
 
   useEffect(() => {
     fetchDashboardData();
@@ -77,44 +81,103 @@ const Dashboard = () => {
     try {
       setIsLoading(true);
       
-      // Fetch SurMesure orders
-      const surMesureResponse = await fetch('https://luccibyey.com.tn/production/api/commandes_surmesure.php');
-      const surMesureData = await surMesureResponse.json();
-      
-      if (surMesureData.success) {
-        setSurMesureOrders(surMesureData.data || []);
-      }
-
-      // Fetch Production batches
-      const productionResponse = await fetch('https://luccibyey.com.tn/production/api/production_batches.php');
-      const productionData = await productionResponse.json();
-      
-      if (productionData.success) {
-        setProductionBatches(productionData.data || []);
-      }
-
-      // Fetch Materials for grid view
-      const materialsResponse = await fetch('https://luccibyey.com.tn/production/api/matieres.php?stock_levels');
-      const materialsData = await materialsResponse.json();
-      
-      if (materialsData.success && Array.isArray(materialsData.data)) {
-        const transformedMaterials: MaterialItem[] = materialsData.data.map(item => ({
-          material_id: item.material_id,
-          title: item.title,
-          color: item.color,
-          quantity_total: parseFloat(item.quantity_total) || 0,
-          status: item.status || "good",
-          progress_percentage: item.progress_percentage || 0,
-        }));
+      // Fetch SurMesure orders with error handling
+      try {
+        const surMesureResponse = await fetch('https://luccibyey.com.tn/api/get_sur_mesure_orders.php');
         
-        setMaterials(transformedMaterials);
-        setFilteredMaterials(transformedMaterials);
+        if (surMesureResponse.ok) {
+          const contentType = surMesureResponse.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const text = await surMesureResponse.text();
+            if (text && text.trim()) {
+              try {
+                const surMesureData = JSON.parse(text);
+                if (surMesureData.success && Array.isArray(surMesureData.data)) {
+                  setSurMesureOrders(surMesureData.data);
+                } else {
+                  setSurMesureOrders([]);
+                }
+              } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                setSurMesureOrders([]);
+              }
+            } else {
+              setSurMesureOrders([]);
+            }
+          } else {
+            setSurMesureOrders([]);
+          }
+        } else {
+          console.error('HTTP error:', surMesureResponse.status);
+          setSurMesureOrders([]);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des commandes sur mesure:', error);
+        setSurMesureOrders([]);
       }
+
+      // Fetch Production batches with error handling
+      try {
+        const productionResponse = await fetch('https://luccibyey.com.tn/production/api/production_batches.php');
+        
+        if (productionResponse.ok) {
+          const contentType = productionResponse.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const productionData = await productionResponse.json();
+            if (productionData.success && Array.isArray(productionData.data)) {
+              setProductionBatches(productionData.data);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des productions:', error);
+        setProductionBatches([]);
+      }
+
+      // Fetch Materials for grid view with error handling
+      try {
+        const materialsResponse = await fetch('https://luccibyey.com.tn/production/api/matieres.php?stock_levels');
+        
+        if (materialsResponse.ok) {
+          const contentType = materialsResponse.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const materialsData = await materialsResponse.json();
+            
+            if (materialsData.success && Array.isArray(materialsData.data)) {
+              let transformedMaterials: MaterialItem[] = materialsData.data.map(item => ({
+                material_id: item.material_id,
+                title: item.title || 'Sans nom',
+                color: item.color,
+                quantity_total: parseFloat(item.quantity_total) || 0,
+                status: item.status || "good",
+                progress_percentage: item.progress_percentage || 0,
+              }));
+              
+              // Filter to show only external materials for sous-traitance users
+              if (isSousTraitance) {
+                const filteredExternMaterials = transformedMaterials.filter(material => {
+                  const originalItem = materialsData.data.find((item: any) => item.material_id === material.material_id);
+                  return originalItem && originalItem.type === 'extern';
+                });
+                transformedMaterials = filteredExternMaterials;
+              }
+              
+              setMaterials(transformedMaterials);
+              setFilteredMaterials(transformedMaterials);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des matières:', error);
+        setMaterials([]);
+        setFilteredMaterials([]);
+      }
+
     } catch (error) {
-      console.error('Erreur lors du chargement des données:', error);
+      console.error('Erreur générale lors du chargement des données:', error);
       toast({
         title: "Erreur de chargement",
-        description: "Impossible de charger certaines données",
+        description: "Certaines données n'ont pas pu être chargées",
         variant: "destructive",
       });
     } finally {
@@ -184,42 +247,66 @@ const Dashboard = () => {
       </div>
 
       {/* Key Metrics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <Card 
-          className="border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300 cursor-pointer"
-          onClick={() => navigate('/commandes')}
-        >
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-primary-foreground/70">Sur Mesure</p>
-                <p className="text-2xl lg:text-3xl font-bold text-primary-foreground">{surMesureEnCours}</p>
-                <p className="text-xs text-primary-foreground/70">En cours</p>
+      <div className={`grid gap-4 lg:gap-6 ${isSousTraitance ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'}`}>
+        {!isSousTraitance && (
+          <Card 
+            className="border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300 cursor-pointer"
+            onClick={() => navigate('/commandes')}
+          >
+            <CardContent className="p-4 lg:p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-primary-foreground/70">Sur Mesure</p>
+                  <p className="text-2xl lg:text-3xl font-bold text-primary-foreground">{surMesureEnCours}</p>
+                  <p className="text-xs text-primary-foreground/70">En cours</p>
+                </div>
+                <div className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
+                  <ShoppingCart className="h-5 w-5 lg:h-6 lg:w-6 text-primary-foreground" />
+                </div>
               </div>
-              <div className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
-                <ShoppingCart className="h-5 w-5 lg:h-6 lg:w-6 text-primary-foreground" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
-        <Card 
-          className="border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300 cursor-pointer"
-          onClick={() => navigate('/productions')}
-        >
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-primary-foreground/70">Productions</p>
-                <p className="text-2xl lg:text-3xl font-bold text-primary-foreground">{productionsEnCours}</p>
-                <p className="text-xs text-primary-foreground/70">En cours</p>
+        {!isSousTraitance && (
+          <Card 
+            className="border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300 cursor-pointer"
+            onClick={() => navigate('/productions')}
+          >
+            <CardContent className="p-4 lg:p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-primary-foreground/70">Productions</p>
+                  <p className="text-2xl lg:text-3xl font-bold text-primary-foreground">{productionsEnCours}</p>
+                  <p className="text-xs text-primary-foreground/70">En cours</p>
+                </div>
+                <div className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
+                  <Factory className="h-5 w-5 lg:h-6 lg:w-6 text-primary-foreground" />
+                </div>
               </div>
-              <div className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
-                <Factory className="h-5 w-5 lg:h-6 lg:w-6 text-primary-foreground" />
+            </CardContent>
+          </Card>
+        )}
+
+        {isSousTraitance && (
+          <Card 
+            className="border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300 cursor-pointer"
+            onClick={() => navigate('/produits-soustraitance')}
+          >
+            <CardContent className="p-4 lg:p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-primary-foreground/70">Produits</p>
+                  <p className="text-2xl lg:text-3xl font-bold text-primary-foreground">-</p>
+                  <p className="text-xs text-primary-foreground/70">Sous-traitance</p>
+                </div>
+                <div className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
+                  <Package2 className="h-5 w-5 lg:h-6 lg:w-6 text-primary-foreground" />
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         <Card 
           className="border-0 shadow-lg bg-primary hover:shadow-xl transition-all duration-300 cursor-pointer"
