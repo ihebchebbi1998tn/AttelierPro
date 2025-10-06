@@ -46,16 +46,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Begin transaction
             $db->beginTransaction();
             
+            // Get batch details to retrieve quantity_to_produce
+            $batchStmt = $db->prepare("SELECT quantity_to_produce FROM production_batches WHERE id = ?");
+            $batchStmt->execute([$batch_id]);
+            $batchData = $batchStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$batchData) {
+                throw new Exception("Batch ID {$batch_id} introuvable");
+            }
+            
+            $quantity_to_produce = intval($batchData['quantity_to_produce']);
+            
+            if ($quantity_to_produce <= 0) {
+                throw new Exception("Quantité à produire invalide pour le batch {$batch_id}");
+            }
+            
             $transactions = [];
             $totalCost = 0;
             $processedMaterials = [];
             
-            foreach ($materials_quantities as $material_id => $quantity_to_deduct) {
+            foreach ($materials_quantities as $material_id => $quantity_per_piece) {
                 $material_id = intval($material_id);
-                $quantity_to_deduct = floatval($quantity_to_deduct);
+                $quantity_per_piece = floatval($quantity_per_piece);
                 
                 // Skip if quantity is 0 or negative
-                if ($quantity_to_deduct <= 0) {
+                if ($quantity_per_piece <= 0) {
                     continue;
                 }
                 
@@ -63,6 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (isset($processedMaterials[$material_id])) {
                     continue;
                 }
+                
+                // IMPORTANT: Multiply quantity per piece by total units to produce
+                $quantity_to_deduct = $quantity_per_piece * $quantity_to_produce;
                 
                 // Get material details
                 $stmt = $db->prepare("
@@ -84,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Check if there's enough stock
                 if ($current_stock < $quantity_to_deduct) {
-                    throw new Exception("Stock insuffisant pour {$material['nom']} ({$material['couleur']}). Disponible: {$current_stock} {$material['unite']}, Requis: {$quantity_to_deduct} {$material['unite']}");
+                    throw new Exception("Stock insuffisant pour {$material['nom']} ({$material['couleur']}). Disponible: {$current_stock} {$material['unite']}, Requis: {$quantity_to_deduct} {$material['unite']} (= {$quantity_per_piece} par pièce × {$quantity_to_produce} unités)");
                 }
                 
                 // Calculate total cost
@@ -107,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
                 
                 $reference = $production_number ?? "BATCH-{$batch_id}";
-                $notes = "Déduction stock pour production - Lot: {$reference}, Matière: {$material['nom']} ({$material['couleur']}), Quantité réelle utilisée: {$quantity_to_deduct} {$material['unite']}";
+                $notes = "Déduction stock pour production - Lot: {$reference}, Matière: {$material['nom']} ({$material['couleur']}), Quantité par pièce: {$quantity_per_piece} {$material['unite']}, Unités produites: {$quantity_to_produce}, Total déduit: {$quantity_to_deduct} {$material['unite']}";
                 
                 $transactionStmt->execute([
                     $material_id,
@@ -130,6 +148,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'material_id' => $material_id,
                     'material_name' => $material['nom'],
                     'material_color' => $material['couleur'],
+                    'quantity_per_piece' => $quantity_per_piece,
+                    'units_produced' => $quantity_to_produce,
                     'quantity_deducted' => $quantity_to_deduct,
                     'unit' => $material['unite'],
                     'unit_price' => $unit_price,

@@ -92,6 +92,9 @@ switch($method) {
                 case 'startCommandeSurMesure':
                     echo json_encode(startCommandeSurMesure($db, $input['order_id'], $input['user_id']));
                     break;
+                case 'cancelTransaction':
+                    echo json_encode(cancelTransaction($db, $input['transaction_id'], $input['user_id']));
+                    break;
                 default:
                     echo json_encode(['success' => false, 'message' => 'Unknown action']);
             }
@@ -359,6 +362,83 @@ function startCommandeSurMesure($db, $order_id, $user_id) {
     } catch(Exception $e) {
         $db->rollBack();
         return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+    }
+}
+
+function cancelTransaction($db, $transaction_id, $user_id) {
+    try {
+        $db->beginTransaction();
+
+        // Get the transaction details
+        $stmt = $db->prepare("
+            SELECT t.*, m.nom AS material_title
+            FROM production_transactions_stock t
+            JOIN production_matieres m ON t.material_id = m.id
+            WHERE t.transaction_id = ?
+        ");
+        $stmt->execute([$transaction_id]);
+        $transaction = $stmt->fetch();
+        
+        if(!$transaction) {
+            $db->rollBack();
+            return ['success' => false, 'message' => 'Transaction not found'];
+        }
+
+        // Check if already cancelled
+        if(isset($transaction['is_cancelled']) && $transaction['is_cancelled'] == 1) {
+            $db->rollBack();
+            return ['success' => false, 'message' => 'Transaction already cancelled'];
+        }
+
+        // Reverse the stock movement
+        if($transaction['type_mouvement'] === 'out') {
+            // For OUT transactions (sortie), add stock back
+            $stmt = $db->prepare("UPDATE production_matieres SET quantite_stock = quantite_stock + ? WHERE id = ?");
+        } else {
+            // For IN transactions (entrée), deduct stock
+            $stmt = $db->prepare("UPDATE production_matieres SET quantite_stock = quantite_stock - ? WHERE id = ?");
+        }
+        $stmt->execute([$transaction['quantite'], $transaction['material_id']]);
+
+        // Mark transaction as cancelled
+        $stmt = $db->prepare("
+            UPDATE production_transactions_stock 
+            SET notes = CONCAT(COALESCE(notes, ''), ' [ANNULÉE]'),
+                motif = CONCAT(COALESCE(motif, ''), ' - Annulée par utilisateur #', ?)
+            WHERE transaction_id = ?
+        ");
+        $stmt->execute([$user_id, $transaction_id]);
+
+        // Create a reversal transaction
+        $reversal_type = $transaction['type_mouvement'] === 'out' ? 'in' : 'out';
+        $stmt = $db->prepare("
+            INSERT INTO production_transactions_stock 
+            (material_id, type_mouvement, quantite, quantity_type_id, prix_unitaire, cout_total, motif, reference_commande, notes, user_id, date_transaction) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        ");
+        $stmt->execute([
+            $transaction['material_id'],
+            $reversal_type,
+            $transaction['quantite'],
+            $transaction['quantity_type_id'],
+            $transaction['prix_unitaire'],
+            $transaction['cout_total'],
+            'Annulation transaction #' . $transaction_id,
+            $transaction['reference_commande'],
+            'Transaction inverse suite à l\'annulation de la transaction #' . $transaction_id . ' (' . $transaction['material_title'] . ')',
+            $user_id
+        ]);
+
+        $db->commit();
+        return [
+            'success' => true, 
+            'message' => 'Transaction annulée avec succès. Stock restauré.',
+            'reversal_transaction_id' => $db->lastInsertId()
+        ];
+        
+    } catch(Exception $e) {
+        $db->rollBack();
+        return ['success' => false, 'message' => 'Erreur: ' . $e->getMessage()];
     }
 }
 ?>

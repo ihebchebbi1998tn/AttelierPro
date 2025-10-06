@@ -1,13 +1,16 @@
 <?php
 require_once 'config.php';
 
-$database = new Database();
-$db = $database->getConnection();
+header('Content-Type: application/json');
 
-$method = $_SERVER['REQUEST_METHOD'];
-$input = json_decode(file_get_contents('php://input'), true);
+try {
+    $database = new Database();
+    $db = $database->getConnection();
 
-switch($method) {
+    $method = $_SERVER['REQUEST_METHOD'];
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    switch($method) {
     case 'GET':
         if(isset($_GET['id'])) {
             // Get specific order with client info
@@ -151,5 +154,9 @@ switch($method) {
     default:
         echo json_encode(['success' => false, 'message' => 'Method not allowed']);
         break;
+    }
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage(), 'data' => []]);
 }
 ?>

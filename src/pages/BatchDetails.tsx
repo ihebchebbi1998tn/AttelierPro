@@ -2996,17 +2996,31 @@ const BatchDetails = () => {
                             </TableCell>
                             <TableCell>
                               {canEdit ? (
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={quantityValue}
-                                  onChange={(e) => handleMaterialQuantityChange(material.material_id, e.target.value)}
-                                  className={`w-28 ${!quantityValue || quantityValue === 0 ? 'border-destructive' : ''}`}
-                                  placeholder="0"
-                                />
+                                <div className="space-y-1">
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={quantityValue}
+                                    onChange={(e) => handleMaterialQuantityChange(material.material_id, e.target.value)}
+                                    className={`w-28 ${!quantityValue || quantityValue === 0 ? 'border-destructive' : ''}`}
+                                    placeholder="0"
+                                  />
+                                  {Number(quantityValue) > 0 && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {quantityValue} × {batch.quantity_to_produce} = {(Number(quantityValue) * batch.quantity_to_produce).toFixed(2)} {material.quantity_unit}
+                                    </span>
+                                  )}
+                                </div>
                               ) : (
-                                <span className="font-medium">{quantityValue || '-'}</span>
+                                <div className="space-y-1">
+                                  <span className="font-medium">{quantityValue || '-'}</span>
+                                  {Number(quantityValue) > 0 && (
+                                    <div className="text-xs text-muted-foreground">
+                                      {quantityValue} × {batch.quantity_to_produce} = {(Number(quantityValue) * batch.quantity_to_produce).toFixed(2)} {material.quantity_unit}
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </TableCell>
                             <TableCell>

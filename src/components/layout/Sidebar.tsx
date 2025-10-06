@@ -65,6 +65,7 @@ const sidebarItems: SidebarItem[] = [
     title: "Produits",
     href: "/produits",
     icon: Package,
+    roles: ["admin", "production"],
   },
   {
     title: "Productions",
@@ -76,11 +77,13 @@ const sidebarItems: SidebarItem[] = [
     title: "Stock",
     href: "/stock",
     icon: TrendingUp,
+    roles: ["admin", "production", "sous_traitance"],
   },
   {
     title: "Transactions",
     href: "/transactions",
     icon: FileText,
+    roles: ["admin", "production"],
   },
   {
     title: "Clients Sur Mesure",
@@ -98,7 +101,7 @@ const sidebarItems: SidebarItem[] = [
     title: "Produits Sous-traitance",
     href: "/soustraitance-products",
     icon: Package,
-    roles: ["admin", "production"],
+    roles: ["admin", "production", "sous_traitance"],
   },
   {
     title: "Gestion RH",

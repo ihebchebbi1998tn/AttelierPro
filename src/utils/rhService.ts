@@ -15,6 +15,7 @@ export interface Employee {
   id: number;
   nom: string;
   prenom: string;
+  nom_complet?: string;
   telephone?: string;
   adresse?: string;
   region?: string;
@@ -28,6 +29,7 @@ export interface Employee {
   cnss_code?: string;
   nombre_enfants?: number;
   date_naissance?: string;
+  fiche_paie_url?: string;
   created_at: string;
   updated_at?: string;
 }

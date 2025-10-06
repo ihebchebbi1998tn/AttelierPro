@@ -26,7 +26,8 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  DollarSign as DollarSignIcon
+  DollarSign as DollarSignIcon,
+  FileText
 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import {
@@ -1174,9 +1175,7 @@ const Employes = () => {
                   <TableHead>Photo</TableHead>
                   <TableHead>Nom Complet</TableHead>
                   <TableHead>Contact</TableHead>
-                  <TableHead>Région</TableHead>
                   <TableHead>Statut Civil</TableHead>
-                  <TableHead>Statut</TableHead>
                   <TableHead className="text-center">Planning/Salaire</TableHead>
                   <TableHead>Date d'embauche</TableHead>
                   <TableHead>Actions</TableHead>
@@ -1230,17 +1229,9 @@ const Employes = () => {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>{employee.region || "-"}</TableCell>
                     <TableCell>
                       <Badge variant="outline">
                         {statutCivilLabels[employee.statut_civil]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={employee.actif ? "default" : "destructive"}
-                      >
-                        {employee.actif ? "Actif" : "Inactif"}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -1268,17 +1259,37 @@ const Employes = () => {
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/rh/employes/${employee.id}`);
-                          }}
-                          title="Voir détails"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                              title="Voir fiche de paie"
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl h-[90vh]">
+                            <DialogHeader>
+                              <DialogTitle>Fiche de paie - {employee.nom_complet}</DialogTitle>
+                            </DialogHeader>
+                            <div className="flex-1 overflow-auto">
+                              {employee.fiche_paie_url ? (
+                                <iframe
+                                  src={employee.fiche_paie_url}
+                                  className="w-full h-full border-0"
+                                  title="Aperçu de la fiche de paie"
+                                />
+                              ) : (
+                                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                                  <FileText className="h-16 w-16 mb-4 opacity-50" />
+                                  <p>Aucune fiche de paie disponible</p>
+                                </div>
+                              )}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                         <Button
                           variant="ghost"
                           size="sm"

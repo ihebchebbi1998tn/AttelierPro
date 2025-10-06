@@ -185,9 +185,9 @@ export function SurMesureNotifications() {
   useEffect(() => {
     const currentCount = unseenOrders.length + unseenBatches.length;
     
-    // Don't show if no notifications
+    // Only proceed if there are actual notifications
     if (currentCount === 0) {
-      setPrevUnseenCount(currentCount);
+      setPrevUnseenCount(0);
       return;
     }
     
@@ -198,7 +198,7 @@ export function SurMesureNotifications() {
     const shownThisVisit = sessionStorage.getItem(pageVisitKey);
     
     const shouldShow = () => {
-      // First time or no previous record - show immediately
+      // First time or no previous record - show immediately if there are notifications
       if (!lastShown) return true;
       
       // Already shown this page visit - don't show again until next visit
@@ -211,7 +211,8 @@ export function SurMesureNotifications() {
       return timeSinceLastShown >= hourInMs;
     };
     
-    if (shouldShow()) {
+    // Only auto-open if we have notifications AND shouldShow is true
+    if (currentCount > 0 && shouldShow()) {
       setIsOpen(true);
       localStorage.setItem(lastShownKey, now.toString());
       sessionStorage.setItem(pageVisitKey, 'true');

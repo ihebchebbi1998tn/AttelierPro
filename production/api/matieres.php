@@ -21,6 +21,28 @@ $db = $database->getConnection();
 
 $method = $_SERVER['REQUEST_METHOD'];
 
+// Get user info from Authorization header
+$headers = getallheaders();
+$authHeader = $headers['Authorization'] ?? '';
+$userEmail = null;
+$userType = null;
+
+if ($authHeader && strpos($authHeader, 'Bearer ') === 0) {
+    $token = substr($authHeader, 7);
+    $decoded = base64_decode($token);
+    $parts = explode(':', $decoded);
+    
+    if (count($parts) >= 2) {
+        $userId = $parts[0];
+        $userEmail = $parts[1];
+        
+        // Check if this is a soustraitance user
+        if (count($parts) === 4 && $parts[2] === 'sous_traitance') {
+            $userType = 'sous_traitance';
+        }
+    }
+}
+
 // Handle both JSON and FormData input for non-GET requests
 $input = null;
 $isFormData = false;
@@ -148,6 +170,13 @@ switch($method) {
             // Build ORDER BY clause
             $order_clause = buildOrderByClause($sort_by, $sort_order);
             
+            // Build WHERE clause based on user type
+            $whereClause = "WHERE m.active = 1";
+            if ($userType === 'sous_traitance' && $userEmail) {
+                // For soustraitance users, only show materials where location matches their email
+                $whereClause .= " AND m.location = " . $db->quote($userEmail);
+            }
+            
             $stmt = $db->query("
                 SELECT m.*, c.nom as category_name, f.name as fournisseur_name, sc.name as customer_name,
                        qt.nom as quantity_type_name, qt.unite as quantity_type_unit,
@@ -159,7 +188,7 @@ switch($method) {
                 LEFT JOIN production_materials_fournisseurs f ON m.id_fournisseur = f.id AND f.active = 1
                 LEFT JOIN production_soustraitance_clients sc ON m.extern_customer_id = sc.id
                 LEFT JOIN production_quantity_types qt ON m.quantity_type_id = qt.id
-                WHERE m.active = 1
+                " . $whereClause . "
                 " . $order_clause . "
             ");
             $materials = $stmt->fetchAll();
@@ -253,6 +282,13 @@ switch($method) {
             $sort_order = isset($_GET['order']) ? $_GET['order'] : 'DESC';
             $order_clause = buildOrderByClause($sort_by, $sort_order);
             
+            // Build WHERE clause based on user type
+            $whereClause = "";
+            if ($userType === 'sous_traitance' && $userEmail) {
+                // For soustraitance users, only show materials where location matches their email
+                $whereClause = "WHERE m.location = " . $db->quote($userEmail);
+            }
+            
             $stmt = $db->query("
                 SELECT m.*, c.nom as category_name, f.name as fournisseur_name, sc.name as customer_name,
                        qt.nom as quantity_type_name, qt.unite as quantity_type_unit,
@@ -262,6 +298,7 @@ switch($method) {
                 LEFT JOIN production_materials_fournisseurs f ON m.id_fournisseur = f.id AND f.active = 1
                 LEFT JOIN production_soustraitance_clients sc ON m.extern_customer_id = sc.id
                 LEFT JOIN production_quantity_types qt ON m.quantity_type_id = qt.id
+                " . $whereClause . "
                 " . $order_clause . "
             ");
             $materials = $stmt->fetchAll();

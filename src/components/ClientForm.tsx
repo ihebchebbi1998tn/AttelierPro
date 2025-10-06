@@ -12,6 +12,7 @@ interface SoustraitanceClient {
   phone: string;
   address: string;
   website?: string;
+  password?: string;
   created_date: string;
   updated_date: string;
 }
@@ -31,6 +32,7 @@ const ClientForm = ({ isOpen, onClose, onSubmit, client, isEditing = false }: Cl
     phone: client?.phone || "",
     address: client?.address || "",
     website: client?.website || "",
+    password: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,6 +53,7 @@ const ClientForm = ({ isOpen, onClose, onSubmit, client, isEditing = false }: Cl
       phone: "",
       address: "",
       website: "",
+      password: "",
     });
     onClose();
   };
@@ -132,6 +135,24 @@ const ClientForm = ({ isOpen, onClose, onSubmit, client, isEditing = false }: Cl
               onChange={handleChange}
               placeholder="https://exemple.com"
             />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="password">
+              Mot de passe {isEditing && "(laisser vide pour ne pas changer)"}
+            </Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder={isEditing ? "••••••••" : "Mot de passe"}
+              required={!isEditing}
+            />
+            <p className="text-xs text-muted-foreground">
+              Ce mot de passe permettra au client de se connecter à l'application
+            </p>
           </div>
           
           <div className="flex justify-end gap-2 pt-4">

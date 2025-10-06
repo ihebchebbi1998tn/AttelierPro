@@ -50,13 +50,20 @@ try {
                 break;
             }
 
-            $stmt = $conn->prepare("INSERT INTO production_soustraitance_clients (name, email, phone, address, website) VALUES (?, ?, ?, ?, ?)");
+            // Hash password if provided
+            $hashedPassword = null;
+            if (isset($data['password']) && !empty($data['password'])) {
+                $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+            }
+
+            $stmt = $conn->prepare("INSERT INTO production_soustraitance_clients (name, email, phone, address, website, password) VALUES (?, ?, ?, ?, ?, ?)");
             $result = $stmt->execute([
                 $data['name'],
                 $data['email'],
                 $data['phone'],
                 $data['address'],
-                $data['website'] ?? null
+                $data['website'] ?? null,
+                $hashedPassword
             ]);
 
             if ($result) {
@@ -107,6 +114,14 @@ try {
             if (isset($data['website'])) {
                 $updateFields[] = "website = ?";
                 $params[] = $data['website'];
+            }
+            if (isset($data['password']) && !empty($data['password'])) {
+                $updateFields[] = "password = ?";
+                $params[] = password_hash($data['password'], PASSWORD_DEFAULT);
+            }
+            if (isset($data['is_active'])) {
+                $updateFields[] = "is_active = ?";
+                $params[] = $data['is_active'];
             }
 
             if (empty($updateFields)) {

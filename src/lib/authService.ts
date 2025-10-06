@@ -5,9 +5,12 @@ export interface User {
   nom: string;
   email: string;
   role: string;
-  active: number;
-  created_at: string;
-  updated_at: string;
+  user_type?: string;
+  active?: number;
+  created_at?: string;
+  updated_at?: string;
+  phone?: string;
+  address?: string;
 }
 
 export interface AuthResponse {
@@ -29,7 +32,6 @@ class AuthService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...this.getAuthHeader(),
         },
         body: JSON.stringify({
           action: 'login',
@@ -110,7 +112,6 @@ class AuthService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...this.getAuthHeader(),
         },
         body: JSON.stringify({
           action: 'verify',
