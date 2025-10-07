@@ -104,6 +104,12 @@ const sidebarItems: SidebarItem[] = [
     roles: ["admin", "production", "sous_traitance"],
   },
   {
+    title: "Paramètres",
+    href: "/soustraitance-settings",
+    icon: Settings,
+    roles: ["sous_traitance"],
+  },
+  {
     title: "Gestion RH",
     href: "/rh",
     icon: UsersIcon,

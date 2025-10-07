@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,8 @@ import {
   TrendingDown,
   Calculator,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Settings
 } from "lucide-react";
 import {
   Table,
@@ -68,9 +70,9 @@ const Salaires = () => {
   
   const [newSalary, setNewSalary] = useState<CreateSalaryData>({
     employee_id: 0,
-    net_total: 0,
-    brut_total: 0,
-    taxes: 0,
+    salaire_brut: 0,
+    chef_de_famille: false,
+    nombre_enfants: 0,
     effective_from: new Date().toISOString().split('T')[0],
     note: ""
   });
@@ -132,18 +134,36 @@ const Salaires = () => {
     });
 
   const handleAddSalary = async () => {
-    if (!newSalary.employee_id || !newSalary.net_total || !newSalary.effective_from) {
+    if (!newSalary.employee_id || !newSalary.salaire_brut || !newSalary.effective_from) {
       toast({
         title: "Erreur",
-        description: "Employé, salaire net et date sont obligatoires",
+        description: "Employé, salaire brut et date sont obligatoires",
         variant: "destructive"
       });
       return;
     }
 
+    // Get employee data for the form
+    const selectedEmp = employees.find(e => e.id === newSalary.employee_id);
+    if (!selectedEmp) {
+      toast({
+        title: "Erreur",
+        description: "Employé non trouvé",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Update with employee's data
+    const salaryWithEmployeeData = {
+      ...newSalary,
+      chef_de_famille: selectedEmp.chef_de_famille || false,
+      nombre_enfants: selectedEmp.nombre_enfants || 0
+    };
+
     try {
       setSubmitting(true);
-      const result = await salaryService.create(newSalary);
+      const result = await salaryService.create(salaryWithEmployeeData);
       
       if (result.success) {
         toast({
@@ -152,9 +172,9 @@ const Salaires = () => {
         });
         setNewSalary({
           employee_id: 0,
-          net_total: 0,
-          brut_total: 0,
-          taxes: 0,
+          salaire_brut: 0,
+          chef_de_famille: false,
+          nombre_enfants: 0,
           effective_from: new Date().toISOString().split('T')[0],
           note: ""
         });
@@ -175,10 +195,21 @@ const Salaires = () => {
   };
 
   const handleEditSalary = async () => {
-    if (!isEditingSalary || !isEditingSalary.net_total || !isEditingSalary.effective_from) {
+    if (!isEditingSalary || !isEditingSalary.salaire_brut || !isEditingSalary.effective_from) {
       toast({
         title: "Erreur",
-        description: "Salaire net et date sont obligatoires",
+        description: "Salaire brut et date sont obligatoires",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Get employee data
+    const employee = employees.find(e => e.id === isEditingSalary.employee_id);
+    if (!employee) {
+      toast({
+        title: "Erreur",
+        description: "Employé non trouvé",
         variant: "destructive"
       });
       return;
@@ -186,13 +217,15 @@ const Salaires = () => {
 
     try {
       setSubmitting(true);
-      const result = await salaryService.update(isEditingSalary.id, {
-        net_total: isEditingSalary.net_total,
-        brut_total: isEditingSalary.brut_total,
-        taxes: isEditingSalary.taxes,
+      const updateData: CreateSalaryData = {
+        employee_id: isEditingSalary.employee_id,
+        salaire_brut: isEditingSalary.salaire_brut,
+        chef_de_famille: employee.chef_de_famille || false,
+        nombre_enfants: employee.nombre_enfants || 0,
         effective_from: isEditingSalary.effective_from,
-        note: isEditingSalary.note
-      });
+        note: isEditingSalary.note || ""
+      };
+      const result = await salaryService.update(isEditingSalary.id, updateData);
       
       if (result.success) {
         toast({
@@ -277,6 +310,12 @@ const Salaires = () => {
             </p>
           </div>
         </div>
+        <Button asChild variant="outline" size={isMobile ? "sm" : "default"}>
+          <Link to="/rh/salaires/configuration">
+            <Settings className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">{isMobile ? "Config" : "Configuration"}</span>
+          </Link>
+        </Button>
       </div>
 
       {/* Statistiques */}

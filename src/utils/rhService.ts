@@ -16,6 +16,7 @@ export interface Employee {
   nom: string;
   prenom: string;
   nom_complet?: string;
+  poste?: string;
   telephone?: string;
   adresse?: string;
   region?: string;
@@ -30,6 +31,7 @@ export interface Employee {
   nombre_enfants?: number;
   date_naissance?: string;
   fiche_paie_url?: string;
+  chef_de_famille?: boolean;
   created_at: string;
   updated_at?: string;
 }
@@ -37,6 +39,7 @@ export interface Employee {
 export interface CreateEmployeeData {
   nom: string;
   prenom: string;
+  poste?: string;
   telephone?: string;
   adresse?: string;
   region?: string;
@@ -50,6 +53,7 @@ export interface CreateEmployeeData {
   cnss_code?: string;
   nombre_enfants?: number;
   date_naissance?: string;
+  chef_de_famille?: boolean;
 }
 
 // Schedule interfaces
@@ -145,7 +149,15 @@ export interface Salary {
   employee_name?: string;
   nom?: string;
   prenom?: string;
-  net_total: number;
+  // New detailed breakdown fields (2025 Tunisian payroll)
+  salaire_brut: number;
+  cnss: number;
+  salaire_brut_imposable: number;
+  irpp: number;
+  css: number;
+  salaire_net: number;
+  // Legacy fields (kept for backward compatibility)
+  net_total?: number;
   brut_total?: number;
   taxes?: number;
   effective_from: string;
@@ -156,9 +168,9 @@ export interface Salary {
 
 export interface CreateSalaryData {
   employee_id: number;
-  net_total: number;
-  brut_total?: number;
-  taxes?: number;
+  salaire_brut: number;
+  chef_de_famille: boolean;
+  nombre_enfants: number;
   effective_from: string;
   note?: string;
 }
@@ -246,7 +258,8 @@ export const employeeService = {
       ...emp,
       actif: emp.actif === '1' || emp.actif === true,
       age: emp.age ? Number(emp.age) : undefined,
-      nombre_enfants: emp.nombre_enfants ? Number(emp.nombre_enfants) : 0
+      nombre_enfants: emp.nombre_enfants ? Number(emp.nombre_enfants) : 0,
+      chef_de_famille: emp.chef_de_famille === '1' || emp.chef_de_famille === true
     }));
     console.log('✅ Processed employees:', employees);
     console.log('✅ Processed employees length:', employees.length);
@@ -265,7 +278,8 @@ export const employeeService = {
       ...emp,
       actif: emp.actif === '1' || emp.actif === true,
       age: emp.age ? Number(emp.age) : undefined,
-      nombre_enfants: emp.nombre_enfants ? Number(emp.nombre_enfants) : 0
+      nombre_enfants: emp.nombre_enfants ? Number(emp.nombre_enfants) : 0,
+      chef_de_famille: emp.chef_de_famille === '1' || emp.chef_de_famille === true
     };
   },
 

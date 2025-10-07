@@ -39,10 +39,11 @@ const ClientForm = ({ isOpen, onClose, onSubmit, client, isEditing = false }: Cl
     e.preventDefault();
     
     if (isEditing && client) {
-      onSubmit({
-        ...client,
-        ...formData,
-      });
+      // Only include password if it was changed (not empty)
+      const updatedData = formData.password 
+        ? { ...client, ...formData }
+        : { ...client, ...formData, password: undefined };
+      onSubmit(updatedData);
     } else {
       onSubmit(formData);
     }

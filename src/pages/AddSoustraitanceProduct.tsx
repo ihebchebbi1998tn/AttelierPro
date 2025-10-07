@@ -16,6 +16,7 @@ import { ArrowLeft, Save, Upload, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { uploadSoustraitanceProductImage, getSoustraitanceClients, createSoustraitanceProduct, updateSoustraitanceProduct, getSoustraitanceProduct } from '@/utils/soustraitanceService';
+import { authService } from '@/lib/authService';
 
 interface SoustraitanceClient {
   id: string;
@@ -182,8 +183,14 @@ const AddSoustraitanceProduct = () => {
     fetchClients();
     if (isEdit) {
       fetchProduct();
+    } else {
+      // For new products, auto-set the logged-in client
+      const currentUser = authService.getCurrentUser();
+      if (currentUser && currentUser.user_type === 'soustraitance') {
+        setFormData(prev => ({ ...prev, client_id: currentUser.id.toString() }));
+      }
     }
-  }, [id]);
+  }, [id, isEdit]);
 
   const fetchClients = async () => {
     try {
@@ -496,49 +503,68 @@ const AddSoustraitanceProduct = () => {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="client_id">Client *</Label>
-                <Popover open={clientSelectOpen} onOpenChange={setClientSelectOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={clientSelectOpen}
-                      className="w-full justify-between"
-                    >
-                      {formData.client_id
-                        ? clients.find((client) => client.id === formData.client_id)?.name
-                        : "Sélectionner un client"}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-50" sideOffset={4}>
-                    <Command>
-                      <CommandInput placeholder="Rechercher un client..." />
-                      <CommandList>
-                        <CommandEmpty>Aucun client trouvé.</CommandEmpty>
-                        <CommandGroup>
-                          {clients.map((client) => (
-                            <CommandItem
-                              key={client.id}
-                              value={client.name}
-                              onSelect={() => {
-                                setFormData({...formData, client_id: client.id});
-                                setClientSelectOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  formData.client_id === client.id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              {client.name}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+              {(() => {
+                const currentUser = authService.getCurrentUser();
+                const isSoustraitanceUser = currentUser?.user_type === 'soustraitance';
+                
+                if (isSoustraitanceUser && !isEdit) {
+                  // Auto-filled and disabled for soustraitance clients creating new products
+                  return (
+                    <Input
+                      value={clients.find((client) => client.id === formData.client_id)?.name || "Chargement..."}
+                      disabled
+                      className="bg-muted"
+                    />
+                  );
+                } else {
+                  // Normal dropdown for admin users or when editing
+                  return (
+                    <Popover open={clientSelectOpen} onOpenChange={setClientSelectOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={clientSelectOpen}
+                          className="w-full justify-between"
+                        >
+                          {formData.client_id
+                            ? clients.find((client) => client.id === formData.client_id)?.name
+                            : "Sélectionner un client"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-50" sideOffset={4}>
+                        <Command>
+                          <CommandInput placeholder="Rechercher un client..." />
+                          <CommandList>
+                            <CommandEmpty>Aucun client trouvé.</CommandEmpty>
+                            <CommandGroup>
+                              {clients.map((client) => (
+                                <CommandItem
+                                  key={client.id}
+                                  value={client.name}
+                                  onSelect={() => {
+                                    setFormData({...formData, client_id: client.id});
+                                    setClientSelectOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      formData.client_id === client.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {client.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  );
+                }
+              })()}
             </div>
 
             <div>

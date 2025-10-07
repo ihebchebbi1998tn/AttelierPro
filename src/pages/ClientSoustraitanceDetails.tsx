@@ -103,6 +103,15 @@ const ClientSoustraitanceDetails = () => {
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    website: ''
+  });
+  const [updating, setUpdating] = useState(false);
 
   const API_BASE_URL = 'https://luccibyey.com.tn/production/api';
 
@@ -353,6 +362,58 @@ const ClientSoustraitanceDetails = () => {
     }
   };
 
+  const handleOpenEditDialog = () => {
+    if (client) {
+      setEditForm({
+        name: client.name,
+        email: client.email,
+        phone: client.phone,
+        address: client.address,
+        website: client.website || ''
+      });
+      setEditDialogOpen(true);
+    }
+  };
+
+  const handleUpdateClient = async () => {
+    if (!client) return;
+
+    try {
+      setUpdating(true);
+      const response = await axios.put(
+        `${API_BASE_URL}/soustraitance_clients.php`,
+        {
+          id: client.id,
+          ...editForm
+        }
+      );
+
+      if (response.data.success) {
+        toast({
+          title: "Succès",
+          description: "Client mis à jour avec succès",
+        });
+        setEditDialogOpen(false);
+        fetchClientDetails();
+      } else {
+        toast({
+          title: "Erreur",
+          description: response.data.message || "Erreur lors de la mise à jour",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating client:', error);
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de la mise à jour du client",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const handleDeleteClient = async () => {
     try {
       setDeleting(true);
@@ -444,7 +505,12 @@ const ClientSoustraitanceDetails = () => {
               </div>
             </div>
             <div className="flex items-center gap-2 self-end md:self-auto">
-              <Button variant="outline" size="sm" className="text-xs md:text-sm h-8 md:h-9">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-xs md:text-sm h-8 md:h-9"
+                onClick={handleOpenEditDialog}
+              >
                 <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1 md:mr-2" />
                 <span className="hidden sm:inline">Modifier</span>
               </Button>
@@ -1256,8 +1322,84 @@ const ClientSoustraitanceDetails = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      {/* Edit Client Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Modifier le client</DialogTitle>
+            <DialogDescription>
+              Mettez à jour les informations du client
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-name">Nom *</Label>
+              <Input
+                id="edit-name"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                placeholder="Nom du client"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-email">Email *</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                placeholder="email@example.com"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-phone">Téléphone *</Label>
+              <Input
+                id="edit-phone"
+                value={editForm.phone}
+                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                placeholder="+216 12 345 678"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-address">Adresse *</Label>
+              <Textarea
+                id="edit-address"
+                value={editForm.address}
+                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                placeholder="Adresse complète"
+                rows={2}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-website">Site web</Label>
+              <Input
+                id="edit-website"
+                value={editForm.website}
+                onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
+                placeholder="https://exemple.com"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(false)}
+              disabled={updating}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleUpdateClient}
+              disabled={updating || !editForm.name || !editForm.email || !editForm.phone || !editForm.address}
+            >
+              {updating ? "Mise à jour..." : "Mettre à jour"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Confirmer la suppression</DialogTitle>

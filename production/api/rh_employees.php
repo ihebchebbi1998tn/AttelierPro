@@ -64,9 +64,12 @@ try {
                 break;
             }
             
+            $chefDeFamille = isset($input['chef_de_famille']) && $input['chef_de_famille'] && 
+                             isset($input['sexe']) && $input['sexe'] === 'homme' ? 1 : 0;
+            
             $stmt = $db->prepare("
-                INSERT INTO production_employees (nom, prenom, telephone, adresse, region, statut_civil, actif, role, age, carte_identite, sexe, cnss_code, nombre_enfants, date_naissance) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO production_employees (nom, prenom, telephone, adresse, region, statut_civil, actif, role, age, carte_identite, sexe, cnss_code, nombre_enfants, date_naissance, chef_de_famille) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $result = $stmt->execute([
@@ -83,7 +86,8 @@ try {
                 $input['sexe'] ?? null,
                 $input['cnss_code'] ?? null,
                 $input['nombre_enfants'] ?? 0,
-                $input['date_naissance'] ?? null
+                $input['date_naissance'] ?? null,
+                $chefDeFamille
             ]);
             
             if ($result) {
@@ -101,9 +105,12 @@ try {
                 break;
             }
             
+            $chefDeFamille = isset($input['chef_de_famille']) && $input['chef_de_famille'] && 
+                             isset($input['sexe']) && $input['sexe'] === 'homme' ? 1 : 0;
+            
             $stmt = $db->prepare("
                 UPDATE production_employees 
-                SET nom = ?, prenom = ?, telephone = ?, adresse = ?, region = ?, statut_civil = ?, actif = ?, role = ?, age = ?, carte_identite = ?, sexe = ?, cnss_code = ?, nombre_enfants = ?, date_naissance = ?
+                SET nom = ?, prenom = ?, telephone = ?, adresse = ?, region = ?, statut_civil = ?, actif = ?, role = ?, age = ?, carte_identite = ?, sexe = ?, cnss_code = ?, nombre_enfants = ?, date_naissance = ?, chef_de_famille = ?
                 WHERE id = ?
             ");
             
@@ -122,6 +129,7 @@ try {
                 $input['cnss_code'] ?? null,
                 $input['nombre_enfants'] ?? 0,
                 $input['date_naissance'] ?? null,
+                $chefDeFamille,
                 $_GET['id']
             ]);
             

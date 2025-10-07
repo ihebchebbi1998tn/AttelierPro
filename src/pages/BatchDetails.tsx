@@ -53,6 +53,7 @@ import BatchReport from '@/components/BatchReport';
 import BatchImageUpload from '@/components/BatchImageUpload';
 import BatchAttachmentUpload from '@/components/BatchAttachmentUpload';
 import { BatchLeftoversView } from '@/components/BatchLeftoversView';
+import { authService } from '@/lib/authService';
 
 // Helper function to parse sizes breakdown
 const parseSizesBreakdown = (sizesBreakdownString: string | undefined) => {
@@ -150,6 +151,8 @@ const BatchDetails = () => {
   const [showLeftoversSection, setShowLeftoversSection] = useState(false);
   const [leftovers, setLeftovers] = useState<{[key: string]: { quantity: number, reusable: boolean, notes: string }}>({});
   const [savedLeftovers, setSavedLeftovers] = useState<any[]>([]);
+  const [materialStocks, setMaterialStocks] = useState<{[key: number]: number}>({});
+  const [stockWarnings, setStockWarnings] = useState<{[key: number]: boolean}>({});
 
   useEffect(() => {
     if (id) {
@@ -1048,6 +1051,26 @@ const BatchDetails = () => {
     }
   };
 
+  const fetchMaterialStocks = async (materials: BatchMaterial[]) => {
+    try {
+      const stocksData: {[key: number]: number} = {};
+      
+      for (const material of materials) {
+        const response = await fetch(`https://luccibyey.com.tn/production/api/matieres.php?id=${material.material_id}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            stocksData[material.material_id] = Number(data.data.quantite_disponible) || 0;
+          }
+        }
+      }
+      
+      setMaterialStocks(stocksData);
+    } catch (error) {
+      console.error('Error fetching material stocks:', error);
+    }
+  };
+
   const generatePDFReport = async () => {
     if (!batch) return;
     
@@ -1442,6 +1465,9 @@ const BatchDetails = () => {
           setMaterialsQuantities(initialQuantities);
           // If all quantities are already filled from database, mark as saved
           setQuantitiesSaved(hasAllQuantities && Object.keys(initialQuantities).length === data.data.materials_used.length);
+          
+          // Fetch stock levels for all materials
+          fetchMaterialStocks(data.data.materials_used);
         }
         
         // Load status history after batch is loaded
@@ -1811,6 +1837,10 @@ const BatchDetails = () => {
         ...prev,
         [materialId]: 0
       }));
+      setStockWarnings(prev => ({
+        ...prev,
+        [materialId]: false
+      }));
       return;
     }
     
@@ -1822,6 +1852,15 @@ const BatchDetails = () => {
       setMaterialsQuantities(prev => ({
         ...prev,
         [materialId]: numValue
+      }));
+      
+      // Check stock availability
+      const totalRequired = numValue * batch.quantity_to_produce;
+      const availableStock = materialStocks[materialId] || 0;
+      
+      setStockWarnings(prev => ({
+        ...prev,
+        [materialId]: totalRequired > availableStock
       }));
     }
   };
@@ -2535,8 +2574,15 @@ const BatchDetails = () => {
               <span className="font-medium">{getProgressPercentage(batch.status)}%</span>
             </div>
             <Progress value={getProgressPercentage(batch.status)} className="h-3" />
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-4 mt-4 md:mt-6">
-              {['planifie', 'en_cours', 'termine', 'en_a_collecter', 'en_magasin'].map((status, index) => {
+            <div className={`grid ${authService.getCurrentUser()?.user_type === 'soustraitance' ? 'grid-cols-3' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-5'} gap-2 md:gap-4 mt-4 md:mt-6 ${authService.getCurrentUser()?.user_type === 'soustraitance' ? 'justify-center' : ''}`}>
+              {(() => {
+                const currentUser = authService.getCurrentUser();
+                const isSoustraitance = currentUser?.user_type === 'soustraitance';
+                const statuses = isSoustraitance 
+                  ? ['planifie', 'termine', 'en_a_collecter']
+                  : ['planifie', 'en_cours', 'termine', 'en_a_collecter', 'en_magasin'];
+                
+                return statuses.map((status, index) => {
                 const isCurrentStatus = batch.status === status;
                 const isCompleted = getProgressPercentage(batch.status) >= getProgressPercentage(status);
                 
@@ -2585,7 +2631,8 @@ const BatchDetails = () => {
                     )}
                   </button>
                 );
-              })}
+                });
+              })()}
             </div>
           </div>
         </CardContent>
@@ -2990,7 +3037,14 @@ const BatchDetails = () => {
                         
                         return (
                           <TableRow key={material.id} className="hover:bg-muted/20">
-                            <TableCell className="font-medium">{material.nom_matiere}</TableCell>
+                            <TableCell className="font-medium">
+                              <button
+                                onClick={() => navigate(`/material-details/${material.material_id}`)}
+                                className="text-primary hover:underline cursor-pointer text-left"
+                              >
+                                {material.nom_matiere}
+                              </button>
+                            </TableCell>
                             <TableCell>
                               <span className="text-sm">{material.couleur || 'Non spécifiée'}</span>
                             </TableCell>
@@ -3007,9 +3061,34 @@ const BatchDetails = () => {
                                     placeholder="0"
                                   />
                                   {Number(quantityValue) > 0 && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {quantityValue} × {batch.quantity_to_produce} = {(Number(quantityValue) * batch.quantity_to_produce).toFixed(2)} {material.quantity_unit}
-                                    </span>
+                                    <div className="space-y-1">
+                                      <span className="text-xs text-muted-foreground">
+                                        {quantityValue} × {batch.quantity_to_produce} = {(Number(quantityValue) * batch.quantity_to_produce).toFixed(2)} {material.quantity_unit}
+                                      </span>
+                                      {stockWarnings[material.material_id] && (() => {
+                                        const totalRequired = Number(quantityValue) * batch.quantity_to_produce;
+                                        const availableStock = materialStocks[material.material_id] || 0;
+                                        const maxUnits = Math.floor(availableStock / Number(quantityValue));
+                                        
+                                        return (
+                                          <div className="flex flex-col gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded border border-destructive/30">
+                                            <div className="flex items-start gap-1">
+                                              <AlertCircle className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                                              <div className="flex-1">
+                                                <div className="font-semibold">Stock insuffisant!</div>
+                                                <div className="mt-1">Requis: {totalRequired.toFixed(2)} {material.quantity_unit}</div>
+                                                <div>Disponible: {availableStock.toFixed(2)} {material.quantity_unit}</div>
+                                                {maxUnits > 0 && (
+                                                  <div className="mt-1 text-muted-foreground">
+                                                    Suggestion: Réduire à {maxUnits} unité{maxUnits > 1 ? 's' : ''}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
                                   )}
                                 </div>
                               ) : (
@@ -3090,20 +3169,52 @@ const BatchDetails = () => {
                               {material.quantity_type_name}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">Quantité utilisée:</span>
-                            {canEdit ? (
-                              <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={quantityValue}
-                                onChange={(e) => handleMaterialQuantityChange(material.material_id, e.target.value)}
-                                className={`w-24 ${!quantityValue || quantityValue === 0 ? 'border-destructive' : ''}`}
-                                placeholder="0"
-                              />
-                            ) : (
-                              <span className="text-sm font-semibold">{quantityValue || '-'}</span>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">Quantité utilisée:</span>
+                              {canEdit ? (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={quantityValue}
+                                  onChange={(e) => handleMaterialQuantityChange(material.material_id, e.target.value)}
+                                  className={`w-24 ${!quantityValue || quantityValue === 0 ? 'border-destructive' : ''}`}
+                                  placeholder="0"
+                                />
+                              ) : (
+                                <span className="text-sm font-semibold">{quantityValue || '-'}</span>
+                              )}
+                            </div>
+                            {Number(quantityValue) > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-xs text-muted-foreground">
+                                  {quantityValue} × {batch.quantity_to_produce} = {(Number(quantityValue) * batch.quantity_to_produce).toFixed(2)} {material.quantity_unit}
+                                </span>
+                                {stockWarnings[material.material_id] && (() => {
+                                  const totalRequired = Number(quantityValue) * batch.quantity_to_produce;
+                                  const availableStock = materialStocks[material.material_id] || 0;
+                                  const maxUnits = Math.floor(availableStock / Number(quantityValue));
+                                  
+                                  return (
+                                    <div className="flex flex-col gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded border border-destructive/30">
+                                      <div className="flex items-start gap-1">
+                                        <AlertCircle className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                          <div className="font-semibold">Stock insuffisant!</div>
+                                          <div className="mt-1">Requis: {totalRequired.toFixed(2)} {material.quantity_unit}</div>
+                                          <div>Disponible: {availableStock.toFixed(2)} {material.quantity_unit}</div>
+                                          {maxUnits > 0 && (
+                                            <div className="mt-1 text-muted-foreground">
+                                              Suggestion: Réduire à {maxUnits} unité{maxUnits > 1 ? 's' : ''}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
                             )}
                           </div>
                           {leftoverData && (
@@ -3189,13 +3300,24 @@ const BatchDetails = () => {
                 </div>
               ) : statusHistory.length > 0 ? (
                 <div className="space-y-6">
-                  {statusHistory.map((entry, index) => {
-                    const isLast = index === statusHistory.length - 1;
-                    const statusColor = getStatusColorAndText(entry.new_status);
-                    const StatusIcon = getStatusIcon(entry.new_status);
+                  {(() => {
+                    const currentUser = authService.getCurrentUser();
+                    const isSoustraitance = currentUser?.user_type === 'soustraitance';
+                    const allowedStatuses = isSoustraitance 
+                      ? ['planifie', 'termine', 'en_a_collecter']
+                      : null;
                     
-                    return (
-                      <div key={entry.id} className="relative pl-8">
+                    const filteredHistory = allowedStatuses
+                      ? statusHistory.filter(entry => allowedStatuses.includes(entry.new_status))
+                      : statusHistory;
+                    
+                    return filteredHistory.map((entry, index) => {
+                      const isLast = index === filteredHistory.length - 1;
+                      const statusColor = getStatusColorAndText(entry.new_status);
+                      const StatusIcon = getStatusIcon(entry.new_status);
+                      
+                      return (
+                        <div key={entry.id} className="relative pl-8">
                         <div className={`absolute left-0 top-1 w-4 h-4 rounded-full ${statusColor.bg}`}></div>
                         {!isLast && (
                           <div className="absolute left-2 top-5 w-0 h-16 border-l-2 border-muted"></div>
@@ -3228,8 +3350,9 @@ const BatchDetails = () => {
                           )}
                         </div>
                       </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">

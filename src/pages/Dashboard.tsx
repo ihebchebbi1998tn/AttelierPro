@@ -47,6 +47,7 @@ const Dashboard = () => {
   const [filteredMaterials, setFilteredMaterials] = useState<MaterialItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [soustraitanceProductCount, setSoustraitanceProductCount] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -173,6 +174,27 @@ const Dashboard = () => {
         setFilteredMaterials([]);
       }
 
+      // Fetch Soustraitance product count for sous-traitance users
+      if (isSousTraitance && currentUser?.id) {
+        try {
+          const productsResponse = await fetch(`https://luccibyey.com.tn/production/api/soustraitance_products.php?client_id=${currentUser.id}`);
+          
+          if (productsResponse.ok) {
+            const contentType = productsResponse.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const productsData = await productsResponse.json();
+              
+              if (productsData.success && Array.isArray(productsData.data)) {
+                setSoustraitanceProductCount(productsData.data.length);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Erreur lors du chargement des produits sous-traitance:', error);
+          setSoustraitanceProductCount(0);
+        }
+      }
+
     } catch (error) {
       console.error('Erreur générale lors du chargement des données:', error);
       toast({
@@ -297,7 +319,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-primary-foreground/70">Produits</p>
-                  <p className="text-2xl lg:text-3xl font-bold text-primary-foreground">-</p>
+                  <p className="text-2xl lg:text-3xl font-bold text-primary-foreground">{soustraitanceProductCount}</p>
                   <p className="text-xs text-primary-foreground/70">Sous-traitance</p>
                 </div>
                 <div className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl bg-primary-foreground/10 flex items-center justify-center">

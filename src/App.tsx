@@ -35,6 +35,7 @@ import SoustraitanceProducts from "./pages/SoustraitanceProducts";
 import SoustraitanceProductDetails from "./pages/SoustraitanceProductDetails";
 import SoustraitanceProductionPlanning from "./pages/SoustraitanceProductionPlanning";
 import AddSoustraitanceProduct from "./pages/AddSoustraitanceProduct";
+import SoustraitanceSettings from "./pages/SoustraitanceSettings";
 import Utilisateurs from "./pages/Utilisateurs";
 import ConfigurerMateriaux from "./pages/ConfigurerMateriaux";
 import ConfigurerMateriauxSoustraitance from "./pages/ConfigurerMateriauxSoustraitance";
@@ -49,10 +50,13 @@ import GestionRH from "./pages/GestionRH";
 import { ProtectedRHRoute } from "./components/ProtectedRHRoute";
 import Employes from "./pages/rh/Employes";
 import EmployeDetails from "./pages/rh/EmployeDetails";
+import EmployeForm from "./pages/rh/EmployeForm";
 import Planning from "./pages/rh/Planning";
 import Conges from "./pages/rh/Conges";
 import Salaires from "./pages/rh/Salaires";
 import Statistiques from "./pages/rh/Statistiques";
+import SalaryConfiguration from "./pages/SalaryConfiguration";
+import DefinirSalaire from "./pages/rh/DefinirSalaire";
 
 const queryClient = new QueryClient();
 
@@ -92,6 +96,7 @@ const AppContent = () => {
           <Route path="/soustraitance-products/:id/production-planning" element={<MainLayout><SoustraitanceProductionPlanning /></MainLayout>} />
           <Route path="/soustraitance-products/add" element={<MainLayout><AddSoustraitanceProduct /></MainLayout>} />
           <Route path="/soustraitance-products/edit/:id" element={<MainLayout><AddSoustraitanceProduct /></MainLayout>} />
+          <Route path="/soustraitance-settings" element={<MainLayout><SoustraitanceSettings /></MainLayout>} />
           <Route path="/utilisateurs" element={<MainLayout><Utilisateurs /></MainLayout>} />
           <Route path="/boutiques" element={<MainLayout><Boutiques /></MainLayout>} />
           <Route path="/lucci-by-ey" element={<MainLayout><LucciBYEy /></MainLayout>} />
@@ -106,10 +111,14 @@ const AppContent = () => {
           {/* Routes RH - Protected */}
           <Route path="/rh" element={<MainLayout><ProtectedRHRoute><GestionRH /></ProtectedRHRoute></MainLayout>} />
           <Route path="/rh/employes" element={<MainLayout><ProtectedRHRoute><Employes /></ProtectedRHRoute></MainLayout>} />
+          <Route path="/rh/employes/add" element={<MainLayout><ProtectedRHRoute><EmployeForm /></ProtectedRHRoute></MainLayout>} />
+          <Route path="/rh/employes/edit/:id" element={<MainLayout><ProtectedRHRoute><EmployeForm /></ProtectedRHRoute></MainLayout>} />
           <Route path="/rh/employes/:id" element={<MainLayout><ProtectedRHRoute><EmployeDetails /></ProtectedRHRoute></MainLayout>} />
           <Route path="/rh/planning" element={<MainLayout><ProtectedRHRoute><Planning /></ProtectedRHRoute></MainLayout>} />
           <Route path="/rh/conges" element={<MainLayout><ProtectedRHRoute><Conges /></ProtectedRHRoute></MainLayout>} />
           <Route path="/rh/salaires" element={<MainLayout><ProtectedRHRoute><Salaires /></ProtectedRHRoute></MainLayout>} />
+          <Route path="/rh/salaires/configuration" element={<MainLayout><ProtectedRHRoute><SalaryConfiguration /></ProtectedRHRoute></MainLayout>} />
+          <Route path="/rh/salaires/definir" element={<MainLayout><ProtectedRHRoute><DefinirSalaire /></ProtectedRHRoute></MainLayout>} />
           <Route path="/rh/statistiques" element={<MainLayout><ProtectedRHRoute><Statistiques /></ProtectedRHRoute></MainLayout>} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

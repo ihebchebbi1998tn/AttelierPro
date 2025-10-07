@@ -1366,31 +1366,172 @@ const CommandeDetails = () => {
                     </Card>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse border border-gray-200 rounded-lg">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-3 px-4 font-semibold">Mesure</th>
-                          <th className="text-right py-3 px-4 font-semibold">Valeur</th>
-                          <th className="text-right py-3 px-4 font-semibold">Tolérance</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Object.entries(order?.measurements || {})
-                          .filter(([name, value]) => name.trim() !== '' && value && value !== 0)
-                          .map(([name, value], index) => (
-                          <tr key={name} className={`border-b ${index % 2 === 0 ? 'bg-muted/30' : 'bg-background'}`}>
-                            <td className="py-3 px-4 font-medium">{name}</td>
-                            <td className="text-right py-3 px-4">
-                              <span className="font-semibold text-primary">{value} cm</span>
-                            </td>
-                            <td className="text-right py-3 px-4 text-muted-foreground">
-                              ±{order?.tolerance?.[name] || 0.5} cm
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="space-y-6">
+                    {/* General Section */}
+                    {(() => {
+                      const generalMeasures = { 'TAILLE EN GENERALE': order?.measurements?.['TAILLE EN GENERALE'] };
+                      const hasFilledGeneral = Object.entries(generalMeasures).some(([_, value]) => {
+                        if (!value) return false;
+                        if (typeof value === 'string') return value !== '0' && value !== 'X';
+                        return value !== 0;
+                      });
+                      
+                      return hasFilledGeneral ? (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3 text-primary">GENERAL</h3>
+                          <div className="overflow-x-auto">
+                            <table className="w-full border-collapse border border-gray-200 rounded-lg">
+                              <thead>
+                                <tr className="bg-muted border-b">
+                                  <th className="text-left py-2 px-4 font-semibold">Mesure</th>
+                                  <th className="text-right py-2 px-4 font-semibold">Valeur</th>
+                                  <th className="text-right py-2 px-4 font-semibold">Tolérance</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {Object.entries(generalMeasures)
+                                  .filter(([_, value]) => {
+                                    if (!value) return false;
+                                    if (typeof value === 'string') return value !== '0' && value !== 'X';
+                                    return value !== 0;
+                                  })
+                                  .map(([name, value], index) => (
+                                    <tr key={name} className={`border-b ${index % 2 === 0 ? 'bg-background' : 'bg-muted/30'}`}>
+                                      <td className="py-2 px-4 font-medium">{name}</td>
+                                      <td className="text-right py-2 px-4">
+                                        <span className="font-semibold text-primary">{value}</span>
+                                      </td>
+                                      <td className="text-right py-2 px-4 text-muted-foreground">
+                                        ±{order?.tolerance?.[name] || 0.5}
+                                      </td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ) : null;
+                    })()}
+
+                    {/* HAUT (Upper Garment) Section */}
+                    {(() => {
+                      const hautMeasures = {
+                        'TOUR DE POITRINE': order?.measurements?.['TOUR DE POITRINE'],
+                        'TOUR DE TAILLE': order?.measurements?.['TOUR DE TAILLE'],
+                        'CARRURE DEVANT': order?.measurements?.['CARRURE DEVANT'],
+                        'CARRURE DOS': order?.measurements?.['CARRURE DOS'],
+                        'LARGEUR EPAULE': order?.measurements?.['LARGEUR EPAULE'],
+                        'LONGUEUR DOS': order?.measurements?.['LONGUEUR DOS'],
+                        'LONGUEUR MANCHE': order?.measurements?.['LONGUEUR MANCHE'],
+                        'BICEPS': order?.measurements?.['BICEPS']
+                      };
+                      const hasFilledHaut = Object.entries(hautMeasures).some(([_, value]) => {
+                        if (!value) return false;
+                        if (typeof value === 'string') return value !== '0';
+                        return value !== 0;
+                      });
+                      
+                      return hasFilledHaut ? (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3 text-primary">HAUT (Upper Garment)</h3>
+                          <div className="overflow-x-auto">
+                            <table className="w-full border-collapse border border-gray-200 rounded-lg">
+                              <thead>
+                                <tr className="bg-muted border-b">
+                                  <th className="text-left py-2 px-4 font-semibold">Mesure</th>
+                                  <th className="text-right py-2 px-4 font-semibold">Valeur</th>
+                                  <th className="text-right py-2 px-4 font-semibold">Tolérance</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {Object.entries(hautMeasures)
+                                  .filter(([_, value]) => {
+                                    if (!value) return false;
+                                    if (typeof value === 'string') return value !== '0';
+                                    return value !== 0;
+                                  })
+                                  .map(([name, value], index) => (
+                                    <tr key={name} className={`border-b ${index % 2 === 0 ? 'bg-background' : 'bg-muted/30'}`}>
+                                      <td className="py-2 px-4 font-medium">{name}</td>
+                                      <td className="text-right py-2 px-4">
+                                        <span className="font-semibold text-primary">{value}</span>
+                                      </td>
+                                      <td className="text-right py-2 px-4 text-muted-foreground">
+                                        ±{order?.tolerance?.[name] || 0.5}
+                                      </td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ) : null;
+                    })()}
+
+                    {/* PANTALON (Pants) Section */}
+                    {(() => {
+                      const pantalonMeasures = {
+                        'TAILLE EN GENERALE PANTALON': order?.measurements?.['TAILLE EN GENERALE PANTALON'],
+                        'TAILLE CEINTURE': order?.measurements?.['TAILLE CEINTURE'],
+                        'TAILLE BASSIN': order?.measurements?.['TAILLE BASSIN'],
+                        'FOURCHE DOS': order?.measurements?.['FOURCHE DOS'],
+                        'CUISSE': order?.measurements?.['CUISSE'],
+                        'BAS': order?.measurements?.['BAS'],
+                        'LONGUEUR': order?.measurements?.['LONGUEUR']
+                      };
+                      const hasFilledPantalon = Object.entries(pantalonMeasures).some(([_, value]) => {
+                        if (!value) return false;
+                        if (typeof value === 'string') return value !== '0';
+                        return value !== 0;
+                      });
+                      
+                      return hasFilledPantalon ? (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3 text-primary">PANTALON (Pants)</h3>
+                          <div className="overflow-x-auto">
+                            <table className="w-full border-collapse border border-gray-200 rounded-lg">
+                              <thead>
+                                <tr className="bg-muted border-b">
+                                  <th className="text-left py-2 px-4 font-semibold">Mesure</th>
+                                  <th className="text-right py-2 px-4 font-semibold">Valeur</th>
+                                  <th className="text-right py-2 px-4 font-semibold">Tolérance</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {Object.entries(pantalonMeasures)
+                                  .filter(([_, value]) => {
+                                    if (!value) return false;
+                                    if (typeof value === 'string') return value !== '0';
+                                    return value !== 0;
+                                  })
+                                  .map(([name, value], index) => (
+                                    <tr key={name} className={`border-b ${index % 2 === 0 ? 'bg-background' : 'bg-muted/30'}`}>
+                                      <td className="py-2 px-4 font-medium">{name}</td>
+                                      <td className="text-right py-2 px-4">
+                                        <span className="font-semibold text-primary">{value}</span>
+                                      </td>
+                                      <td className="text-right py-2 px-4 text-muted-foreground">
+                                        ±{order?.tolerance?.[name] || 0.5}
+                                      </td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ) : null;
+                    })()}
+
+                    {/* Show message if no measurements at all */}
+                    {!Object.entries(order?.measurements || {}).some(([_, value]) => {
+                      if (!value) return false;
+                      if (typeof value === 'string') return value !== '0';
+                      return value !== 0;
+                    }) && (
+                      <p className="text-muted-foreground text-center py-8">
+                        Aucune mesure disponible
+                      </p>
+                    )}
                   </div>
                 )}
               </CardContent>

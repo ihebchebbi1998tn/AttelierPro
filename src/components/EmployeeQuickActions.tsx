@@ -52,8 +52,9 @@ const EmployeeQuickActions: React.FC<EmployeeQuickActionsProps> = ({
 
   const [newSalary, setNewSalary] = useState<CreateSalaryData>({
     employee_id: employee.id,
-    net_total: 0,
-    brut_total: 0,
+    salaire_brut: 0,
+    chef_de_famille: employee.chef_de_famille || false,
+    nombre_enfants: employee.nombre_enfants || 0,
     effective_from: new Date().toISOString().split('T')[0],
     note: ""
   });
@@ -98,10 +99,10 @@ const EmployeeQuickActions: React.FC<EmployeeQuickActionsProps> = ({
   };
 
   const handleAddSalary = async () => {
-    if (!newSalary.net_total || newSalary.net_total <= 0) {
+    if (!newSalary.salaire_brut || newSalary.salaire_brut <= 0) {
       toast({
         title: "Erreur",
-        description: "Le salaire net doit être supérieur à 0",
+        description: "Le salaire brut doit être supérieur à 0",
         variant: "destructive"
       });
       return;
@@ -118,8 +119,9 @@ const EmployeeQuickActions: React.FC<EmployeeQuickActionsProps> = ({
         });
         setNewSalary({
           employee_id: employee.id,
-          net_total: 0,
-          brut_total: 0,
+          salaire_brut: 0,
+          chef_de_famille: employee.chef_de_famille || false,
+          nombre_enfants: employee.nombre_enfants || 0,
           effective_from: new Date().toISOString().split('T')[0],
           note: ""
         });
@@ -266,25 +268,15 @@ const EmployeeQuickActions: React.FC<EmployeeQuickActionsProps> = ({
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="salary-net" className="text-right">Salaire Net</Label>
-                  <Input
-                    id="salary-net"
-                    type="number"
-                    value={newSalary.net_total}
-                    onChange={(e) => setNewSalary({...newSalary, net_total: parseFloat(e.target.value) || 0})}
-                    className="col-span-3"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="salary-brut" className="text-right">Salaire Brut</Label>
                   <Input
                     id="salary-brut"
                     type="number"
-                    value={newSalary.brut_total}
-                    onChange={(e) => setNewSalary({...newSalary, brut_total: parseFloat(e.target.value) || 0})}
+                    step="0.001"
+                    value={newSalary.salaire_brut}
+                    onChange={(e) => setNewSalary({...newSalary, salaire_brut: parseFloat(e.target.value) || 0})}
                     className="col-span-3"
-                    placeholder="0.00"
+                    placeholder="0.000"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">

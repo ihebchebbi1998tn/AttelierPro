@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Eye, Package, Clock, CheckCircle, Truck, Store, X, BarChart3 } from 'lucide-react';
+import { authService } from '@/lib/authService';
 
 interface ProductionBatch {
   id: number;
@@ -62,6 +63,12 @@ const Productions = () => {
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+      
+      // Filter for soustraitance users - only show batches for their products
+      const currentUser = authService.getCurrentUser();
+      if (currentUser?.user_type === 'soustraitance') {
+        params.append('client_id', currentUser.id.toString());
+      }
       
       const response = await fetch(`https://luccibyey.com.tn/production/api/production_batches.php?${params}`);
       const data = await response.json();

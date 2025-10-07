@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { uploadSoustraitanceProductImageAuto, deleteSoustraitanceProductImage } from '@/utils/soustraitanceService';
+import { authService } from '@/lib/authService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -90,7 +91,20 @@ const SoustraitanceProducts = () => {
 
   const fetchProducts = async () => {
     try {
-      const params = selectedClient && selectedClient !== 'all' ? { client_id: selectedClient } : {};
+      // Auto-filter by logged-in client if soustraitance user
+      const currentUser = authService.getCurrentUser();
+      const isSoustraitanceUser = currentUser?.user_type === 'soustraitance';
+      
+      let params = {};
+      
+      if (isSoustraitanceUser) {
+        // Soustraitance users see only their products
+        params = { client_id: currentUser.id };
+      } else if (selectedClient && selectedClient !== 'all') {
+        // Admin users can filter by client
+        params = { client_id: selectedClient };
+      }
+      
       console.log('Fetching products with params:', params);
       
       const response = await axios.get(`${API_BASE_URL}/soustraitance_products.php`, { 

@@ -7,7 +7,37 @@ $db = $database->getConnection();
 $method = $_SERVER['REQUEST_METHOD'];
 
 try {
-    if ($method === 'GET') {
+    if ($method === 'POST') {
+        // Handle login verification for password changes
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        if (isset($data['action']) && $data['action'] === 'login') {
+            if (!isset($data['email']) || !isset($data['password'])) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Email and password are required'
+                ]);
+                exit;
+            }
+
+            $stmt = $db->prepare("SELECT * FROM production_soustraitance_clients WHERE email = ?");
+            $stmt->execute([$data['email']]);
+            $client = $stmt->fetch();
+
+            if ($client && password_verify($data['password'], $client['password'])) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Authentication successful'
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Invalid credentials'
+                ]);
+            }
+            exit;
+        }
+    } elseif ($method === 'GET') {
         $client_id = isset($_GET['client_id']) ? $_GET['client_id'] : null;
         
         if (!$client_id) {
