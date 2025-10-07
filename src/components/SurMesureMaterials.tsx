@@ -63,6 +63,7 @@ export const SurMesureMaterials: React.FC<SurMesureMaterialsProps> = ({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isAddingMaterial, setIsAddingMaterial] = useState(false);
   const [newMaterialId, setNewMaterialId] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const formatQuantity = (value: number): string => {
     if (value % 1 === 0) return value.toString();
@@ -82,17 +83,19 @@ export const SurMesureMaterials: React.FC<SurMesureMaterialsProps> = ({
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load all materials
+      // Load all materials and filter by location
       const materialsResponse = await fetch('https://luccibyey.com.tn/production/api/matieres.php');
       const materialsData = await materialsResponse.json();
       if (materialsData.success) {
-        const normalizedMaterials: Material[] = (materialsData.data || []).map((m: any) => ({
-          id: parseInt(m.id),
-          nom: m.nom,
-          reference: m.reference,
-          quantite_stock: parseFloat(m.quantite_stock),
-          quantity_type_id: parseInt(m.quantity_type_id)
-        }));
+        const normalizedMaterials: Material[] = (materialsData.data || [])
+          .filter((m: any) => m.location === 'Lucci By Ey' || m.location === 'Les Deux')
+          .map((m: any) => ({
+            id: parseInt(m.id),
+            nom: m.nom,
+            reference: m.reference,
+            quantite_stock: parseFloat(m.quantite_stock),
+            quantity_type_id: parseInt(m.quantity_type_id)
+          }));
         setAllMaterials(normalizedMaterials);
       }
 
@@ -461,12 +464,22 @@ export const SurMesureMaterials: React.FC<SurMesureMaterialsProps> = ({
     m => !selectedMaterialIds.includes(m.id.toString())
   );
 
+  const filteredAvailableMaterials = availableMaterials.filter(
+    m => m.nom.toLowerCase().includes(searchQuery.toLowerCase()) || 
+         m.reference.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">
-          {selectedMaterials.length === 0 ? 'Aucun matériau configuré' : 'Matériaux configurés'}
-        </h3>
+        <div>
+          <h3 className="text-lg font-semibold">
+            {selectedMaterials.length === 0 ? 'Aucun matériau configuré coté Lucci' : 'Matériaux configurés'}
+          </h3>
+          <p className="text-sm text-destructive mt-1">
+            L'ajout de matériau ici est temporaire
+          </p>
+        </div>
         {!isAddingMaterial && availableMaterials.length > 0 && (
           <Button 
             onClick={() => setIsAddingMaterial(true)} 
@@ -496,18 +509,46 @@ export const SurMesureMaterials: React.FC<SurMesureMaterialsProps> = ({
             {isAddingMaterial && (
               <TableRow className="bg-muted/30">
                 <TableCell colSpan={2}>
-                  <Select value={newMaterialId} onValueChange={setNewMaterialId}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Sélectionner un matériau..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableMaterials.map((material) => (
-                        <SelectItem key={material.id} value={material.id.toString()}>
-                          {material.nom} ({material.reference})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-2 relative">
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        placeholder="Rechercher et sélectionner un matériau..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full"
+                        onFocus={() => setSearchQuery('')}
+                      />
+                      {searchQuery && filteredAvailableMaterials.length > 0 && (
+                        <div className="fixed z-[100] mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto" style={{
+                          width: 'calc(100% - 2rem)',
+                          maxWidth: '600px'
+                        }}>
+                          {filteredAvailableMaterials.map((material) => (
+                            <div
+                              key={material.id}
+                              onClick={() => {
+                                setNewMaterialId(material.id.toString());
+                                setSearchQuery(material.nom + ' (' + material.reference + ')');
+                              }}
+                              className="px-3 py-2 hover:bg-accent cursor-pointer border-b last:border-b-0 text-popover-foreground"
+                            >
+                              <div className="font-medium">{material.nom}</div>
+                              <div className="text-sm text-muted-foreground">{material.reference}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {searchQuery && filteredAvailableMaterials.length === 0 && (
+                        <div className="fixed z-[100] mt-1 bg-popover border rounded-md shadow-lg p-3" style={{
+                          width: 'calc(100% - 2rem)',
+                          maxWidth: '600px'
+                        }}>
+                          <p className="text-sm text-muted-foreground">Aucun matériau trouvé</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell>
                   {newMaterialId && (

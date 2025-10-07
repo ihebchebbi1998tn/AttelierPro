@@ -37,9 +37,9 @@ const QuickSalaryModal: React.FC<QuickSalaryModalProps> = ({
   const [taxPercentage, setTaxPercentage] = useState(0);
   const [salaryData, setSalaryData] = useState<CreateSalaryData>({
     employee_id: employee.id,
-    net_total: 0,
-    brut_total: 0,
-    taxes: 0,
+    salaire_brut: 0,
+    chef_de_famille: employee.chef_de_famille || false,
+    nombre_enfants: employee.nombre_enfants || 0,
     effective_from: new Date().toISOString().split('T')[0],
     note: ""
   });
@@ -64,9 +64,9 @@ const QuickSalaryModal: React.FC<QuickSalaryModalProps> = ({
         // Pre-fill form with current values
         setSalaryData({
           employee_id: employee.id,
-          net_total: Number(latest.net_total) || 0,
-          brut_total: Number(latest.brut_total) || 0,
-          taxes: Number(latest.taxes) || 0,
+          salaire_brut: Number(latest.salaire_brut) || 0,
+          chef_de_famille: employee.chef_de_famille || false,
+          nombre_enfants: employee.nombre_enfants || 0,
           effective_from: new Date().toISOString().split('T')[0],
           note: ""
         });
@@ -81,10 +81,10 @@ const QuickSalaryModal: React.FC<QuickSalaryModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!salaryData.net_total || salaryData.net_total <= 0) {
+    if (!salaryData.salaire_brut || salaryData.salaire_brut <= 0) {
       toast({
         title: "Erreur",
-        description: "Le salaire net doit être supérieur à 0",
+        description: "Le salaire brut doit être supérieur à 0",
         variant: "destructive"
       });
       return;
@@ -111,48 +111,6 @@ const QuickSalaryModal: React.FC<QuickSalaryModalProps> = ({
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const calculateBrutFromNetAndTaxes = (netTotal: number, taxes: number) => {
-    const brutTotal = netTotal + taxes;
-    setSalaryData(prev => ({ ...prev, brut_total: brutTotal, net_total: netTotal, taxes }));
-  };
-
-  const calculateTaxesFromPercentage = (percentage: number, netTotal: number) => {
-    const taxes = (netTotal * percentage) / 100;
-    const brutTotal = netTotal + taxes;
-    setSalaryData(prev => ({ ...prev, taxes, brut_total: brutTotal }));
-  };
-
-  const handleTaxPercentageChange = (value: number) => {
-    setTaxPercentage(value);
-    if (salaryData.net_total) {
-      calculateTaxesFromPercentage(value, salaryData.net_total);
-    }
-  };
-
-  const handleNetTotalChange = (value: number) => {
-    setSalaryData(prev => ({ ...prev, net_total: value }));
-    if (taxMode === 'percentage' && taxPercentage > 0) {
-      calculateTaxesFromPercentage(taxPercentage, value);
-    } else if (salaryData.taxes > 0) {
-      calculateBrutFromNetAndTaxes(value, salaryData.taxes);
-    } else {
-      setSalaryData(prev => ({ ...prev, net_total: value, brut_total: value }));
-    }
-  };
-
-  const handleTaxAmountChange = (value: number) => {
-    const brutTotal = salaryData.net_total + value;
-    setSalaryData(prev => ({ ...prev, taxes: value, brut_total: brutTotal }));
-  };
-
-  const calculateDifference = () => {
-    if (!currentSalary) return null;
-    const currentNet = Number(currentSalary.net_total);
-    const diff = salaryData.net_total - currentNet;
-    const percentage = ((diff / currentNet) * 100).toFixed(1);
-    return { diff, percentage };
   };
 
   return (
@@ -183,11 +141,11 @@ const QuickSalaryModal: React.FC<QuickSalaryModalProps> = ({
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <span className="text-muted-foreground">Salaire Net:</span>
-                      <p className="font-semibold">{Number(currentSalary.net_total).toFixed(2)} TND</p>
+                      <p className="font-semibold">{Number(currentSalary.salaire_net).toFixed(2)} TND</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Salaire Brut:</span>
-                      <p className="font-semibold">{Number(currentSalary.brut_total || 0).toFixed(2)} TND</p>
+                      <p className="font-semibold">{Number(currentSalary.salaire_brut).toFixed(2)} TND</p>
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground pt-1">
@@ -198,87 +156,30 @@ const QuickSalaryModal: React.FC<QuickSalaryModalProps> = ({
             )}
 
         <div className="space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="net_total">Salaire Net (TND)</Label>
-              <Input
-                id="net_total"
-                type="number"
-                step="0.01"
-                value={salaryData.net_total}
-                onChange={(e) => handleNetTotalChange(parseFloat(e.target.value) || 0)}
-                placeholder="0.00"
-              />
-              {currentSalary && salaryData.net_total !== Number(currentSalary.net_total) && (
-                <div className={`text-xs mt-1 flex items-center gap-1 ${
-                  salaryData.net_total > Number(currentSalary.net_total) ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {salaryData.net_total > Number(currentSalary.net_total) ? (
-                    <TrendingUp className="h-3 w-3" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3" />
-                  )}
-                  <span>
-                    {salaryData.net_total > Number(currentSalary.net_total) ? '+' : ''}
-                    {(salaryData.net_total - Number(currentSalary.net_total)).toFixed(2)} TND
-                    {calculateDifference() && ` (${calculateDifference()!.percentage}%)`}
-                  </span>
-                </div>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="brut_total">Salaire Brut (TND)</Label>
-              <Input
-                id="brut_total"
-                type="number"
-                step="0.01"
-                value={salaryData.brut_total.toFixed(2)}
-                readOnly
-                placeholder="0.00"
-                className="bg-muted"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Calculé automatiquement (Net + Charges)</p>
-            </div>
-          </div>
-
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label htmlFor="taxes">Charges/Impôts</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setTaxMode(prev => prev === 'percentage' ? 'amount' : 'percentage')}
-                className="h-7 text-xs gap-1"
-              >
-                <Percent className="h-3 w-3" />
-                {taxMode === 'percentage' ? 'Passer en TND' : 'Passer en %'}
-              </Button>
-            </div>
-            {taxMode === 'percentage' ? (
-              <div className="space-y-2">
-                <Input
-                  id="tax_percentage"
-                  type="number"
-                  step="0.1"
-                  value={taxPercentage}
-                  onChange={(e) => handleTaxPercentageChange(parseFloat(e.target.value) || 0)}
-                  placeholder="0.0"
-                  className="w-full"
-                />
-                <div className="text-sm text-muted-foreground">
-                  = {salaryData.taxes.toFixed(2)} TND
-                </div>
+            <Label htmlFor="salaire_brut">Salaire Brut (TND)</Label>
+            <Input
+              id="salaire_brut"
+              type="number"
+              step="0.01"
+              value={salaryData.salaire_brut}
+              onChange={(e) => setSalaryData(prev => ({ ...prev, salaire_brut: parseFloat(e.target.value) || 0 }))}
+              placeholder="0.00"
+            />
+            {currentSalary && salaryData.salaire_brut !== Number(currentSalary.salaire_brut) && (
+              <div className={`text-xs mt-1 flex items-center gap-1 ${
+                salaryData.salaire_brut > Number(currentSalary.salaire_brut) ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {salaryData.salaire_brut > Number(currentSalary.salaire_brut) ? (
+                  <TrendingUp className="h-3 w-3" />
+                ) : (
+                  <TrendingDown className="h-3 w-3" />
+                )}
+                <span>
+                  {salaryData.salaire_brut > Number(currentSalary.salaire_brut) ? '+' : ''}
+                  {(salaryData.salaire_brut - Number(currentSalary.salaire_brut)).toFixed(2)} TND
+                </span>
               </div>
-            ) : (
-              <Input
-                id="taxes"
-                type="number"
-                step="0.01"
-                value={salaryData.taxes}
-                onChange={(e) => handleTaxAmountChange(parseFloat(e.target.value) || 0)}
-                placeholder="0.00"
-              />
             )}
           </div>
 
@@ -318,7 +219,7 @@ const QuickSalaryModal: React.FC<QuickSalaryModalProps> = ({
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={loading || submitting || !salaryData.net_total}
+            disabled={loading || submitting || !salaryData.salaire_brut}
           >
             {submitting ? (
               <>
