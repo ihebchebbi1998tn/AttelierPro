@@ -1208,24 +1208,19 @@ const CommandeDetails = () => {
               <CardContent>
                 {order?.couple && order.couple.length > 0 ? (
                   <div className="space-y-2">
-                    {order.couple
-                      .filter((item) => item.valeur && item.valeur.trim() !== '')
-                      .map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex justify-between items-center py-3 border-b last:border-b-0"
-                        >
-                          <span className="font-medium text-muted-foreground">
-                            {item.donne}
-                          </span>
-                          <span className="text-foreground font-semibold">{item.valeur}</span>
-                        </div>
-                      ))}
-                    {order.couple.filter((item) => item.valeur && item.valeur.trim() !== '').length === 0 && (
-                      <p className="text-muted-foreground text-center py-8">
-                        Aucune information de coupe disponible
-                      </p>
-                    )}
+                    {order.couple.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex justify-between items-center py-3 border-b last:border-b-0"
+                      >
+                        <span className="font-medium text-muted-foreground">
+                          {item.donne}
+                        </span>
+                        <span className="text-foreground font-semibold">
+                          {item.valeur || <span className="text-muted-foreground italic">Non renseigné</span>}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <p className="text-muted-foreground text-center py-8">
@@ -1280,9 +1275,7 @@ const CommandeDetails = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {Object.entries(measurements)
-                            .filter(([name, value]) => name.trim() !== '' && value && value !== 0)
-                            .map(([name, value], index) => (
+                          {Object.entries(measurements).map(([name, value], index) => (
                             <tr key={name} className={`border-b ${index % 2 === 0 ? 'bg-muted/30' : 'bg-background'}`}>
                               <td className="py-3 px-4 font-medium">{name}</td>
                               <td className="text-right py-3 px-4">
@@ -1370,13 +1363,7 @@ const CommandeDetails = () => {
                     {/* General Section */}
                     {(() => {
                       const generalMeasures = { 'TAILLE EN GENERALE': order?.measurements?.['TAILLE EN GENERALE'] };
-                      const hasFilledGeneral = Object.entries(generalMeasures).some(([_, value]) => {
-                        if (!value) return false;
-                        if (typeof value === 'string') return value !== '0' && value !== 'X';
-                        return value !== 0;
-                      });
-                      
-                      return hasFilledGeneral ? (
+                      return (
                         <div>
                           <h3 className="text-lg font-semibold mb-3 text-primary">GENERAL</h3>
                           <div className="overflow-x-auto">
@@ -1389,17 +1376,13 @@ const CommandeDetails = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {Object.entries(generalMeasures)
-                                  .filter(([_, value]) => {
-                                    if (!value) return false;
-                                    if (typeof value === 'string') return value !== '0' && value !== 'X';
-                                    return value !== 0;
-                                  })
-                                  .map(([name, value], index) => (
+                                {Object.entries(generalMeasures).map(([name, value], index) => (
                                     <tr key={name} className={`border-b ${index % 2 === 0 ? 'bg-background' : 'bg-muted/30'}`}>
                                       <td className="py-2 px-4 font-medium">{name}</td>
                                       <td className="text-right py-2 px-4">
-                                        <span className="font-semibold text-primary">{value}</span>
+                                        <span className="font-semibold text-primary">
+                                          {value || <span className="text-muted-foreground italic">-</span>}
+                                        </span>
                                       </td>
                                       <td className="text-right py-2 px-4 text-muted-foreground">
                                         ±{order?.tolerance?.[name] || 0.5}
@@ -1410,7 +1393,7 @@ const CommandeDetails = () => {
                             </table>
                           </div>
                         </div>
-                      ) : null;
+                      );
                     })()}
 
                     {/* HAUT (Upper Garment) Section */}
@@ -1425,13 +1408,7 @@ const CommandeDetails = () => {
                         'LONGUEUR MANCHE': order?.measurements?.['LONGUEUR MANCHE'],
                         'BICEPS': order?.measurements?.['BICEPS']
                       };
-                      const hasFilledHaut = Object.entries(hautMeasures).some(([_, value]) => {
-                        if (!value) return false;
-                        if (typeof value === 'string') return value !== '0';
-                        return value !== 0;
-                      });
-                      
-                      return hasFilledHaut ? (
+                      return (
                         <div>
                           <h3 className="text-lg font-semibold mb-3 text-primary">HAUT (Upper Garment)</h3>
                           <div className="overflow-x-auto">
@@ -1444,17 +1421,13 @@ const CommandeDetails = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {Object.entries(hautMeasures)
-                                  .filter(([_, value]) => {
-                                    if (!value) return false;
-                                    if (typeof value === 'string') return value !== '0';
-                                    return value !== 0;
-                                  })
-                                  .map(([name, value], index) => (
+                                {Object.entries(hautMeasures).map(([name, value], index) => (
                                     <tr key={name} className={`border-b ${index % 2 === 0 ? 'bg-background' : 'bg-muted/30'}`}>
                                       <td className="py-2 px-4 font-medium">{name}</td>
                                       <td className="text-right py-2 px-4">
-                                        <span className="font-semibold text-primary">{value}</span>
+                                        <span className="font-semibold text-primary">
+                                          {value || <span className="text-muted-foreground italic">-</span>}
+                                        </span>
                                       </td>
                                       <td className="text-right py-2 px-4 text-muted-foreground">
                                         ±{order?.tolerance?.[name] || 0.5}
@@ -1465,7 +1438,7 @@ const CommandeDetails = () => {
                             </table>
                           </div>
                         </div>
-                      ) : null;
+                      );
                     })()}
 
                     {/* PANTALON (Pants) Section */}
@@ -1479,13 +1452,7 @@ const CommandeDetails = () => {
                         'BAS': order?.measurements?.['BAS'],
                         'LONGUEUR': order?.measurements?.['LONGUEUR']
                       };
-                      const hasFilledPantalon = Object.entries(pantalonMeasures).some(([_, value]) => {
-                        if (!value) return false;
-                        if (typeof value === 'string') return value !== '0';
-                        return value !== 0;
-                      });
-                      
-                      return hasFilledPantalon ? (
+                      return (
                         <div>
                           <h3 className="text-lg font-semibold mb-3 text-primary">PANTALON (Pants)</h3>
                           <div className="overflow-x-auto">
@@ -1498,17 +1465,13 @@ const CommandeDetails = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {Object.entries(pantalonMeasures)
-                                  .filter(([_, value]) => {
-                                    if (!value) return false;
-                                    if (typeof value === 'string') return value !== '0';
-                                    return value !== 0;
-                                  })
-                                  .map(([name, value], index) => (
+                                {Object.entries(pantalonMeasures).map(([name, value], index) => (
                                     <tr key={name} className={`border-b ${index % 2 === 0 ? 'bg-background' : 'bg-muted/30'}`}>
                                       <td className="py-2 px-4 font-medium">{name}</td>
                                       <td className="text-right py-2 px-4">
-                                        <span className="font-semibold text-primary">{value}</span>
+                                        <span className="font-semibold text-primary">
+                                          {value || <span className="text-muted-foreground italic">-</span>}
+                                        </span>
                                       </td>
                                       <td className="text-right py-2 px-4 text-muted-foreground">
                                         ±{order?.tolerance?.[name] || 0.5}
@@ -1519,19 +1482,8 @@ const CommandeDetails = () => {
                             </table>
                           </div>
                         </div>
-                      ) : null;
+                      );
                     })()}
-
-                    {/* Show message if no measurements at all */}
-                    {!Object.entries(order?.measurements || {}).some(([_, value]) => {
-                      if (!value) return false;
-                      if (typeof value === 'string') return value !== '0';
-                      return value !== 0;
-                    }) && (
-                      <p className="text-muted-foreground text-center py-8">
-                        Aucune mesure disponible
-                      </p>
-                    )}
                   </div>
                 )}
               </CardContent>

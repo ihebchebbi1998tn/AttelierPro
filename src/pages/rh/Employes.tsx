@@ -909,13 +909,15 @@ const Employes = () => {
             <div className="p-3 sm:p-4 md:p-6">
               <WeeklyPlanningCreator
                 employee={selectedEmployeeForPlanning}
-                onSuccess={() => {
+                onSuccess={async () => {
                   setShowPlanningCreator(false);
                   setSelectedEmployeeForPlanning(null);
                   toast({
                     title: "Succès",
                     description: "Planning créé avec succès",
                   });
+                  // Reload employee status to update icons instantly
+                  await loadEmployeeStatus(employees);
                 }}
                 onCancel={() => {
                   setShowPlanningCreator(false);

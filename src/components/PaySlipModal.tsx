@@ -14,6 +14,7 @@ interface PaySlipModalProps {
   calculatedSalary?: SalaryCalculationResult;
   month?: string; // Format: YYYY-MM
   workDays?: number;
+  showIRPPBreakdown?: boolean; // Show detailed IRPP calculation
 }
 
 export const PaySlipModal = ({ 
@@ -23,7 +24,8 @@ export const PaySlipModal = ({
   salary, 
   calculatedSalary,
   month, 
-  workDays = 26 
+  workDays = 26,
+  showIRPPBreakdown = true 
 }: PaySlipModalProps) => {
   const monthDate = month ? new Date(month + "-01") : new Date();
   const monthName = format(monthDate, "MMMM yyyy", { locale: fr });
@@ -96,24 +98,26 @@ export const PaySlipModal = ({
             }
             .header {
               text-align: center;
-              border: 2px solid #000;
-              padding: 8px 10px;
-              margin: 8px 30px 10px 30px;
-              background: #f5f5f5;
+              border: 1px solid #666;
+              padding: 6px 10px;
+              margin: 6px 30px 8px 30px;
+              background: #fff;
               border-radius: 6px;
             }
             .header h1 {
-              font-size: 16px;
+              font-size: 14px;
               font-weight: bold;
-              margin-bottom: 3px;
               letter-spacing: 1px;
               text-transform: uppercase;
+              display: inline-block;
+              margin-right: 12px;
             }
             .header h2 {
               font-size: 12px;
               font-weight: 500;
               color: #333;
               text-transform: capitalize;
+              display: inline-block;
             }
             .info-section {
               margin: 0 30px 10px 30px;
@@ -139,7 +143,7 @@ export const PaySlipModal = ({
             .info-cell {
               padding: 4px 8px;
               border-right: 1px solid #000;
-              font-size: 9.5px;
+              font-size: 9px;
               line-height: 1.1;
             }
             .info-cell:last-child {
@@ -152,13 +156,13 @@ export const PaySlipModal = ({
               width: 100%;
               border-collapse: collapse;
               border: 2px solid #000;
-              font-size: 10.5px;
+              font-size: 10px;
               border-radius: 6px;
               overflow: hidden;
             }
             .salary-table th {
               background: linear-gradient(to bottom, #e8e8e8, #d0d0d0);
-              padding: 8px 6px;
+              padding: 7.5px 6px;
               border: 1px solid #000;
               font-weight: bold;
             }
@@ -174,8 +178,8 @@ export const PaySlipModal = ({
               background: #fafafa;
             }
             .salary-table td {
-              padding: 5px 6px;
-              border: 1px solid #000;
+              padding: 4.3px 6px;
+              border: 1px solid #666;
             }
             .salary-table .total-row {
               background: linear-gradient(to bottom, #f0f0f0, #e0e0e0) !important;
@@ -186,46 +190,39 @@ export const PaySlipModal = ({
               font-size: 11px;
             }
             .salary-table .net-row {
-              background: linear-gradient(to right, #3b82f6, #2563eb) !important;
+              background: #fff !important;
             }
             .salary-table .net-row td {
-              padding: 10px 6px;
+              padding: 4.3px 6px;
               font-weight: bold;
-              color: #fff;
-              font-size: 12px;
+              color: #000;
+              font-size: 10px;
             }
             .green-text {
-              color: #059669;
+              color: #000;
               font-weight: 600;
             }
             .red-text {
-              color: #dc2626;
+              color: #000;
               font-weight: 600;
             }
             .signatures {
               display: grid;
               grid-template-columns: 1fr 1fr;
-              margin: 20px 30px 15px 30px;
-              font-size: 10px;
-              gap: 30px;
+              margin: 20px 30px 30px 30px;
+              font-size: 12px;
+              gap: 60px;
             }
             .signature-box {
               text-align: center;
-              padding: 12px 10px;
-              border: 1px dashed #999;
-              border-radius: 6px;
-              background: #fafafa;
+              padding: 0;
               min-height: 80px;
             }
             .signature-box .title {
-              font-weight: 600;
-              margin-bottom: 40px;
-              font-size: 11px;
-            }
-            .signature-line {
-              border-top: 2px solid #000;
-              margin-top: 6px;
-              padding-top: 4px;
+              font-weight: 400;
+              margin-bottom: 60px;
+              font-size: 12px;
+              color: #000;
             }
           </style>
         </head>
@@ -263,56 +260,58 @@ export const PaySlipModal = ({
                 {/* Header */}
                 <div className="header" style={{
                   textAlign: 'center',
-                  border: '3px solid #000',
-                  padding: '20px',
-                  margin: '30px',
-                  background: '#f5f5f5',
+                  border: '1px solid #666',
+                  padding: '12px 20px',
+                  margin: '20px 30px',
+                  background: '#fff',
                   borderRadius: '8px'
                 }}>
                   <h1 style={{
-                    fontSize: '24px',
+                    fontSize: '12px',
                     fontWeight: 'bold',
-                    marginBottom: '12px',
-                    letterSpacing: '1px'
+                    letterSpacing: '1px',
+                    display: 'inline-block',
+                    marginRight: '15px'
                   }}>BULLETIN DE PAIE</h1>
                   <h2 style={{
-                    fontSize: '18px',
+                    fontSize: '12px',
                     fontWeight: '500',
-                    color: '#333'
+                    color: '#000',
+                    display: 'inline-block'
                   }}>{monthName}</h2>
                 </div>
 
                 {/* Employee Information Section */}
                 <div className="info-section" style={{
                   margin: '0 30px 30px 30px',
-                  border: '2px solid #000',
+                  border: '1px solid #666',
                   borderRadius: '8px',
                   overflow: 'hidden'
                 }}>
                   <div className="info-row" style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr 1fr',
-                    borderBottom: '1px solid #000',
+                    borderBottom: '1px solid #666',
                     background: '#fff'
                   }}>
                     <div className="info-cell" style={{
-                      padding: '12px 16px',
-                      borderRight: '1px solid #000',
-                      fontSize: '13px'
+                      padding: '10px 16px',
+                      borderRight: '1px solid #666',
+                      fontSize: '12px'
                     }}>
                       <span style={{ fontWeight: 'bold' }}>MI:</span> {employee.id}/{format(monthDate, 'yy')}
                     </div>
                     <div className="info-cell" style={{
-                      padding: '12px 16px',
-                      borderRight: '1px solid #000',
-                      fontSize: '13px',
+                      padding: '10px 16px',
+                      borderRight: '1px solid #666',
+                      fontSize: '12px',
                       fontWeight: '600'
                     }}>
                       <span style={{ fontWeight: 'bold' }}>Travailleur</span>
                     </div>
                     <div className="info-cell" style={{
-                      padding: '12px 16px',
-                      fontSize: '13px'
+                      padding: '10px 16px',
+                      fontSize: '12px'
                     }}>
                       <span style={{ fontWeight: 'bold' }}>Nb.j:</span> {workDays}
                     </div>
@@ -320,26 +319,26 @@ export const PaySlipModal = ({
                   <div className="info-row" style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr 1fr',
-                    borderBottom: '1px solid #000',
-                    background: '#fafafa'
+                    borderBottom: '1px solid #666',
+                    background: '#fff'
                   }}>
                     <div className="info-cell" style={{
-                      padding: '12px 16px',
-                      borderRight: '1px solid #000',
-                      fontSize: '13px'
+                      padding: '10px 16px',
+                      borderRight: '1px solid #666',
+                      fontSize: '12px'
                     }}>
                       <span style={{ fontWeight: 'bold' }}>Salaire de base:</span> {salaryData.salaire_brut.toFixed(3)}
                     </div>
                     <div className="info-cell" style={{
-                      padding: '12px 16px',
-                      borderRight: '1px solid #000',
-                      fontSize: '13px'
+                      padding: '10px 16px',
+                      borderRight: '1px solid #666',
+                      fontSize: '12px'
                     }}>
                       <span style={{ fontWeight: 'bold' }}>Situation Fam:</span> {employee.statut_civil || 'Célibataire'}
                     </div>
                     <div className="info-cell" style={{
-                      padding: '12px 16px',
-                      fontSize: '13px'
+                      padding: '10px 16px',
+                      fontSize: '12px'
                     }}>
                       <span style={{ fontWeight: 'bold' }}>Mat.CNSS:</span> {employee.cnss_code || 'N/A'}
                     </div>
@@ -347,26 +346,26 @@ export const PaySlipModal = ({
                   <div className="info-row" style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr 1fr',
-                    borderBottom: '1px solid #000',
-                    background: '#fff'
+                    borderBottom: '1px solid #666',
+                    background: '#fafafa'
                   }}>
                     <div className="info-cell" style={{
-                      padding: '12px 16px',
-                      borderRight: '1px solid #000',
-                      fontSize: '13px'
+                      padding: '10px 16px',
+                      borderRight: '1px solid #666',
+                      fontSize: '12px'
                     }}>
                       <span style={{ fontWeight: 'bold' }}>Catégorie:</span> Employé
                     </div>
                     <div className="info-cell" style={{
-                      padding: '12px 16px',
-                      borderRight: '1px solid #000',
-                      fontSize: '13px'
+                      padding: '10px 16px',
+                      borderRight: '1px solid #666',
+                      fontSize: '12px'
                     }}>
                       <span style={{ fontWeight: 'bold' }}>Nb.Enf:</span> {employee.nombre_enfants || 0}
                     </div>
                     <div className="info-cell" style={{
-                      padding: '12px 16px',
-                      fontSize: '13px'
+                      padding: '10px 16px',
+                      fontSize: '12px'
                     }}>
                       <span style={{ fontWeight: 'bold' }}>C/N N°:</span> {employee.carte_identite || 'N/A'}
                     </div>
@@ -374,11 +373,11 @@ export const PaySlipModal = ({
                   <div className="info-row" style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr',
-                    background: '#fafafa'
+                    background: '#fff'
                   }}>
                     <div className="info-cell" style={{
-                      padding: '12px 16px',
-                      fontSize: '13px'
+                      padding: '10px 16px',
+                      fontSize: '12px'
                     }}>
                       <span style={{ fontWeight: 'bold' }}>Date de Naissance:</span> {employee.date_naissance && employee.date_naissance !== '0000-00-00' && !isNaN(new Date(employee.date_naissance).getTime()) ? format(new Date(employee.date_naissance), 'dd/MM/yyyy') : 'N/A'}
                     </div>
@@ -390,49 +389,49 @@ export const PaySlipModal = ({
                   <table className="salary-table" style={{
                     width: '100%',
                     borderCollapse: 'collapse',
-                    border: '2px solid #000',
-                    fontSize: '13px',
+                    border: '1px solid #666',
+                    fontSize: '12px',
                     borderRadius: '8px',
                     overflow: 'hidden'
                   }}>
                     <thead>
                       <tr>
                         <th style={{
-                          background: 'linear-gradient(to bottom, #e8e8e8, #d0d0d0)',
-                          padding: '14px 12px',
-                          border: '1px solid #000',
+                          background: '#fff',
+                          padding: '13px 12px',
+                          border: '1px solid #666',
                           textAlign: 'left',
                           fontWeight: 'bold',
                           width: '40%'
                         }}>Libellé</th>
                         <th style={{
-                          background: 'linear-gradient(to bottom, #e8e8e8, #d0d0d0)',
-                          padding: '14px 12px',
-                          border: '1px solid #000',
+                          background: '#fff',
+                          padding: '13px 12px',
+                          border: '1px solid #666',
                           textAlign: 'center',
                           fontWeight: 'bold',
                           width: '15%'
                         }}>Taux</th>
                         <th style={{
-                          background: 'linear-gradient(to bottom, #e8e8e8, #d0d0d0)',
-                          padding: '14px 12px',
-                          border: '1px solid #000',
+                          background: '#fff',
+                          padding: '13px 12px',
+                          border: '1px solid #666',
                           textAlign: 'center',
                           fontWeight: 'bold',
                           width: '15%'
                         }}>Nb.Jours</th>
                         <th style={{
-                          background: 'linear-gradient(to bottom, #e8e8e8, #d0d0d0)',
-                          padding: '14px 12px',
-                          border: '1px solid #000',
+                          background: '#fff',
+                          padding: '13px 12px',
+                          border: '1px solid #666',
                           textAlign: 'right',
                           fontWeight: 'bold',
                           width: '15%'
                         }}>Sal/Prime</th>
                         <th style={{
-                          background: 'linear-gradient(to bottom, #e8e8e8, #d0d0d0)',
-                          padding: '14px 12px',
-                          border: '1px solid #000',
+                          background: '#fff',
+                          padding: '13px 12px',
+                          border: '1px solid #666',
                           textAlign: 'right',
                           fontWeight: 'bold',
                           width: '15%'
@@ -442,135 +441,121 @@ export const PaySlipModal = ({
                     <tbody>
                       {/* Base Salary */}
                       <tr style={{ background: '#fff' }}>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000' }}>Traitement de base</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center', fontWeight: '600' }}>{workDays}</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right', fontWeight: '600', color: '#059669' }}>{salaryData.salaire_brut.toFixed(3)}</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                      </tr>
-                      <tr style={{ background: '#fafafa' }}>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000' }}>Salaire de base</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '8.5px 12px', border: '1px solid #666' }}>Traitement de base</td>
+                        <td style={{ padding: '8.5px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '8.5px 12px', border: '1px solid #666', textAlign: 'center', fontWeight: '600' }}>{workDays}</td>
+                        <td style={{ padding: '8.5px 12px', border: '1px solid #666', textAlign: 'right', fontWeight: '600', color: '#000' }}>{salaryData.salaire_brut.toFixed(3)}</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
                       </tr>
                       <tr style={{ background: '#fff' }}>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000' }}>Prime de présence</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                      </tr>
-                      <tr style={{ background: '#fafafa' }}>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000' }}>Indemnité de transport</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666' }}>Salaire de base</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
                       </tr>
                       <tr style={{ background: '#fff' }}>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000' }}>Prime</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666' }}>Prime de présence</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                      </tr>
+                      <tr style={{ background: '#fff' }}>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666' }}>Indemnité de transport</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                      </tr>
+                      <tr style={{ background: '#fff' }}>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666' }}>Prime</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
                       </tr>
                       
                       {/* Gross Salary Total */}
-                      <tr style={{ background: 'linear-gradient(to bottom, #f0f0f0, #e0e0e0)' }}>
-                        <td style={{ padding: '12px', border: '1px solid #000', fontWeight: 'bold' }}>Salaire Brut</td>
-                        <td style={{ padding: '12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '12px', border: '1px solid #000', textAlign: 'right', fontWeight: 'bold', fontSize: '14px', color: '#059669' }}>{salaryData.salaire_brut.toFixed(3)}</td>
-                        <td style={{ padding: '12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
+                      <tr style={{ background: '#fff' }}>
+                        <td style={{ padding: '12px', border: '1px solid #666', fontWeight: 'bold' }}>Salaire Brut</td>
+                        <td style={{ padding: '12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '12px', border: '1px solid #666', textAlign: 'right', fontWeight: 'bold', fontSize: '12px', color: '#000' }}>{salaryData.salaire_brut.toFixed(3)}</td>
+                        <td style={{ padding: '12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
                       </tr>
                       
                       {/* Deductions */}
                       <tr style={{ background: '#fff' }}>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000' }}>CNSS</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center', fontWeight: '600' }}>9.68%</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right', fontWeight: '600', color: '#dc2626' }}>{salaryData.cnss.toFixed(3)}</td>
-                      </tr>
-                      <tr style={{ background: '#fafafa' }}>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000' }}>Salaire imposable</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right', fontWeight: '600' }}>{salaryData.salaire_brut_imposable.toFixed(3)}</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666' }}>CNSS</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center', fontWeight: '600' }}>9.68%</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right', fontWeight: '600', color: '#000' }}>{salaryData.cnss.toFixed(3)}</td>
                       </tr>
                       <tr style={{ background: '#fff' }}>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000' }}>IRPP</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right', fontWeight: '600', color: '#dc2626' }}>{salaryData.irpp.toFixed(3)}</td>
-                      </tr>
-                      <tr style={{ background: '#fafafa' }}>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000' }}>CSS 1%</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center', fontWeight: '600' }}>1%</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right', fontWeight: '600', color: '#dc2626' }}>{salaryData.css.toFixed(3)}</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666' }}>Salaire imposable</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right', fontWeight: '600' }}>{salaryData.salaire_brut_imposable.toFixed(3)}</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
                       </tr>
                       <tr style={{ background: '#fff' }}>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000' }}>Retenues facultatives</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                        <td style={{ padding: '10px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                      </tr>
-                      <tr style={{ background: '#fafafa' }}>
-                        <td style={{ padding: '8px 12px 8px 32px', border: '1px solid #000', fontSize: '12px' }}>Prêt</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666' }}>IRPP</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right', fontWeight: '600', color: '#000' }}>{salaryData.irpp.toFixed(3)}</td>
                       </tr>
                       <tr style={{ background: '#fff' }}>
-                        <td style={{ padding: '8px 12px 8px 32px', border: '1px solid #000', fontSize: '12px' }}>Avance</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                      </tr>
-                      <tr style={{ background: '#fafafa' }}>
-                        <td style={{ padding: '8px 12px 8px 32px', border: '1px solid #000', fontSize: '12px' }}>Assurance groupe</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666' }}>CSS 1%</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center', fontWeight: '600' }}>1%</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right', fontWeight: '600', color: '#000' }}>{salaryData.css.toFixed(3)}</td>
                       </tr>
                       <tr style={{ background: '#fff' }}>
-                        <td style={{ padding: '8px 12px 8px 32px', border: '1px solid #000', fontSize: '12px' }}>Oppositions</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666' }}>Retenues facultatives</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
                       </tr>
-                      <tr style={{ background: '#fafafa' }}>
-                        <td style={{ padding: '8px 12px 8px 32px', border: '1px solid #000', fontSize: '12px' }}>Autres retenues</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #000', textAlign: 'right' }}>-</td>
+                      <tr style={{ background: '#fff' }}>
+                        <td style={{ padding: '8px 12px 8px 32px', border: '1px solid #666', fontSize: '12px' }}>Prêt</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                      </tr>
+                      <tr style={{ background: '#fff' }}>
+                        <td style={{ padding: '8px 12px 8px 32px', border: '1px solid #666', fontSize: '12px' }}>Avance</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                      </tr>
+                      <tr style={{ background: '#fff' }}>
+                        <td style={{ padding: '8px 12px 8px 32px', border: '1px solid #666', fontSize: '12px' }}>Assurance groupe</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'right' }}>-</td>
                       </tr>
                       
                       {/* Totals */}
-                      <tr style={{ background: 'linear-gradient(to bottom, #f0f0f0, #e0e0e0)' }}>
-                        <td style={{ padding: '12px', border: '1px solid #000', fontWeight: 'bold' }}>Totaux</td>
-                        <td style={{ padding: '12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '12px', border: '1px solid #000', textAlign: 'center' }}>-</td>
-                        <td style={{ padding: '12px', border: '1px solid #000', textAlign: 'right', fontWeight: 'bold', fontSize: '14px', color: '#059669' }}>{salaryData.salaire_brut.toFixed(3)}</td>
-                        <td style={{ padding: '12px', border: '1px solid #000', textAlign: 'right', fontWeight: 'bold', fontSize: '14px', color: '#dc2626' }}>{(salaryData.cnss + salaryData.irpp + salaryData.css).toFixed(3)}</td>
+                      <tr style={{ background: '#fff' }}>
+                        <td style={{ padding: '12px', border: '1px solid #666', fontWeight: 'bold' }}>Totaux</td>
+                        <td style={{ padding: '12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '12px', border: '1px solid #666', textAlign: 'center' }}>-</td>
+                        <td style={{ padding: '12px', border: '1px solid #666', textAlign: 'right', fontWeight: 'bold', fontSize: '12px', color: '#000' }}>{salaryData.salaire_brut.toFixed(3)}</td>
+                        <td style={{ padding: '12px', border: '1px solid #666', textAlign: 'right', fontWeight: 'bold', fontSize: '12px', color: '#000' }}>{(salaryData.cnss + salaryData.irpp + salaryData.css).toFixed(3)}</td>
                       </tr>
                       
                       {/* Net to Pay */}
-                      <tr style={{ background: 'linear-gradient(to right, #3b82f6, #2563eb)' }}>
-                        <td colSpan={3} style={{ padding: '16px', border: '1px solid #000', textAlign: 'center', fontWeight: 'bold', fontSize: '16px', color: '#fff' }}>Net à payer</td>
-                        <td colSpan={2} style={{ padding: '16px', border: '1px solid #000', textAlign: 'right', fontWeight: 'bold', fontSize: '18px', color: '#fff' }}>{salaryData.salaire_net.toFixed(3)}</td>
+                      <tr style={{ background: '#fff' }}>
+                        <td colSpan={3} style={{ padding: '8.5px 12px', border: '1px solid #666', textAlign: 'center', fontWeight: 'bold', fontSize: '12px', color: '#000' }}>Net à payer</td>
+                        <td colSpan={2} style={{ padding: '8.5px 12px', border: '1px solid #666', textAlign: 'right', fontWeight: 'bold', fontSize: '12px', color: '#000' }}>{salaryData.salaire_net.toFixed(3)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -580,38 +565,21 @@ export const PaySlipModal = ({
                 <div className="signatures" style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
-                  margin: '40px 30px 30px 30px',
-                  fontSize: '13px',
-                  gap: '40px'
+                  margin: '20px 30px 30px 30px',
+                  fontSize: '12px',
+                  gap: '80px'
                 }}>
                   <div className="signature-box" style={{
                     textAlign: 'center',
-                    padding: '20px',
-                    border: '1px dashed #999',
-                    borderRadius: '8px',
-                    background: '#fafafa'
+                    padding: '0'
                   }}>
-                    <div style={{ fontWeight: '600', marginBottom: '60px' }}>Signature Employé</div>
-                    <div style={{
-                      borderTop: '2px solid #000',
-                      paddingTop: '8px',
-                      marginTop: '8px'
-                    }}></div>
+                    <div style={{ fontWeight: '400', color: '#000', fontSize: '12px' }}>Signature employé</div>
                   </div>
                   <div className="signature-box" style={{
                     textAlign: 'center',
-                    padding: '20px',
-                    border: '1px dashed #999',
-                    borderRadius: '8px',
-                    background: '#fafafa'
+                    padding: '0'
                   }}>
-                    <div style={{ fontWeight: '600' }}>Signature & cachet</div>
-                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '50px' }}>Employeur</div>
-                    <div style={{
-                      borderTop: '2px solid #000',
-                      paddingTop: '8px',
-                      marginTop: '8px'
-                    }}></div>
+                    <div style={{ fontWeight: '400', color: '#000', fontSize: '12px' }}>Signature & cachet employeur</div>
                   </div>
                 </div>
               </div>

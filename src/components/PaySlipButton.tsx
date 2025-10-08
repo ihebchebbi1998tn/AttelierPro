@@ -89,42 +89,22 @@ export const PaySlipButton = ({ employee }: PaySlipButtonProps) => {
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => e.stopPropagation()}
-            title="Voir fiche de paie"
-          >
-            <FileText className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          {currentMonthSalary && (
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewPaySlip(currentMonth, currentMonthSalary);
-              }}
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              {currentMonthLabel}
-            </DropdownMenuItem>
-          )}
-          {lastMonthSalary && (
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewPaySlip(lastMonth, lastMonthSalary);
-              }}
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              {lastMonthLabel}
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation();
+          // Open the most recent salary (current month if available, otherwise last month)
+          const salaryToShow = currentMonthSalary || lastMonthSalary;
+          const monthToShow = currentMonthSalary ? currentMonth : lastMonth;
+          if (salaryToShow) {
+            handleViewPaySlip(monthToShow, salaryToShow);
+          }
+        }}
+        title="Voir fiche de paie"
+      >
+        <FileText className="h-4 w-4" />
+      </Button>
 
       {selectedPaySlip && (
         <PaySlipModal

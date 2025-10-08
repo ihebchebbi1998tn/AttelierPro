@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { salaryService, Employee, CreateSalaryData, Salary } from "@/utils/rhService";
-import { calculateTunisianSalary, formatTND } from "@/utils/tunisianSalaryCalculator";
+import { calculateTunisianSalary, calculateGrossFromNet, formatTND } from "@/utils/tunisianSalaryCalculator";
 import { ArrowLeft, DollarSign, Loader2, Info, TrendingUp, TrendingDown, Calculator, Save, Settings, CheckCircle2, FileText } from "lucide-react";
 import { PaySlipModal } from "@/components/PaySlipModal";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -35,21 +35,29 @@ const DefinirSalaire: React.FC = () => {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [savedSalaryInfo, setSavedSalaryInfo] = useState<{ net: number; brut: number } | null>(null);
   const [showPaySlip, setShowPaySlip] = useState(false);
+  const [netSalaryInput, setNetSalaryInput] = useState(0); // User enters this
   const [salaryData, setSalaryData] = useState<CreateSalaryData>({
     employee_id: employee?.id || 0,
-    salaire_brut: 0,
+    salaire_brut: 0, // Calculated from net
     chef_de_famille: employee?.chef_de_famille || false,
     nombre_enfants: employee?.nombre_enfants || 0,
     effective_from: new Date().toISOString().split('T')[0],
     note: ""
   });
 
-  // Calculate salary breakdown whenever inputs change
-  const calculatedSalary = calculateTunisianSalary({
-    salaire_brut: salaryData.salaire_brut,
-    chef_de_famille: salaryData.chef_de_famille,
-    nombre_enfants: salaryData.nombre_enfants
-  });
+  // Calculate gross from net salary whenever net input changes
+  const calculatedSalary = calculateGrossFromNet(
+    netSalaryInput,
+    salaryData.chef_de_famille,
+    salaryData.nombre_enfants
+  );
+
+  // Update gross salary in salaryData when calculated
+  useEffect(() => {
+    if (netSalaryInput > 0) {
+      setSalaryData(prev => ({ ...prev, salaire_brut: calculatedSalary.salaire_brut }));
+    }
+  }, [calculatedSalary.salaire_brut, netSalaryInput]);
 
   useEffect(() => {
     if (!employee) {
@@ -77,7 +85,9 @@ const DefinirSalaire: React.FC = () => {
       if (salaries && salaries.length > 0) {
         const latest = salaries[0];
         setCurrentSalary(latest);
-        // Pre-fill form with current gross salary
+        // Pre-fill form with current net salary
+        const currentNet = Number(latest.salaire_net || latest.net_total || 0);
+        setNetSalaryInput(currentNet);
         setSalaryData({
           employee_id: employee.id,
           salaire_brut: Number(latest.salaire_brut) || 0,
@@ -245,37 +255,40 @@ const DefinirSalaire: React.FC = () => {
                   </Alert>
                 )}
 
-                {/* Input: Gross Salary */}
+                {/* Input: Net Salary */}
                 <div className="space-y-2">
-                  <Label htmlFor="salaire_brut" className="text-sm font-medium flex items-center gap-2">
-                    Salaire Brut (TND)
+                  <Label htmlFor="salaire_net" className="text-sm font-medium flex items-center gap-2">
+                    Salaire Net (TND)
                     <Calculator className="h-3.5 w-3.5 text-muted-foreground" />
                   </Label>
                   <Input
-                    id="salaire_brut"
+                    id="salaire_net"
                     type="number"
                     step="0.001"
-                    value={salaryData.salaire_brut}
-                    onChange={(e) => setSalaryData(prev => ({ ...prev, salaire_brut: parseFloat(e.target.value) || 0 }))}
+                    value={netSalaryInput}
+                    onChange={(e) => setNetSalaryInput(parseFloat(e.target.value) || 0)}
                     placeholder="0.000"
                     className="text-xl font-semibold mt-2"
                   />
-                  {currentSalary && calculatedSalary.salaire_net !== Number(currentSalary.salaire_net || currentSalary.net_total || 0) && (
+                  {currentSalary && netSalaryInput !== Number(currentSalary.salaire_net || currentSalary.net_total || 0) && (
                     <div className={`text-sm mt-2 flex items-center gap-1 ${
-                      calculatedSalary.salaire_net > Number(currentSalary.salaire_net || currentSalary.net_total || 0) ? 'text-green-600' : 'text-red-600'
+                      netSalaryInput > Number(currentSalary.salaire_net || currentSalary.net_total || 0) ? 'text-green-600' : 'text-red-600'
                     }`}>
-                      {calculatedSalary.salaire_net > Number(currentSalary.salaire_net || currentSalary.net_total || 0) ? (
+                      {netSalaryInput > Number(currentSalary.salaire_net || currentSalary.net_total || 0) ? (
                         <TrendingUp className="h-4 w-4" />
                       ) : (
                         <TrendingDown className="h-4 w-4" />
                       )}
                       <span>
-                        Net: {calculatedSalary.salaire_net > Number(currentSalary.salaire_net || currentSalary.net_total || 0) ? '+' : ''}
-                        {(calculatedSalary.salaire_net - Number(currentSalary.salaire_net || currentSalary.net_total || 0)).toFixed(3)} TND
+                        {netSalaryInput > Number(currentSalary.salaire_net || currentSalary.net_total || 0) ? '+' : ''}
+                        {(netSalaryInput - Number(currentSalary.salaire_net || currentSalary.net_total || 0)).toFixed(3)} TND
                         {calculateDifference() && ` (${calculateDifference()!.percentage}%)`}
                       </span>
                     </div>
                   )}
+                  <div className="text-xs text-muted-foreground mt-2">
+                    Salaire brut calculé: <span className="font-semibold">{calculatedSalary.salaire_brut.toFixed(3)} TND</span>
+                  </div>
                 </div>
 
                 {/* Employee Deduction Info (Read-only) */}
@@ -395,6 +408,121 @@ const DefinirSalaire: React.FC = () => {
                     <span>Salaire Net:</span>
                     <span className="text-lg">{formatTND(calculatedSalary.salaire_net)}</span>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Calculation Methodology Card */}
+            <Card className="border-blue-200 bg-blue-50/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  Méthodologie de Calcul
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Détail des formules appliquées selon la loi tunisienne 2025
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-xs">
+                {/* CNSS */}
+                <div className="space-y-1.5 pb-3 border-b">
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-blue-700 min-w-[60px]">1. CNSS:</span>
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground">Cotisation sociale obligatoire</p>
+                      <p className="font-mono bg-white px-2 py-1 rounded border">CNSS = Salaire Brut × 9.68%</p>
+                      <p className="text-xs text-muted-foreground italic">
+                        Exemple: {calculatedSalary.salaire_brut.toFixed(3)} × 0.0968 = {calculatedSalary.cnss.toFixed(3)} TND
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Abattement Fiscal */}
+                <div className="space-y-1.5 pb-3 border-b">
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-blue-700 min-w-[60px]">2. Abattement:</span>
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground">Déductions fiscales</p>
+                      <div className="space-y-1 font-mono bg-white px-2 py-1 rounded border">
+                        <p>• Chef de famille: 150 TND/mois</p>
+                        <p>• Par enfant: 100 TND/mois</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground italic">
+                        Total abattement: {calculatedSalary.breakdown.deduction_chef_famille.toFixed(3)} + {calculatedSalary.breakdown.deduction_enfants.toFixed(3)} = {calculatedSalary.deductions_fiscales.toFixed(3)} TND
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* IRPP */}
+                <div className="space-y-1.5 pb-3 border-b">
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-blue-700 min-w-[60px]">3. IRPP:</span>
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground">Impôt <strong>progressif</strong> sur le revenu (par tranches)</p>
+                      <div className="font-mono bg-white px-2 py-1.5 rounded border space-y-0.5 text-[10px]">
+                        <p>Base = Salaire Imposable - Abattement</p>
+                        <p className="text-muted-foreground">= {calculatedSalary.salaire_brut_imposable.toFixed(3)} - {calculatedSalary.deductions_fiscales.toFixed(3)}</p>
+                        <p className="font-semibold">= {calculatedSalary.base_imposable.toFixed(3)} TND</p>
+                        <div className="mt-2 pt-2 border-t space-y-0.5">
+                          <p className="font-semibold text-blue-700">Tranches progressives 2025 (mensuel):</p>
+                          <div className="bg-yellow-50 border border-yellow-200 p-1.5 rounded mt-1 mb-1">
+                            <p className="text-orange-700 font-semibold">⚠️ Taxation PROGRESSIVE:</p>
+                            <p className="text-[9px] text-orange-600">Chaque tranche taxe uniquement la portion du revenu dans cette tranche</p>
+                          </div>
+                          <p>• <strong>1ère tranche (0-5,000 DT/an):</strong> 0-416.67 TND → 0%</p>
+                          <p className="text-[9px] text-muted-foreground ml-2">Les premiers 416.67 TND sont EXONÉRÉS</p>
+                          <p>• <strong>2ème tranche (5,000-10,000 DT/an):</strong> 416.67-833.33 TND → 15%</p>
+                          <p className="text-[9px] text-muted-foreground ml-2">Seulement la partie entre 416.67 et 833.33</p>
+                          <p>• <strong>3ème tranche (10,000-20,000 DT/an):</strong> 833.33-1,666.67 TND → 25%</p>
+                          <p>• <strong>4ème tranche (20,000-30,000 DT/an):</strong> 1,666.67-2,500 TND → 30%</p>
+                          <p>• <strong>5ème tranche (30,000-40,000 DT/an):</strong> 2,500-3,333.33 TND → 33%</p>
+                          <p>• <strong>6ème tranche (40,000-50,000 DT/an):</strong> 3,333.33-4,166.67 TND → 36%</p>
+                          <p>• <strong>7ème tranche (50,000-70,000 DT/an):</strong> 4,166.67-5,833.33 TND → 38%</p>
+                          <p>• <strong>8ème tranche (&gt;70,000 DT/an):</strong> &gt; 5,833.33 TND → 40%</p>
+                          <div className="bg-blue-50 border border-blue-200 p-1.5 rounded mt-1.5">
+                            <p className="font-semibold text-blue-800 text-[9px]">Exemple avec 1,000 TND:</p>
+                            <p className="text-[9px] text-blue-700">• 0-416.67 TND: 416.67 × 0% = 0.000</p>
+                            <p className="text-[9px] text-blue-700">• 416.67-833.33: 416.66 × 15% = 62.500</p>
+                            <p className="text-[9px] text-blue-700">• 833.33-1,000: 166.67 × 25% = 41.667</p>
+                            <p className="text-[9px] text-blue-800 font-semibold">Total IRPP = 104.167 TND</p>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground italic">
+                        IRPP calculé: {calculatedSalary.irpp.toFixed(3)} TND
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CSS */}
+                <div className="space-y-1.5">
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-blue-700 min-w-[60px]">4. CSS:</span>
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground">Contribution Sociale de Solidarité</p>
+                      <p className="font-mono bg-white px-2 py-1 rounded border">CSS = Salaire Imposable × 1%</p>
+                      <p className="text-xs text-muted-foreground italic">
+                        Exemple: {calculatedSalary.salaire_brut_imposable.toFixed(3)} × 0.01 = {calculatedSalary.css.toFixed(3)} TND
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Final Formula */}
+                <div className="mt-4 pt-4 border-t bg-gradient-to-r from-blue-50 to-blue-100 p-3 rounded-lg">
+                  <p className="font-semibold text-blue-900 mb-2 text-sm">Formule finale:</p>
+                  <p className="font-mono text-xs bg-white px-3 py-2 rounded border-2 border-blue-200">
+                    Net = Brut - CNSS - IRPP - CSS
+                  </p>
+                  <p className="font-mono text-xs mt-2 text-muted-foreground">
+                    = {calculatedSalary.salaire_brut.toFixed(3)} - {calculatedSalary.cnss.toFixed(3)} - {calculatedSalary.irpp.toFixed(3)} - {calculatedSalary.css.toFixed(3)}
+                  </p>
+                  <p className="font-mono text-sm mt-1 font-bold text-blue-900">
+                    = {calculatedSalary.salaire_net.toFixed(3)} TND
+                  </p>
                 </div>
               </CardContent>
             </Card>

@@ -131,6 +131,50 @@ export function calculateTunisianSalary(
 }
 
 /**
+ * Reverse calculation: Calculate gross salary from desired net salary
+ * Uses iterative approach since IRPP is progressive
+ */
+export function calculateGrossFromNet(
+  desiredNet: number,
+  chef_de_famille: boolean,
+  nombre_enfants: number,
+  config: SalaryConfigParams = DEFAULT_CONFIG
+): SalaryCalculationResult {
+  // Initial estimate: net salary is roughly 85-90% of gross
+  let estimatedGross = desiredNet / 0.87;
+  let iterations = 0;
+  const maxIterations = 50;
+  const tolerance = 0.01; // 0.01 TND tolerance
+  
+  while (iterations < maxIterations) {
+    const result = calculateTunisianSalary(
+      { salaire_brut: estimatedGross, chef_de_famille, nombre_enfants },
+      config
+    );
+    
+    const netDifference = result.salaire_net - desiredNet;
+    
+    // If we're close enough, return the result
+    if (Math.abs(netDifference) < tolerance) {
+      return result;
+    }
+    
+    // Adjust estimate based on difference
+    // If net is too high, decrease gross; if too low, increase gross
+    const adjustmentFactor = 1 + (netDifference / desiredNet) * -0.5;
+    estimatedGross *= adjustmentFactor;
+    
+    iterations++;
+  }
+  
+  // Final calculation with best estimate
+  return calculateTunisianSalary(
+    { salaire_brut: estimatedGross, chef_de_famille, nombre_enfants },
+    config
+  );
+}
+
+/**
  * Format currency for display
  */
 export function formatTND(amount: number): string {

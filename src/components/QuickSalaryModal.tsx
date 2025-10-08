@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { salaryService, Employee, CreateSalaryData, Salary } from "@/utils/rhService";
+import { calculateGrossFromNet } from "@/utils/tunisianSalaryCalculator";
 import { DollarSign, Loader2, Info, TrendingUp, TrendingDown, Percent } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -33,16 +34,27 @@ const QuickSalaryModal: React.FC<QuickSalaryModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentSalary, setCurrentSalary] = useState<Salary | null>(null);
-  const [taxMode, setTaxMode] = useState<'percentage' | 'amount'>('percentage');
-  const [taxPercentage, setTaxPercentage] = useState(0);
+  const [netSalaryInput, setNetSalaryInput] = useState(0); // User enters net
   const [salaryData, setSalaryData] = useState<CreateSalaryData>({
     employee_id: employee.id,
-    salaire_brut: 0,
+    salaire_brut: 0, // Calculated from net
     chef_de_famille: employee.chef_de_famille || false,
     nombre_enfants: employee.nombre_enfants || 0,
     effective_from: new Date().toISOString().split('T')[0],
     note: ""
   });
+
+  // Calculate gross from net whenever input changes
+  useEffect(() => {
+    if (netSalaryInput > 0) {
+      const calculated = calculateGrossFromNet(
+        netSalaryInput,
+        salaryData.chef_de_famille,
+        salaryData.nombre_enfants
+      );
+      setSalaryData(prev => ({ ...prev, salaire_brut: calculated.salaire_brut }));
+    }
+  }, [netSalaryInput, salaryData.chef_de_famille, salaryData.nombre_enfants]);
 
   useEffect(() => {
     if (isOpen) {
@@ -61,7 +73,9 @@ const QuickSalaryModal: React.FC<QuickSalaryModalProps> = ({
       if (salaries && salaries.length > 0) {
         const latest = salaries[0];
         setCurrentSalary(latest);
-        // Pre-fill form with current values
+        // Pre-fill form with current net salary
+        const currentNet = Number(latest.salaire_net || latest.net_total || 0);
+        setNetSalaryInput(currentNet);
         setSalaryData({
           employee_id: employee.id,
           salaire_brut: Number(latest.salaire_brut) || 0,
@@ -81,10 +95,10 @@ const QuickSalaryModal: React.FC<QuickSalaryModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!salaryData.salaire_brut || salaryData.salaire_brut <= 0) {
+    if (!netSalaryInput || netSalaryInput <= 0) {
       toast({
         title: "Erreur",
-        description: "Le salaire brut doit être supérieur à 0",
+        description: "Le salaire net doit être supérieur à 0",
         variant: "destructive"
       });
       return;
@@ -157,30 +171,33 @@ const QuickSalaryModal: React.FC<QuickSalaryModalProps> = ({
 
         <div className="space-y-4 py-4">
           <div>
-            <Label htmlFor="salaire_brut">Salaire Brut (TND)</Label>
+            <Label htmlFor="salaire_net">Salaire Net (TND)</Label>
             <Input
-              id="salaire_brut"
+              id="salaire_net"
               type="number"
-              step="0.01"
-              value={salaryData.salaire_brut}
-              onChange={(e) => setSalaryData(prev => ({ ...prev, salaire_brut: parseFloat(e.target.value) || 0 }))}
-              placeholder="0.00"
+              step="0.001"
+              value={netSalaryInput}
+              onChange={(e) => setNetSalaryInput(parseFloat(e.target.value) || 0)}
+              placeholder="0.000"
             />
-            {currentSalary && salaryData.salaire_brut !== Number(currentSalary.salaire_brut) && (
+            {currentSalary && netSalaryInput !== Number(currentSalary.salaire_net || currentSalary.net_total || 0) && (
               <div className={`text-xs mt-1 flex items-center gap-1 ${
-                salaryData.salaire_brut > Number(currentSalary.salaire_brut) ? 'text-green-600' : 'text-red-600'
+                netSalaryInput > Number(currentSalary.salaire_net || currentSalary.net_total || 0) ? 'text-green-600' : 'text-red-600'
               }`}>
-                {salaryData.salaire_brut > Number(currentSalary.salaire_brut) ? (
+                {netSalaryInput > Number(currentSalary.salaire_net || currentSalary.net_total || 0) ? (
                   <TrendingUp className="h-3 w-3" />
                 ) : (
                   <TrendingDown className="h-3 w-3" />
                 )}
                 <span>
-                  {salaryData.salaire_brut > Number(currentSalary.salaire_brut) ? '+' : ''}
-                  {(salaryData.salaire_brut - Number(currentSalary.salaire_brut)).toFixed(2)} TND
+                  {netSalaryInput > Number(currentSalary.salaire_net || currentSalary.net_total || 0) ? '+' : ''}
+                  {(netSalaryInput - Number(currentSalary.salaire_net || currentSalary.net_total || 0)).toFixed(3)} TND
                 </span>
               </div>
             )}
+            <div className="text-xs text-muted-foreground mt-1">
+              Salaire brut calculé: <span className="font-semibold">{salaryData.salaire_brut.toFixed(3)} TND</span>
+            </div>
           </div>
 
           <div>
@@ -219,7 +236,7 @@ const QuickSalaryModal: React.FC<QuickSalaryModalProps> = ({
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={loading || submitting || !salaryData.salaire_brut}
+            disabled={loading || submitting || !netSalaryInput}
           >
             {submitting ? (
               <>
