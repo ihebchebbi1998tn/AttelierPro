@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -57,6 +56,12 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
   // Get default quantity based on item group
   const getDefaultQuantityByItemGroup = (itemGroup: string): number => {
     const itemGroupLower = itemGroup?.toLowerCase() || '';
+    console.log('🔍 Item Group Debug:', {
+      original: itemGroup,
+      lowercase: itemGroupLower,
+      productName: product?.nom_product
+    });
+    
     const quantityMap: Record<string, number> = {
       'pantalon': 1.3,
       'costume-croise': 2.8,
@@ -68,7 +73,10 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
       'manteau': 2,
       'smoking': 2.7
     };
-    return quantityMap[itemGroupLower] || 1;
+    
+    const defaultQuantity = quantityMap[itemGroupLower] || 1;
+    console.log('✅ Default Quantity:', defaultQuantity);
+    return defaultQuantity;
   };
 
   useEffect(() => {
@@ -366,18 +374,24 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
                                </Select>
                              </div>
 
-                             {/* Quantity */}
-                             <div>
-                               <Label className="text-sm font-medium">Quantité</Label>
-                               <Input
-                                 type="number"
-                                 step="0.1"
-                                 min="0"
-                                 value={pm.quantity_needed}
-                                 onChange={(e) => updateMaterial(index, 'quantity_needed', parseFloat(e.target.value) || 0)}
-                                 className="mt-1"
-                               />
-                             </div>
+                              {/* Quantity */}
+                              <div>
+                                <Label className="text-sm font-medium">
+                                  Quantité par pièce {product?.itemgroup_product && (
+                                    <span className="text-red-500">
+                                      ({product.itemgroup_product}, {getDefaultQuantityByItemGroup(product.itemgroup_product)} préconfiguré)
+                                    </span>
+                                  )}
+                                </Label>
+                                <Input
+                                  type="number"
+                                  step="0.1"
+                                  min="0"
+                                  value={pm.quantity_needed}
+                                  onChange={(e) => updateMaterial(index, 'quantity_needed', parseFloat(e.target.value) || 0)}
+                                  className="mt-1"
+                                />
+                              </div>
 
                              {/* Commentaire */}
                              <div>
