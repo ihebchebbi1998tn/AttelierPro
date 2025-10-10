@@ -381,28 +381,28 @@ const ProductionPlanning = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
       {/* Professional Header */}
       <div className="bg-card/95 backdrop-blur-md border-b shadow-sm sticky top-0 z-50">
-        <div className="container-responsive py-4 lg:py-6">
-          <div className="flex items-center gap-4">
+        <div className="container-responsive py-2 lg:py-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => navigate(`/produits/${id}`)}
-              className="hover:bg-accent shadow-sm"
+              className="hover:bg-accent shadow-sm shrink-0"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour au Produit
+              <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="text-xs sm:text-sm">Retour</span>
             </Button>
-            <Separator orientation="vertical" className="h-8" />
-            <div className="page-header">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Settings className="h-6 w-6 text-primary" />
+            <Separator orientation="vertical" className="h-8 hidden sm:block" />
+            <div className="page-header w-full">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg shrink-0">
+                  <Settings className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-2xl lg:text-3xl font-semibold text-foreground tracking-tight">
+                  <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-foreground tracking-tight">
                     Planification de Production
                   </h1>
-                  <p className="text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
                     Configurez les quantités et validez les matériaux disponibles
                   </p>
                 </div>
