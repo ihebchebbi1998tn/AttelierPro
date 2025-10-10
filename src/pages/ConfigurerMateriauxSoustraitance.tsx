@@ -138,9 +138,14 @@ const ConfigurerMateriauxSoustraitance = () => {
         setSelectedMaterials(existingMaterials);
       }
 
-      // Load materials - filter by current user's email
+      // Load materials - filter by current user's email via server-side filtering
       const currentUser = authService.getCurrentUser();
-      const materialsResponse = await fetch('https://luccibyey.com.tn/production/api/matieres.php');
+      const token = localStorage.getItem('auth_token');
+      const materialsResponse = await fetch('https://luccibyey.com.tn/production/api/matieres.php', {
+        headers: token ? {
+          'Authorization': `Bearer ${token}`
+        } : {}
+      });
       const materialsData = await materialsResponse.json();
       if (materialsData.success) {
         const allMaterials: Material[] = (materialsData.data || []).map((m: any) => ({
@@ -158,16 +163,10 @@ const ConfigurerMateriauxSoustraitance = () => {
           location: m.location
         }));
         
-        // Filter materials by location matching current user's email
-        const filteredMaterials = currentUser?.email 
-          ? allMaterials.filter(m => m.location === currentUser.email)
-          : allMaterials;
+        console.log('🔍 Materials loaded for soustraitance user:', currentUser?.email);
+        console.log('📦 Filtered materials (server-side):', allMaterials.length);
         
-        console.log('🔍 Filtering materials by location:', currentUser?.email);
-        console.log('📦 Total materials:', allMaterials.length);
-        console.log('✅ Filtered materials:', filteredMaterials.length);
-        
-        setMaterials(filteredMaterials);
+        setMaterials(allMaterials);
       }
 
       // Load quantity types

@@ -15,13 +15,14 @@ try {
     switch($method) {
         case 'GET':
             if (isset($_GET['product_id'])) {
-                // Récupérer les matériaux pour un produit soustraitance avec détails
+                // Récupérer les matériaux pour un produit soustraitance avec détails complets
                 $stmt = $db->prepare("
                     SELECT 
                         pm.*,
                         m.nom as material_name,
                         m.description as material_description,
                         m.quantite_stock as material_stock,
+                        m.couleur as material_color,
                         qt.nom as quantity_type_name,
                         qt.unite as quantity_unit
                     FROM production_soustraitance_product_materials pm

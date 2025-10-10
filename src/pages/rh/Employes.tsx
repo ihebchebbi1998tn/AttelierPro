@@ -100,7 +100,13 @@ const Employes = () => {
   const [selectedEmployeeForLeave, setSelectedEmployeeForLeave] = useState<Employee | null>(null);
   const [leaveData, setLeaveData] = useState({
     date: new Date().toISOString().split('T')[0],
+    dateEnd: '',
+    leaveType: 'single' as 'single' | 'period',
+    halfDay: 'FULL' as 'AM' | 'PM' | 'FULL',
+    startTime: '',
+    endTime: '',
     motif: '',
+    isPaid: true,
   });
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -864,7 +870,13 @@ const Employes = () => {
                             setSelectedEmployeeForLeave(employee);
                             setLeaveData({
                               date: new Date().toISOString().split('T')[0],
+                              dateEnd: '',
+                              leaveType: 'single',
+                              halfDay: 'FULL',
+                              startTime: '',
+                              endTime: '',
                               motif: '',
+                              isPaid: true,
                             });
                             setShowLeaveDialog(true);
                           }}
@@ -917,7 +929,7 @@ const Employes = () => {
 
       {/* Leave Dialog */}
       <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Marquer en congé</DialogTitle>
             <DialogDescription>
@@ -925,15 +937,134 @@ const Employes = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="leave-date">Date du congé</Label>
-              <Input
-                id="leave-date"
-                type="date"
-                value={leaveData.date}
-                onChange={(e) => setLeaveData({ ...leaveData, date: e.target.value })}
-              />
+            {/* Type de congé */}
+            <div className="space-y-2">
+              <Label>Type de congé</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={leaveData.leaveType === 'single' ? 'default' : 'outline'}
+                  onClick={() => setLeaveData({ ...leaveData, leaveType: 'single', dateEnd: '' })}
+                  className="w-full"
+                >
+                  Jour unique
+                </Button>
+                <Button
+                  type="button"
+                  variant={leaveData.leaveType === 'period' ? 'default' : 'outline'}
+                  onClick={() => setLeaveData({ ...leaveData, leaveType: 'period' })}
+                  className="w-full"
+                >
+                  Période
+                </Button>
+              </div>
             </div>
+
+            {/* Date selection */}
+            {leaveData.leaveType === 'single' ? (
+              <div>
+                <Label htmlFor="leave-date">Date du congé</Label>
+                <Input
+                  id="leave-date"
+                  type="date"
+                  value={leaveData.date}
+                  onChange={(e) => setLeaveData({ ...leaveData, date: e.target.value })}
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="leave-date-start">Date de début</Label>
+                  <Input
+                    id="leave-date-start"
+                    type="date"
+                    value={leaveData.date}
+                    onChange={(e) => setLeaveData({ ...leaveData, date: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="leave-date-end">Date de fin</Label>
+                  <Input
+                    id="leave-date-end"
+                    type="date"
+                    value={leaveData.dateEnd}
+                    onChange={(e) => setLeaveData({ ...leaveData, dateEnd: e.target.value })}
+                    min={leaveData.date}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Half day or Full day (only for single day) */}
+            {leaveData.leaveType === 'single' && (
+              <div className="space-y-2">
+                <Label>Durée</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    type="button"
+                    variant={leaveData.halfDay === 'FULL' ? 'default' : 'outline'}
+                    onClick={() => setLeaveData({ ...leaveData, halfDay: 'FULL' })}
+                    className="w-full"
+                  >
+                    Journée complète
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={leaveData.halfDay === 'AM' ? 'default' : 'outline'}
+                    onClick={() => setLeaveData({ ...leaveData, halfDay: 'AM' })}
+                    className="w-full"
+                  >
+                    Matin
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={leaveData.halfDay === 'PM' ? 'default' : 'outline'}
+                    onClick={() => setLeaveData({ ...leaveData, halfDay: 'PM' })}
+                    className="w-full"
+                  >
+                    Après-midi
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Time range (only for single day and full day) */}
+            {leaveData.leaveType === 'single' && leaveData.halfDay === 'FULL' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="start-time">Heure de début (optionnel)</Label>
+                  <Input
+                    id="start-time"
+                    type="time"
+                    value={leaveData.startTime}
+                    onChange={(e) => setLeaveData({ ...leaveData, startTime: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="end-time">Heure de fin (optionnel)</Label>
+                  <Input
+                    id="end-time"
+                    type="time"
+                    value={leaveData.endTime}
+                    onChange={(e) => setLeaveData({ ...leaveData, endTime: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Paid/Unpaid */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="is-paid"
+                checked={leaveData.isPaid}
+                onCheckedChange={(checked) => setLeaveData({ ...leaveData, isPaid: checked as boolean })}
+              />
+              <Label htmlFor="is-paid" className="cursor-pointer">
+                Congé payé
+              </Label>
+            </div>
+
+            {/* Motif */}
             <div>
               <Label htmlFor="leave-motif">Motif (optionnel)</Label>
               <Textarea
@@ -952,12 +1083,27 @@ const Employes = () => {
             <Button onClick={async () => {
               try {
                 if (!selectedEmployeeForLeave) return;
+
+                // Validate period dates
+                if (leaveData.leaveType === 'period' && (!leaveData.dateEnd || leaveData.dateEnd < leaveData.date)) {
+                  toast({
+                    title: "Erreur",
+                    description: "Veuillez sélectionner une date de fin valide",
+                    variant: "destructive"
+                  });
+                  return;
+                }
                 
                 await holidayService.create({
                   employee_id: selectedEmployeeForLeave.id,
                   date: leaveData.date,
+                  date_end: leaveData.leaveType === 'period' ? leaveData.dateEnd : undefined,
+                  half_day: leaveData.halfDay,
+                  start_time: leaveData.startTime || undefined,
+                  end_time: leaveData.endTime || undefined,
                   motif: leaveData.motif || 'Congé',
-                  status: 'approved'
+                  status: 'approved',
+                  is_paid: leaveData.isPaid,
                 });
 
                 toast({
@@ -967,6 +1113,16 @@ const Employes = () => {
 
                 setShowLeaveDialog(false);
                 setSelectedEmployeeForLeave(null);
+                setLeaveData({
+                  date: new Date().toISOString().split('T')[0],
+                  dateEnd: '',
+                  leaveType: 'single',
+                  halfDay: 'FULL',
+                  startTime: '',
+                  endTime: '',
+                  motif: '',
+                  isPaid: true,
+                });
               } catch (error) {
                 console.error("Error creating leave:", error);
                 toast({

@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Eye, Image, Cog, Ruler, Package, FileText, Save, Settings, FileOutput, Play, CheckCircle, AlertTriangle, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Eye, Image, Cog, Ruler, Package, FileText, Save, Settings, FileOutput, Play, CheckCircle, AlertTriangle, Info, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import SoustraitanceProductFilesUpload from "@/components/SoustraitanceProductFilesUpload";
 import SoustraitanceProductReport from "@/components/SoustraitanceProductReport";
@@ -118,6 +118,8 @@ const SoustraitanceProductDetails = () => {
   const [validationResult, setValidationResult] = useState<any>(null);
   const [validating, setValidating] = useState(false);
   const [configuredSizes, setConfiguredSizes] = useState<string[]>([]);
+  const [showDeleteMaterialModal, setShowDeleteMaterialModal] = useState(false);
+  const [materialToDelete, setMaterialToDelete] = useState<any>(null);
 
   const API_BASE_URL = 'https://luccibyey.com.tn/production/api';
 
@@ -349,7 +351,36 @@ const SoustraitanceProductDetails = () => {
       const data = await response.json();
       
       if (data.success) {
-        setValidationResult(data.data);
+        // Fix backend logic: recalculate is_sufficient for each material
+        const correctedData = { ...data.data };
+        
+        if (correctedData.material_requirements) {
+          Object.keys(correctedData.material_requirements).forEach(materialId => {
+            const req = correctedData.material_requirements[materialId];
+            // Material is sufficient if: total_needed is 0 OR current_stock >= total_needed
+            req.is_sufficient = req.total_needed === 0 || req.current_stock >= req.total_needed;
+          });
+          
+          // Recalculate has_sufficient_stock based on corrected material sufficiency
+          correctedData.has_sufficient_stock = Object.values(correctedData.material_requirements).every(
+            (req: any) => req.is_sufficient
+          );
+          
+          // Recalculate insufficient_materials array
+          correctedData.insufficient_materials = Object.entries(correctedData.material_requirements)
+            .filter(([_, req]: [string, any]) => !req.is_sufficient)
+            .map(([materialId, req]: [string, any]) => ({
+              material_id: materialId,
+              material_name: req.material_name,
+              material_color: req.material_color,
+              needed: req.total_needed,
+              available: req.current_stock,
+              missing: Math.max(0, req.total_needed - req.current_stock),
+              unit: req.quantity_unit
+            }));
+        }
+        
+        setValidationResult(correctedData);
         setProductionStep('validation');
       } else {
         throw new Error(data.message || 'Erreur lors de la validation');
@@ -813,6 +844,62 @@ const SoustraitanceProductDetails = () => {
     return materials.length > 0;
   };
 
+  const handleDeleteMaterial = async () => {
+    if (!materialToDelete) return;
+
+    console.log('🗑️ DELETE MATERIAL - Starting deletion process');
+    console.log('Material to delete:', materialToDelete);
+
+    try {
+      // Get all raw material entries from the API
+      const response = await fetch(`${API_BASE_URL}/soustraitance_product_materials.php?product_id=${id}`);
+      const data = await response.json();
+      console.log('Fetched all product materials:', data);
+      
+      if (data.success && data.data) {
+        // Find ALL entries for this material (across all sizes)
+        const allEntriesForThisMaterial = data.data.filter((m: any) => 
+          m.material_id === materialToDelete.material_id
+        );
+        
+        console.log('Found ALL entries for material_id', materialToDelete.material_id, ':', allEntriesForThisMaterial);
+        console.log('Number of entries to delete:', allEntriesForThisMaterial.length);
+        
+        // Delete ALL entries for this material
+        const deletePromises = allEntriesForThisMaterial.map((m: any) => {
+          console.log(`Deleting entry ID: ${m.id} (size: ${m.size_specific || 'N/A'})`);
+          return fetch(`${API_BASE_URL}/soustraitance_product_materials.php?id=${m.id}`, {
+            method: 'DELETE',
+          });
+        });
+        
+        const results = await Promise.all(deletePromises);
+        console.log('Delete results:', results);
+        
+        const isFused = materialToDelete.commentaire?.includes('Fusionné');
+        
+        toast({
+          title: isFused ? "Matériaux fusionnés supprimés" : "Matériau supprimé",
+          description: `${allEntriesForThisMaterial.length} entrée(s) supprimée(s) avec succès`,
+        });
+      }
+      
+      console.log('✅ Deletion successful, reloading materials');
+      await loadMaterials(id || '');
+    } catch (error) {
+      console.error('❌ DELETE ERROR:', error);
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Impossible de supprimer le matériau",
+        variant: "destructive",
+      });
+    } finally {
+      console.log('🔄 Closing modal and clearing state');
+      setShowDeleteMaterialModal(false);
+      setMaterialToDelete(null);
+    }
+  };
+
   const getProductImages = (product: SoustraitanceProduct): string[] => {
     const images: string[] = [];
     const imageFields = ['img_product', 'img2_product', 'img3_product', 'img4_product', 'img5_product'];
@@ -1099,93 +1186,136 @@ const SoustraitanceProductDetails = () => {
           <TabsContent value="materials" className="space-y-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Matériaux</CardTitle>
+                <CardTitle>Matériaux Configurés</CardTitle>
                 <Button 
                   onClick={() => navigate(`/soustraitance-products/${id}/configurer-materiaux`)}
                   className="flex items-center gap-2"
                 >
                   <Settings className="h-4 w-4" />
-                  Configurer
+                  {materials.length > 0 ? 'Modifier Configuration' : 'Configurer Matériaux'}
                 </Button>
               </CardHeader>
               <CardContent>
                 {materials.length > 0 ? (
                   <div className="space-y-4">
-                    <div className="grid gap-4">
-                      {(() => {
-                        // Group materials by material_id
-                        const groupedMaterials = materials.reduce((acc, material) => {
-                          const materialId = material.material_id || material.material_name;
-                          if (!acc[materialId]) {
-                            acc[materialId] = {
-                              material_name: material.material_name,
-                              material_description: material.material_description,
-                              material_stock: material.material_stock,
-                              quantity_unit: material.quantity_unit,
-                              commentaire: material.commentaire,
-                              sizes: []
-                            };
-                          }
-                          acc[materialId].sizes.push({
-                            size_specific: material.size_specific || 'Taille unique',
-                            quantity_needed: material.quantity_needed
-                          });
-                          return acc;
-                        }, {} as Record<string, any>);
+                    {/* Group materials by material_id */}
+                    {(() => {
+                      const groupedMaterials: Record<string, any> = {};
+                      
+                      materials.forEach((material: any) => {
+                        const materialId = material.material_id;
+                        if (!groupedMaterials[materialId]) {
+                          groupedMaterials[materialId] = {
+                            material_id: materialId,
+                            material_name: material.material_name,
+                            material_description: material.material_description,
+                            material_stock: material.material_stock,
+                            quantity_unit: material.quantity_unit,
+                            commentaire: material.commentaire,
+                            color: material.material_color || '',
+                            sizes: []
+                          };
+                        }
+                        groupedMaterials[materialId].sizes.push({
+                          size: material.size_specific || 'general',
+                          quantity: material.quantity_needed,
+                          unit: material.quantity_unit
+                        });
+                      });
 
-                        return Object.values(groupedMaterials).map((material: any, index) => (
-                          <div key={index} className="border rounded-lg p-4">
-                            <div className="flex justify-between items-start mb-3">
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-lg">{material.material_name}</h4>
-                                <p className="text-sm text-muted-foreground">{material.material_description}</p>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-xs text-muted-foreground mb-1">Stock disponible</div>
-                                <Badge variant="outline" className="text-sm">
-                                  {parseFloat(material.material_stock).toString()}
-                                </Badge>
-                              </div>
-                            </div>
-                            
-                            {/* Size breakdown */}
-                            <div className="space-y-2">
-                              <h5 className="font-medium text-sm text-muted-foreground">Quantités par taille:</h5>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                                {material.sizes.map((sizeData: any, sizeIndex: number) => (
-                                  <div key={sizeIndex} className="flex items-center justify-between bg-muted rounded-md px-3 py-2">
-                                    <span className="text-sm font-medium">{sizeData.size_specific}</span>
-                                    <span className="text-sm text-muted-foreground">
-                                      {sizeData.quantity_needed} {material.quantity_unit}
-                                    </span>
+                      return Object.values(groupedMaterials).map((material: any, index) => {
+                        const isFused = material.commentaire?.includes('Fusionné');
+                        
+                        return (
+                          <Card key={index} className="border-2 border-primary/10 hover:border-primary/30 transition-colors">
+                            <CardContent className="p-6">
+                              <div className="flex justify-between items-start gap-4">
+                                <div className="flex-1 space-y-3">
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-3 mb-2">
+                                        <h4 className="font-bold text-lg text-foreground">{material.material_name}</h4>
+                                        {isFused && (
+                                          <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                                            <Check className="h-3 w-3 mr-1" />
+                                            Fusionné
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      {material.material_description && (
+                                        <p className="text-sm text-muted-foreground mb-2">{material.material_description}</p>
+                                      )}
+                                      {material.color && (
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <span className="text-xs font-medium text-muted-foreground">Couleur:</span>
+                                          <Badge variant="outline" className="text-xs">{material.color}</Badge>
+                                        </div>
+                                      )}
+                                      {material.commentaire && (
+                                        <div className="mt-2 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
+                                          💬 {material.commentaire}
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                     <div className="text-right flex-shrink-0 space-y-2">
+                                       <div>
+                                         <div className="text-xs font-medium text-muted-foreground mb-1">Stock disponible</div>
+                                         <Badge 
+                                           variant={parseFloat(material.material_stock) > 10 ? 'default' : 'destructive'}
+                                           className="text-sm font-bold px-3 py-1"
+                                         >
+                                           {parseFloat(material.material_stock).toFixed(1)} {material.quantity_unit}
+                                         </Badge>
+                                       </div>
+                                       <Button
+                                         variant="destructive"
+                                         size="sm"
+                                         onClick={() => {
+                                           setMaterialToDelete(material);
+                                           setShowDeleteMaterialModal(true);
+                                         }}
+                                         className="flex items-center gap-2 w-full"
+                                       >
+                                         <X className="h-4 w-4" />
+                                         Supprimer
+                                       </Button>
+                                     </div>
+                                   </div>
+
+                                   {/* Size breakdown */}
+                                   <div className="space-y-2 pt-2 border-t">
+                                    <h5 className="font-semibold text-sm text-primary">Quantités requises par taille:</h5>
+                                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                                        {material.sizes.map((sizeData: any, sizeIndex: number) => (
+                                          <div key={sizeIndex} className="flex items-center justify-between bg-muted rounded-md px-3 py-2">
+                                            <span className="text-sm font-medium">{sizeData.size}</span>
+                                            <span className="text-sm text-muted-foreground">
+                                              {parseFloat(sizeData.quantity).toFixed(2)} {sizeData.unit}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+
+                                    {/* Total quantity */}
+                                    <div className="mt-3 pt-3 border-t border-border">
+                                      <div className="flex justify-between items-center">
+                                        <span className="font-medium text-sm">Total nécessaire:</span>
+                                        <Badge variant="secondary" className="text-sm font-bold">
+                                          {material.sizes.reduce((total: number, size: any) => total + parseFloat(size.quantity), 0).toFixed(2)} {material.quantity_unit}
+                                        </Badge>
+                                      </div>
+                                    </div>
                                   </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Total quantity */}
-                            <div className="mt-3 pt-3 border-t border-border">
-                              <div className="flex justify-between items-center">
-                                <span className="font-medium text-sm">Total nécessaire:</span>
-                                <Badge variant="secondary" className="text-sm">
-                                  {material.sizes.reduce((total: number, size: any) => total + parseFloat(size.quantity_needed), 0)} {material.quantity_unit}
-                                </Badge>
-                              </div>
-                            </div>
-
-                            {material.commentaire && (
-                              <div className="mt-3 pt-3 border-t border-border">
-                                <p className="text-sm text-muted-foreground">
-                                  <span className="font-medium">Commentaire:</span> {material.commentaire}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        ));
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        });
                       })()}
                     </div>
-                  </div>
-                ) : (
+                  ) : (
                   <div className="text-center py-8">
                     <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-semibold mb-2">Aucun matériau configuré</h3>
@@ -1736,6 +1866,43 @@ const SoustraitanceProductDetails = () => {
                 </Button>
               )}
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Material Confirmation Modal */}
+      <Dialog open={showDeleteMaterialModal} onOpenChange={setShowDeleteMaterialModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer ce matériau de la configuration ?
+              {materialToDelete && (
+                <div className="mt-4 p-3 bg-muted rounded-md">
+                  <p className="font-semibold">{materialToDelete.material_name}</p>
+                  {materialToDelete.commentaire && (
+                    <p className="text-sm text-muted-foreground mt-1">{materialToDelete.commentaire}</p>
+                  )}
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteMaterialModal(false);
+                setMaterialToDelete(null);
+              }}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteMaterial}
+            >
+              Supprimer
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

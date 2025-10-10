@@ -87,16 +87,20 @@ try {
             }
             
             $stmt = $db->prepare("
-                INSERT INTO production_holidays (employee_id, date, half_day, motif, status, created_by) 
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO production_holidays (employee_id, date, date_end, half_day, start_time, end_time, motif, status, is_paid, created_by) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $result = $stmt->execute([
                 $input['employee_id'],
                 $input['date'],
+                $input['date_end'] ?? null,
                 $input['half_day'] ?? 'FULL',
+                $input['start_time'] ?? null,
+                $input['end_time'] ?? null,
                 $input['motif'] ?? null,
                 $input['status'] ?? 'pending',
+                $input['is_paid'] ?? true,
                 $input['created_by'] ?? null
             ]);
             
@@ -133,15 +137,19 @@ try {
                 // Regular update
                 $stmt = $db->prepare("
                     UPDATE production_holidays 
-                    SET date = ?, half_day = ?, motif = ?, status = ?
+                    SET date = ?, date_end = ?, half_day = ?, start_time = ?, end_time = ?, motif = ?, status = ?, is_paid = ?
                     WHERE id = ?
                 ");
                 
                 $result = $stmt->execute([
                     $input['date'],
+                    $input['date_end'] ?? null,
                     $input['half_day'] ?? 'FULL',
+                    $input['start_time'] ?? null,
+                    $input['end_time'] ?? null,
                     $input['motif'] ?? null,
                     $input['status'] ?? 'pending',
+                    $input['is_paid'] ?? true,
                     $_GET['id']
                 ]);
                 

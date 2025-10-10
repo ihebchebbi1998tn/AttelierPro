@@ -120,9 +120,13 @@ export interface Holiday {
   nom?: string;
   prenom?: string;
   date: string;
+  date_end?: string;
   half_day: 'AM' | 'PM' | 'FULL';
+  start_time?: string;
+  end_time?: string;
   motif?: string;
   status: 'pending' | 'approved' | 'rejected';
+  is_paid: boolean;
   created_by?: number;
   approved_by?: number;
   approved_at?: string;
@@ -136,9 +140,13 @@ export interface Holiday {
 export interface CreateHolidayData {
   employee_id: number;
   date: string;
+  date_end?: string;
   half_day?: 'AM' | 'PM' | 'FULL';
+  start_time?: string;
+  end_time?: string;
   motif?: string;
   status?: 'pending' | 'approved' | 'rejected';
+  is_paid?: boolean;
   created_by?: number;
 }
 
