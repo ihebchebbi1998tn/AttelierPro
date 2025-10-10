@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -8,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -126,6 +128,8 @@ const ProductDetails = () => {
   const [selectedMaterial, setSelectedMaterial] = useState<any>(null);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showDeleteMaterialModal, setShowDeleteMaterialModal] = useState(false);
+  const [materialToDelete, setMaterialToDelete] = useState<any>(null);
   const [measurementScale, setMeasurementScale] = useState<any>(null);
   const [sizesLocked, setSizesLocked] = useState(false);
 
@@ -307,6 +311,36 @@ const ProductDetails = () => {
 
   const hasMaterialsConfigured = () => {
     return configuredMaterials && configuredMaterials.length > 0;
+  };
+
+  const handleDeleteMaterial = async () => {
+    if (!materialToDelete) return;
+
+    try {
+      const response = await fetch(`https://luccibyey.com.tn/production/api/production_product_materials.php?id=${materialToDelete.id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        toast({
+          title: "Matériau supprimé",
+          description: "Le matériau a été retiré de la configuration",
+        });
+        loadConfiguredMaterials(id || '');
+      } else {
+        throw new Error(data.message || 'Erreur lors de la suppression');
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Impossible de supprimer le matériau",
+        variant: "destructive",
+      });
+    } finally {
+      setShowDeleteMaterialModal(false);
+      setMaterialToDelete(null);
+    }
   };
 
   const handleViewImages = (product: Product) => {
@@ -1262,31 +1296,10 @@ const ProductDetails = () => {
                                       variant="ghost"
                                       size="sm"
                                       className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                      onClick={async (e) => {
+                                      onClick={(e) => {
                                         e.stopPropagation();
-                                        if (window.confirm(`Supprimer le matériau "${material.material_name}" de la configuration ?`)) {
-                                          try {
-                                            const response = await fetch(`https://luccibyey.com.tn/production/api/production_product_materials.php?product_id=${id}&material_id=${material.material_id}`, {
-                                              method: 'DELETE',
-                                            });
-                                            const data = await response.json();
-                                            if (data.success) {
-                                              toast({
-                                                title: "Matériau supprimé",
-                                                description: "Le matériau a été retiré de la configuration",
-                                              });
-                                              loadConfiguredMaterials(id || '');
-                                            } else {
-                                              throw new Error(data.message || 'Erreur lors de la suppression');
-                                            }
-                                          } catch (error) {
-                                            toast({
-                                              title: "Erreur",
-                                              description: "Impossible de supprimer le matériau",
-                                              variant: "destructive",
-                                            });
-                                          }
-                                        }
+                                        setMaterialToDelete(material);
+                                        setShowDeleteMaterialModal(true);
                                       }}
                                     >
                                       <Trash2 className="h-4 w-4" />
@@ -1879,6 +1892,30 @@ const ProductDetails = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Material Confirmation Modal */}
+      <AlertDialog open={showDeleteMaterialModal} onOpenChange={setShowDeleteMaterialModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer le matériau "{materialToDelete?.material_name}" de la configuration ?
+              Cette action ne peut pas être annulée.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowDeleteMaterialModal(false);
+              setMaterialToDelete(null);
+            }}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMaterial} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
