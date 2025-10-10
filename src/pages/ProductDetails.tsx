@@ -1199,24 +1199,40 @@ const ProductDetails = () => {
                     ) : configuredMaterials.length > 0 ? (
                       <div className="grid gap-4">
                         {configuredMaterials.map((material, index) => {
-                          // Calculate total quantity needed across all sizes
-                          const totalQuantityNeeded = material.sizes.reduce((total, size) => total + parseFloat(size.quantity), 0);
-                          const stockPercentage = (parseFloat(material.material_stock) / totalQuantityNeeded) * 100;
+                          // Calculate total quantity needed per piece (across all sizes)
+                          const totalQuantityNeededPerPiece = material.sizes.reduce((total: number, size: any) => total + parseFloat(size.quantity), 0);
+                          
+                          // Get production quantities from product
+                          let totalPiecesToProduce = 0;
+                          if (product?.production_quantities) {
+                            try {
+                              const productionQty = JSON.parse(product.production_quantities);
+                              totalPiecesToProduce = Object.values(productionQty).reduce((sum: number, qty: any) => sum + (Number(qty) || 0), 0) as number;
+                            } catch (e) {
+                              console.error('Error parsing production quantities:', e);
+                            }
+                          }
+                          
+                          // Calculate total material required for all pieces
+                          const totalMaterialRequired = totalQuantityNeededPerPiece * totalPiecesToProduce;
+                          const stockPercentage = totalMaterialRequired > 0 ? (parseFloat(material.material_stock) / totalMaterialRequired) * 100 : 100;
                           const stockLevel = stockPercentage >= 100 ? 'sufficient' : stockPercentage >= 50 ? 'warning' : 'critical';
                           
                           return (
                             <Card 
                               key={material.material_id} 
-                              className="cursor-pointer hover:shadow-md transition-all duration-200 border-l-4"
+                              className="hover:shadow-md transition-all duration-200 border-l-4"
                               style={{ borderLeftColor: material.color || '#6B7280' }}
-                              onClick={() => {
-                                setSelectedMaterial(material);
-                                setShowMaterialModal(true);
-                              }}
                             >
                               <CardContent className="p-3 md:p-4">
-                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
-                                  <div className="flex items-start gap-2 md:gap-3 flex-1 min-w-0">
+                                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-3">
+                                  <div 
+                                    className="flex items-start gap-2 md:gap-3 flex-1 min-w-0 cursor-pointer"
+                                    onClick={() => {
+                                      setSelectedMaterial(material);
+                                      setShowMaterialModal(true);
+                                    }}
+                                  >
                                     <div className="flex-1 min-w-0">
                                       <h4 className="font-semibold text-sm md:text-base text-foreground truncate">
                                         {material.material_name}
@@ -1230,13 +1246,51 @@ const ProductDetails = () => {
                                       </p>
                                     </div>
                                   </div>
-                                  <div className="text-left md:text-right flex-shrink-0">
-                                    <div className="text-xs md:text-sm font-medium">
-                                      Requis: {formatNumber(totalQuantityNeeded)} {material.quantity_unit}
+                                  <div className="flex items-start gap-2">
+                                    <div className="text-left md:text-right flex-shrink-0">
+                                      <div className="text-xs md:text-sm font-medium">
+                                        Total requis: {formatNumber(totalMaterialRequired)} {material.quantity_unit}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        ({formatNumber(totalQuantityNeededPerPiece)} {material.quantity_unit}/pièce × {totalPiecesToProduce} pièces)
+                                      </div>
+                                      <div className="text-xs md:text-sm text-muted-foreground mt-1">
+                                        Stock: {formatNumber(material.material_stock)} {material.quantity_unit}
+                                      </div>
                                     </div>
-                                    <div className="text-xs md:text-sm text-muted-foreground">
-                                      Stock: {formatNumber(material.material_stock)} {material.quantity_unit}
-                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (window.confirm(`Supprimer le matériau "${material.material_name}" de la configuration ?`)) {
+                                          try {
+                                            const response = await fetch(`https://luccibyey.com.tn/production/api/production_product_materials.php?product_id=${id}&material_id=${material.material_id}`, {
+                                              method: 'DELETE',
+                                            });
+                                            const data = await response.json();
+                                            if (data.success) {
+                                              toast({
+                                                title: "Matériau supprimé",
+                                                description: "Le matériau a été retiré de la configuration",
+                                              });
+                                              loadConfiguredMaterials(id || '');
+                                            } else {
+                                              throw new Error(data.message || 'Erreur lors de la suppression');
+                                            }
+                                          } catch (error) {
+                                            toast({
+                                              title: "Erreur",
+                                              description: "Impossible de supprimer le matériau",
+                                              variant: "destructive",
+                                            });
+                                          }
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
                                   </div>
                                 </div>
                                 
@@ -1764,13 +1818,31 @@ const ProductDetails = () => {
                 </div>
               </div>
               
-              <div className="mt-4">
+              <div className="mt-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Total requis:</span>
+                  <span>Total requis par pièce:</span>
                   <span className="font-semibold">
-                    {formatNumber(selectedMaterial.sizes.reduce((total, size) => total + parseFloat(size.quantity), 0))} {selectedMaterial.quantity_unit}
+                    {formatNumber(selectedMaterial.sizes.reduce((total: number, size: any) => total + parseFloat(size.quantity), 0))} {selectedMaterial.quantity_unit}
                   </span>
                 </div>
+                {product?.production_quantities && (() => {
+                  try {
+                    const productionQty = JSON.parse(product.production_quantities);
+                    const totalPieces = Object.values(productionQty).reduce((sum: number, qty: any) => sum + (Number(qty) || 0), 0) as number;
+                    const perPiece = selectedMaterial.sizes.reduce((total: number, size: any) => total + parseFloat(size.quantity), 0);
+                    const totalRequired = perPiece * totalPieces;
+                    return (
+                      <div className="flex justify-between text-sm pt-2 border-t">
+                        <span className="font-semibold">Total requis ({totalPieces} pièces):</span>
+                        <span className="font-bold text-primary">
+                          {formatNumber(totalRequired)} {selectedMaterial.quantity_unit}
+                        </span>
+                      </div>
+                    );
+                  } catch (e) {
+                    return null;
+                  }
+                })()}
               </div>
             </div>
           )}
