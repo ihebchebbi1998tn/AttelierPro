@@ -3022,6 +3022,7 @@ const BatchDetails = () => {
                       <TableRow className="bg-muted/50">
                         <TableHead className="font-semibold">Matériau</TableHead>
                         <TableHead className="font-semibold">Couleur</TableHead>
+                        <TableHead className="font-semibold">Qté Préconfiguré</TableHead>
                         <TableHead className="font-semibold">Qté Réelle Utilisée</TableHead>
                         <TableHead className="font-semibold">Qté Déchet/Reste</TableHead>
                         <TableHead className="font-semibold">Réutilisable</TableHead>
@@ -3047,6 +3048,16 @@ const BatchDetails = () => {
                             </TableCell>
                             <TableCell>
                               <span className="text-sm">{material.couleur || 'Non spécifiée'}</span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <span className="font-medium text-muted-foreground">{material.quantity_used || '-'}</span>
+                                {Number(material.quantity_used) > 0 && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {material.quantity_used} × {batch.quantity_to_produce} = {(Number(material.quantity_used) * batch.quantity_to_produce).toFixed(2)} {material.quantity_unit}
+                                  </div>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell>
                               {canEdit ? (
@@ -3171,7 +3182,11 @@ const BatchDetails = () => {
                           </div>
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">Quantité utilisée:</span>
+                              <span className="text-xs text-muted-foreground">Qté préconfiguré:</span>
+                              <span className="text-sm font-medium text-muted-foreground">{material.quantity_used || '-'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">Qté réelle utilisée:</span>
                               {canEdit ? (
                                 <Input
                                   type="number"
