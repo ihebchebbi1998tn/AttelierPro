@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -201,7 +202,7 @@ const ProductionPlanning = () => {
       
       if (data.success) {
         setValidationResult(data.data);
-        setShowValidationModal(true);
+        setShowConfirmationModal(true);
       } else {
         throw new Error(data.message || 'Erreur lors de la validation');
       }
@@ -234,118 +235,115 @@ const ProductionPlanning = () => {
   };
 
   const startProduction = async () => {
-    if (validationResult?.has_sufficient_stock) {
-      try {
-        setValidating(true);
-        
-        // Calculate total quantity to produce
-        const totalQuantity = Object.values(plannedQuantities).reduce(
-          (sum, qty) => sum + (typeof qty === 'string' ? parseInt(qty) || 0 : Number(qty) || 0), 
-          0
-        );
-        
-        if (totalQuantity === 0) {
-          toast({
-            title: "Erreur",
-            description: "Veuillez saisir au moins une quantité à produire",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        // First, deduct materials from stock
-        const deductionData = {
-          action: 'deduct_stock_production',
-          product_id: typeof product?.id === 'string' ? parseInt(product.id) : Number(product?.id),
-          planned_quantities: plannedQuantities,
-          user_id: 1 // Default user ID - should be from auth context
-        };
-        
-        console.log('Deducting materials:', deductionData);
-        
-        const deductionResponse = await fetch('https://luccibyey.com.tn/production/api/production_stock_deduction.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(deductionData),
-        });
-        
-        if (!deductionResponse.ok) {
-          const errorText = await deductionResponse.text();
-          throw new Error(`Erreur lors de la déduction des matériaux: ${errorText}`);
-        }
-        
-        const deductionResult = await deductionResponse.json();
-        console.log('Deduction result:', deductionResult);
-        
-        if (!deductionResult.success) {
-          throw new Error(deductionResult.message || 'Erreur lors de la déduction des matériaux');
-        }
-        
-        // Now create the production batch
-        const sizesBreakdown = JSON.stringify(plannedQuantities);
-        
-        const requestData = {
-          action: 'start_production',
-          product_id: typeof product?.id === 'string' ? parseInt(product.id) : Number(product?.id),
-          quantity_to_produce: totalQuantity,
-          sizes_breakdown: sizesBreakdown,
-          user_id: 1, // Default user ID - should be from auth context
-          notes: `Production lancée depuis la planification pour ${product?.nom_product}`,
-          materials_cost: deductionResult.total_cost || 0
-        };
-        
-        console.log('Sending production request:', requestData);
-        
-        const response = await fetch('https://luccibyey.com.tn/production/api/production_batches.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestData),
-        });
-        
-        console.log('Response status:', response.status);
-        
-        // Check if response is ok
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Server error response:', errorText);
-          throw new Error(`Server error: ${response.status} - ${errorText}`);
-        }
-        
-        const result = await response.json();
-        console.log('Production result:', result);
-        
-        if (result.success) {
-          toast({
-            title: "Production démarrée !",
-            description: `Batch ${result.batch_reference} créé avec succès. Matériaux déduits: ${deductionResult.total_cost?.toFixed(2) || 0} TND`,
-          });
-          
-          // Navigate to productions page to see the created batch
-          navigate('/productions');
-        } else {
-          toast({
-            title: "Erreur",
-            description: result.message || "Erreur lors du démarrage de la production",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error('Erreur lors du démarrage de la production:', error);
+    try {
+      setValidating(true);
+      
+      // Calculate total quantity to produce
+      const totalQuantity = Object.values(plannedQuantities).reduce(
+        (sum, qty) => sum + (typeof qty === 'string' ? parseInt(qty) || 0 : Number(qty) || 0), 
+        0
+      );
+      
+      if (totalQuantity === 0) {
         toast({
           title: "Erreur",
-          description: error instanceof Error ? error.message : "Erreur de connexion lors du démarrage de la production",
+          description: "Veuillez saisir au moins une quantité à produire",
           variant: "destructive",
         });
-      } finally {
-        setValidating(false);
+        return;
       }
+      
+      // First, deduct materials from stock
+      const deductionData = {
+        action: 'deduct_stock_production',
+        product_id: typeof product?.id === 'string' ? parseInt(product.id) : Number(product?.id),
+        planned_quantities: plannedQuantities,
+        user_id: 1 // Default user ID - should be from auth context
+      };
+      
+      console.log('Deducting materials:', deductionData);
+      
+      const deductionResponse = await fetch('https://luccibyey.com.tn/production/api/production_stock_deduction.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(deductionData),
+      });
+      
+      if (!deductionResponse.ok) {
+        const errorText = await deductionResponse.text();
+        throw new Error(`Erreur lors de la déduction des matériaux: ${errorText}`);
+      }
+      
+      const deductionResult = await deductionResponse.json();
+      console.log('Deduction result:', deductionResult);
+      
+      if (!deductionResult.success) {
+        throw new Error(deductionResult.message || 'Erreur lors de la déduction des matériaux');
+      }
+      
+      // Now create the production batch
+      const sizesBreakdown = JSON.stringify(plannedQuantities);
+      
+      const requestData = {
+        action: 'start_production',
+        product_id: typeof product?.id === 'string' ? parseInt(product.id) : Number(product?.id),
+        quantity_to_produce: totalQuantity,
+        sizes_breakdown: sizesBreakdown,
+        user_id: 1, // Default user ID - should be from auth context
+        notes: `Production lancée depuis la planification pour ${product?.nom_product}`,
+        materials_cost: deductionResult.total_cost || 0
+      };
+      
+      console.log('Sending production request:', requestData);
+      
+      const response = await fetch('https://luccibyey.com.tn/production/api/production_batches.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+      
+      console.log('Response status:', response.status);
+      
+      // Check if response is ok
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server error response:', errorText);
+        throw new Error(`Server error: ${response.status} - ${errorText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Production result:', result);
+      
+      if (result.success) {
+        toast({
+          title: "Production démarrée !",
+          description: `Batch ${result.batch_reference} créé avec succès. Matériaux déduits: ${deductionResult.total_cost?.toFixed(2) || 0} TND`,
+        });
+        
+        // Navigate to productions page to see the created batch
+        navigate('/productions');
+      } else {
+        toast({
+          title: "Erreur",
+          description: result.message || "Erreur lors du démarrage de la production",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors du démarrage de la production:', error);
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Erreur de connexion lors du démarrage de la production",
+        variant: "destructive",
+      });
+    } finally {
+      setValidating(false);
     }
   };
-
   useEffect(() => {
     loadProductData();
   }, [id]);
@@ -623,7 +621,7 @@ const ProductionPlanning = () => {
                       ) : (
                         <CheckCircle className="h-5 w-5" />
                       )}
-                      <span className="font-semibold">Valider & Vérifier les Matériaux</span>
+                      <span className="font-semibold">Valider</span>
                     </Button>
                   </div>
                 </div>
@@ -1005,7 +1003,6 @@ const ProductionPlanning = () => {
               variant="outline" 
               onClick={() => {
                 setShowConfirmationModal(false);
-                setShowValidationModal(true);
               }}
               size="lg"
               className="flex-1 sm:flex-none"
