@@ -15,9 +15,10 @@ import { RefreshCw, Settings, Play, Plus, Eye, Edit, ShoppingCart, Package, Rule
 import { getProductImageUrl, getProductImages } from "@/utils/imageUtils";
 import MaterialsConfigurationModal from "@/components/MaterialsConfigurationModal";
 import { useIsMobile } from "@/hooks/use-mobile";
-
 const Produits = () => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -32,13 +33,20 @@ const Produits = () => {
   const [selectedImages, setSelectedImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [productSizes, setProductSizes] = useState<{
-    clothing?: { [size: string]: boolean };
-    numeric_pants?: { [size: string]: boolean };
-    shoes?: { [size: string]: boolean };
-    belts?: { [size: string]: boolean };
+    clothing?: {
+      [size: string]: boolean;
+    };
+    numeric_pants?: {
+      [size: string]: boolean;
+    };
+    shoes?: {
+      [size: string]: boolean;
+    };
+    belts?: {
+      [size: string]: boolean;
+    };
   }>({});
   const [hasNoSizes, setHasNoSizes] = useState(false);
-
   const loadProducts = async () => {
     setLoading(true);
     try {
@@ -53,14 +61,13 @@ const Produits = () => {
       toast({
         title: "Erreur",
         description: "Impossible de charger les produits",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
-  const handleViewImages = (product) => {
+  const handleViewImages = product => {
     const images = getProductImages(product);
     if (images.length > 0) {
       setSelectedImages(images);
@@ -68,7 +75,6 @@ const Produits = () => {
       setShowImageModal(true);
     }
   };
-
   const syncBoutique = async (boutique: string) => {
     setLoading(true);
     try {
@@ -80,14 +86,14 @@ const Produits = () => {
       } else if (boutique === 'all') {
         url = 'https://luccibyey.com.tn/production/api/sync_all.php';
       }
-
-      const response = await fetch(url, { method: 'POST' });
+      const response = await fetch(url, {
+        method: 'POST'
+      });
       const data = await response.json();
-      
       if (data.success) {
         toast({
           title: "Synchronisation réussie",
-          description: data.message || `Synchronisation ${boutique} terminée`,
+          description: data.message || `Synchronisation ${boutique} terminée`
         });
         await loadProducts();
       } else {
@@ -97,23 +103,23 @@ const Produits = () => {
       toast({
         title: "Erreur",
         description: `Erreur lors de la synchronisation ${boutique}`,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
-  const markAsSeen = async (productId) => {
+  const markAsSeen = async productId => {
     try {
       const response = await fetch('https://luccibyey.com.tn/production/api/mark_product_as_seen.php', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ productId })
+        body: JSON.stringify({
+          productId
+        })
       });
-      
       const data = await response.json();
       if (data.success) {
         // Refresh products list to update the highlighting
@@ -123,30 +129,25 @@ const Produits = () => {
       console.error('Error marking product as seen:', error);
     }
   };
-
-  const getRowHighlightClass = (product) => {
+  const getRowHighlightClass = product => {
     if (!product.transfer_date || product.is_seen === "1" || product.is_seen === 1) {
       return "";
     }
-
     const today = new Date();
     const transferDate = new Date(product.transfer_date);
-    
+
     // Reset time parts for accurate date comparison
     today.setHours(0, 0, 0, 0);
     transferDate.setHours(0, 0, 0, 0);
-    
     if (transferDate.getTime() === today.getTime()) {
       return "bg-yellow-100 dark:bg-yellow-900/20 hover:bg-yellow-200 dark:hover:bg-yellow-900/30";
     } else if (transferDate < today) {
       return "bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/30";
     }
-    
     return "";
   };
-
-  const handleStartProduction = (product) => {
-    if ((product.materials_configured == 1 || product.materials_configured === "1")) {
+  const handleStartProduction = product => {
+    if (product.materials_configured == 1 || product.materials_configured === "1") {
       // Navigate to production planning page if materials are configured
       navigate(`/produits/${product.id}/production-planning`);
     } else {
@@ -154,28 +155,23 @@ const Produits = () => {
       navigate(`/produits/${product.id}/configurer-materiaux`);
     }
   };
-
-  const handleConfigure = (product) => {
+  const handleConfigure = product => {
     setSelectedProduct(product);
     setShowConfigModal(true);
   };
-
   const handleConfigureMaterials = () => {
     if (selectedProduct) {
       setShowConfigModal(false);
       navigate(`/produits/${selectedProduct.id}/configurer-materiaux`);
     }
   };
-
   const handleConfigureSizes = async () => {
     if (selectedProduct) {
       setShowConfigModal(false);
-      
       try {
         // Load current sizes configuration from API
         const response = await fetch(`https://luccibyey.com.tn/production/api/product_sizes.php?product_id=${selectedProduct.id}`);
         const data = await response.json();
-        
         if (data.success) {
           // Check if product has no sizes
           if (data.no_sizes) {
@@ -191,14 +187,12 @@ const Produits = () => {
                 currentSizes[sizeType][size.size_value] = size.is_active === '1';
               });
             });
-            
             setProductSizes(currentSizes);
           }
         } else {
           // Initialize sizes if no configuration exists
           await initializeProductSizes();
         }
-        
         setShowSizesModal(true);
       } catch (error) {
         console.error('Error loading sizes:', error);
@@ -208,35 +202,76 @@ const Produits = () => {
       }
     }
   };
-
   const initializeProductSizes = async () => {
     try {
       const response = await fetch('https://luccibyey.com.tn/production/api/init_product_sizes.php', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ product_id: selectedProduct.id })
+        body: JSON.stringify({
+          product_id: selectedProduct.id
+        })
       });
-      
       const data = await response.json();
       if (data.success) {
         // Set default sizes (all unchecked)
         setHasNoSizes(false);
         setProductSizes({
           clothing: {
-            xs: false, s: false, m: false, l: false, xl: false, xxl: false, '3xl': false, '4xl': false
+            xs: false,
+            s: false,
+            m: false,
+            l: false,
+            xl: false,
+            xxl: false,
+            '3xl': false,
+            '4xl': false
           },
           numeric_pants: {
-            '30': false, '31': false, '32': false, '33': false, '34': false, '36': false, '38': false, '40': false,
-            '42': false, '44': false, '46': false, '48': false, '50': false, '52': false, '54': false, '56': false,
-            '58': false, '60': false, '62': false, '64': false, '66': false
+            '30': false,
+            '31': false,
+            '32': false,
+            '33': false,
+            '34': false,
+            '36': false,
+            '38': false,
+            '40': false,
+            '42': false,
+            '44': false,
+            '46': false,
+            '48': false,
+            '50': false,
+            '52': false,
+            '54': false,
+            '56': false,
+            '58': false,
+            '60': false,
+            '62': false,
+            '64': false,
+            '66': false
           },
           shoes: {
-            '39': false, '40': false, '41': false, '42': false, '43': false, '44': false, '45': false, '46': false, '47': false
+            '39': false,
+            '40': false,
+            '41': false,
+            '42': false,
+            '43': false,
+            '44': false,
+            '45': false,
+            '46': false,
+            '47': false
           },
           belts: {
-            '85': false, '90': false, '95': false, '100': false, '105': false, '110': false, '115': false, '120': false, '125': false
+            '85': false,
+            '90': false,
+            '95': false,
+            '100': false,
+            '105': false,
+            '110': false,
+            '115': false,
+            '120': false,
+            '125': false
           }
         });
       }
@@ -252,13 +287,10 @@ const Produits = () => {
       });
     }
   };
-
   const saveSizesConfiguration = async () => {
     if (!selectedProduct) return;
-
     try {
       let requestBody;
-      
       if (hasNoSizes) {
         // Product has no sizes
         requestBody = {
@@ -276,26 +308,23 @@ const Produits = () => {
             }
           });
         });
-
         requestBody = {
           product_id: selectedProduct.id,
           sizes: sizesData
         };
       }
-
       const response = await fetch('https://luccibyey.com.tn/production/api/product_sizes.php', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody)
       });
-
       const data = await response.json();
       if (data.success) {
         toast({
           title: "Succès",
-          description: "Configuration des tailles sauvegardée",
+          description: "Configuration des tailles sauvegardée"
         });
         setShowSizesModal(false);
         loadProducts(); // Reload to get updated data
@@ -307,30 +336,22 @@ const Produits = () => {
       toast({
         title: "Erreur",
         description: "Impossible de sauvegarder la configuration des tailles",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleMaterialsConfigurationSave = () => {
     // Refresh the products list after saving materials configuration
     loadProducts();
   };
-
   useEffect(() => {
     loadProducts();
   }, [location.state?.refresh]);
 
   // Remove the window focus listener as we're using location state instead
 
-  const filteredProducts = products.filter(product => 
-    (product.nom_product?.toLowerCase().includes(search.toLowerCase()) ||
-    product.reference_product?.toLowerCase().includes(search.toLowerCase())) &&
-    (!product.is_in_production || product.is_in_production === "0" || product.is_in_production === 0)
-  );
-
-  return (
-    <div className="space-y-4 md:space-y-6 p-4 md:p-6">
+  const filteredProducts = products.filter(product => (product.nom_product?.toLowerCase().includes(search.toLowerCase()) || product.reference_product?.toLowerCase().includes(search.toLowerCase())) && (!product.is_in_production || product.is_in_production === "0" || product.is_in_production === 0));
+  return <div className="space-y-4 md:space-y-6 p-4 md:p-6">
       <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Produits Prêt à Porter Production</h1>
@@ -343,12 +364,7 @@ const Produits = () => {
           <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
             <CardTitle className="text-lg md:text-xl">Liste des Produits ({products.length})</CardTitle>
             <div className="flex gap-2">
-              <Input
-                placeholder="Rechercher..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full md:w-64"
-              />
+              <Input placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} className="w-full md:w-64" />
               <Button onClick={loadProducts} variant="outline" size="sm" disabled={loading}>
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
@@ -371,48 +387,30 @@ const Produits = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredProducts.map((product) => {
-                  const mainImage = getProductImageUrl(product.img_product, product.boutique_origin);
-                  const allImages = getProductImages(product);
-                  
-                  return (
-                    <TableRow 
-                      key={product.id} 
-                      className={`text-xs md:text-sm cursor-pointer hover:bg-muted/50 ${getRowHighlightClass(product)}`}
-                      onClick={() => {
-                        // Mark as seen if not already seen
-                        if (product.is_seen === "0" || product.is_seen === 0) {
-                          markAsSeen(product.id);
-                        }
-                        // Always navigate to product details
-                        navigate(`/produits/${product.id}`);
-                      }}
-                    >
+                {filteredProducts.map(product => {
+                const mainImage = getProductImageUrl(product.img_product, product.boutique_origin);
+                const allImages = getProductImages(product);
+                return <TableRow key={product.id} className={`text-xs md:text-sm cursor-pointer hover:bg-muted/50 ${getRowHighlightClass(product)}`} onClick={() => {
+                  // Mark as seen if not already seen
+                  if (product.is_seen === "0" || product.is_seen === 0) {
+                    markAsSeen(product.id);
+                  }
+                  // Always navigate to product details
+                  navigate(`/produits/${product.id}`);
+                }}>
                       <TableCell>
-                        <div 
-                          className="relative w-12 h-12 md:w-16 md:h-16 cursor-pointer group"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewImages(product);
-                          }}
-                        >
-                          {mainImage ? (
-                            <>
-                              <img 
-                                src={mainImage} 
-                                alt={product.nom_product}
-                                className="w-full h-full object-cover rounded-md transition-transform group-hover:scale-105"
-                                onError={(e) => {
-                                  e.currentTarget.src = '/placeholder.svg';
-                                }}
-                              />
+                        <div className="relative w-12 h-12 md:w-16 md:h-16 cursor-pointer group" onClick={e => {
+                      e.stopPropagation();
+                      handleViewImages(product);
+                    }}>
+                          {mainImage ? <>
+                              <img src={mainImage} alt={product.nom_product} className="w-full h-full object-cover rounded-md transition-transform group-hover:scale-105" onError={e => {
+                          e.currentTarget.src = '/placeholder.svg';
+                        }} />
                               
-                            </>
-                          ) : (
-                            <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
+                            </> : <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
                               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          )}
+                            </div>}
                         </div>
                       </TableCell>
                       <TableCell className="font-medium">{product.reference_product}</TableCell>
@@ -421,20 +419,13 @@ const Produits = () => {
                         <Badge variant="outline" className="text-xs">{product.type_product}</Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        {product.production_quantities ? (
-                          <Badge variant="default" className="text-xs">
+                        {product.production_quantities ? <Badge variant="default" className="text-xs">
                             {Object.values(JSON.parse(product.production_quantities) as Record<string, number>).reduce((sum: number, qty: number) => sum + (qty || 0), 0)} pièces
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-xs">Non défini</Badge>
-                        )}
+                          </Badge> : <Badge variant="secondary" className="text-xs">Non défini</Badge>}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        <Badge 
-                          variant={(product.materials_configured == 1 || product.materials_configured === "1") ? 'default' : 'destructive'} 
-                          className="text-xs"
-                        >
-                          {(product.materials_configured == 1 || product.materials_configured === "1") ? 'Configurés' : 'Non configurés'}
+                        <Badge variant={product.materials_configured == 1 || product.materials_configured === "1" ? 'default' : 'destructive'} className="text-xs">
+                          {product.materials_configured == 1 || product.materials_configured === "1" ? 'Configurés' : 'Non configurés'}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -443,40 +434,23 @@ const Produits = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col sm:flex-row gap-1" onClick={(e) => e.stopPropagation()}>
-                          {(product.materials_configured == 1 || product.materials_configured === "1") ? (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => handleStartProduction(product)}
-                              className="text-xs px-2 py-1"
-                            >
+                        <div className="flex flex-col sm:flex-row gap-1" onClick={e => e.stopPropagation()}>
+                          {product.materials_configured == 1 || product.materials_configured === "1" ? <Button size="sm" variant="default" onClick={() => handleStartProduction(product)} className="text-xs px-2 py-1">
                               <Play className="h-3 w-3 mr-1" />
                               Production
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => handleConfigure(product)}
-                              className="text-xs px-2 py-1"
-                            >
+                            </Button> : <Button size="sm" variant="secondary" onClick={() => handleConfigure(product)} className="text-xs px-2 py-1">
                               <Settings className="h-3 w-3 mr-1" />
                               Configurer
-                            </Button>
-                          )}
+                            </Button>}
                         </div>
                       </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {filteredProducts.length === 0 && (
-                  <TableRow>
+                    </TableRow>;
+              })}
+                {filteredProducts.length === 0 && <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       {loading ? 'Chargement...' : 'Aucun produit en attente de production'}
                     </TableCell>
-                  </TableRow>
-                )}
+                  </TableRow>}
               </TableBody>
             </Table>
           </div>
@@ -484,158 +458,82 @@ const Produits = () => {
       </Card>
 
       {/* Mobile Cards View */}
-      {isMobile && (
-        <div className="grid grid-cols-1 gap-4 md:hidden">
-          {filteredProducts.map((product) => {
-            const mainImage = getProductImageUrl(product.img_product, product.boutique_origin);
-            const allImages = getProductImages(product);
-            
-            return (
-              <Card key={product.id} className={`overflow-hidden ${getRowHighlightClass(product)}`}>
+      {isMobile && <div className="grid grid-cols-1 gap-4 md:hidden">
+          {filteredProducts.map(product => {
+        const mainImage = getProductImageUrl(product.img_product, product.boutique_origin);
+        const allImages = getProductImages(product);
+        return <Card key={product.id} className={`overflow-hidden ${getRowHighlightClass(product)}`}>
                 <CardContent className="p-2">
                   <div className="flex gap-3">
-                    <div 
-                      className="relative w-20 h-20 flex-shrink-0 cursor-pointer"
-                      onClick={() => navigate(`/produits/${product.id}`)}
-                    >
-                      {mainImage ? (
-                        <img 
-                          src={mainImage} 
-                          alt={product.nom_product}
-                          className="w-full h-full object-cover rounded-md"
-                          onError={(e) => {
-                            e.currentTarget.src = '/placeholder.svg';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
+                    <div className="relative w-20 h-20 flex-shrink-0 cursor-pointer" onClick={() => navigate(`/produits/${product.id}`)}>
+                      {mainImage ? <img src={mainImage} alt={product.nom_product} className="w-full h-full object-cover rounded-md" onError={e => {
+                  e.currentTarget.src = '/placeholder.svg';
+                }} /> : <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
                           <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      )}
+                        </div>}
                     </div>
                     <div className="flex-1 min-w-0" onClick={() => {
-                      // Mark as seen if not already seen
-                      if (product.is_seen === "0" || product.is_seen === 0) {
-                        markAsSeen(product.id);
-                      }
-                      // Always navigate to product details
-                      navigate(`/produits/${product.id}`);
-                    }}>
+                // Mark as seen if not already seen
+                if (product.is_seen === "0" || product.is_seen === 0) {
+                  markAsSeen(product.id);
+                }
+                // Always navigate to product details
+                navigate(`/produits/${product.id}`);
+              }}>
                       <h3 className="font-semibold text-xs break-words line-clamp-3">{product.nom_product}</h3>
                       <p className="text-xs text-muted-foreground mb-2">Ref: {product.reference_product}</p>
                       <div className="flex flex-wrap gap-1 mb-2">
-                        <Badge 
-                          variant={product.boutique_origin === 'luccibyey' ? 'default' : 'secondary'} 
-                          className="text-xs"
-                        >
+                        <Badge variant={product.boutique_origin === 'luccibyey' ? 'default' : 'secondary'} className="text-xs">
                           {product.boutique_origin === 'luccibyey' ? 'Lucci By Ey' : 'Spada di Battaglia'}
                         </Badge>
-                        {product.type_product && (
-                          <Badge variant="outline" className="text-xs">{product.type_product}</Badge>
-                        )}
-                        <Badge 
-                          variant={(product.materials_configured == 1 || product.materials_configured === "1") ? 'default' : 'destructive'} 
-                          className="text-xs"
-                        >
-                          {(product.materials_configured == 1 || product.materials_configured === "1") ? 'Configurés' : 'Non configurés'}
+                        {product.type_product && <Badge variant="outline" className="text-xs">{product.type_product}</Badge>}
+                        <Badge variant={product.materials_configured == 1 || product.materials_configured === "1" ? 'default' : 'destructive'} className="text-xs">
+                          {product.materials_configured == 1 || product.materials_configured === "1" ? 'Configurés' : 'Non configurés'}
                         </Badge>
                       </div>
                       <div className="flex items-center justify-end">
-                        <div onClick={(e) => e.stopPropagation()}>
-                          {(product.materials_configured == 1 || product.materials_configured === "1") ? (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => handleStartProduction(product)}
-                              className="text-xs px-2 py-1"
-                            >
-                              <Play className="h-3 w-3 mr-1" />
-                              Production
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => handleConfigure(product)}
-                              className="text-xs px-2 py-1"
-                            >
-                              <Settings className="h-3 w-3 mr-1" />
-                              Config
-                            </Button>
-                          )}
-                        </div>
+                        
                       </div>
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+              </Card>;
+      })}
+        </div>}
 
-      {loading && (
-        <div className="flex justify-center items-center py-8">
+      {loading && <div className="flex justify-center items-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      )}
+        </div>}
       
-      {!loading && filteredProducts.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground md:hidden">
+      {!loading && filteredProducts.length === 0 && <div className="text-center py-8 text-muted-foreground md:hidden">
           <p>Aucun produit trouvé</p>
-        </div>
-      )}
+        </div>}
 
       {/* Modals */}
 
       {/* Image Gallery Modal */}
-      {showImageModal && (
-        <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
+      {showImageModal && <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
           <DialogContent className="max-w-4xl max-h-[90vh] p-0">
             <div className="relative">
-              {selectedImages.length > 0 && (
-                <>
-                  <img 
-                    src={selectedImages[currentImageIndex]} 
-                    alt={`Image ${currentImageIndex + 1}`}
-                    className="w-full max-h-[80vh] object-contain"
-                    onError={(e) => {
-                      e.currentTarget.src = '/placeholder.svg';
-                    }}
-                  />
-                  {selectedImages.length > 1 && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="absolute left-2 top-1/2 transform -translate-y-1/2"
-                        onClick={() => setCurrentImageIndex(prev => 
-                          prev === 0 ? selectedImages.length - 1 : prev - 1
-                        )}
-                      >
+              {selectedImages.length > 0 && <>
+                  <img src={selectedImages[currentImageIndex]} alt={`Image ${currentImageIndex + 1}`} className="w-full max-h-[80vh] object-contain" onError={e => {
+              e.currentTarget.src = '/placeholder.svg';
+            }} />
+                  {selectedImages.length > 1 && <>
+                      <Button variant="outline" size="sm" className="absolute left-2 top-1/2 transform -translate-y-1/2" onClick={() => setCurrentImageIndex(prev => prev === 0 ? selectedImages.length - 1 : prev - 1)}>
                         ←
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                        onClick={() => setCurrentImageIndex(prev => 
-                          prev === selectedImages.length - 1 ? 0 : prev + 1
-                        )}
-                      >
+                      <Button variant="outline" size="sm" className="absolute right-2 top-1/2 transform -translate-y-1/2" onClick={() => setCurrentImageIndex(prev => prev === selectedImages.length - 1 ? 0 : prev + 1)}>
                         →
                       </Button>
                       <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-2 py-1 rounded text-sm">
                         {currentImageIndex + 1} / {selectedImages.length}
                       </div>
-                    </>
-                  )}
-                </>
-              )}
+                    </>}
+                </>}
             </div>
           </DialogContent>
-        </Dialog>
-      )}
+        </Dialog>}
 
       {/* Configuration Modal */}
       <Dialog open={showConfigModal} onOpenChange={setShowConfigModal}>
@@ -650,11 +548,7 @@ const Produits = () => {
             </p>
             
             <div className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full justify-start h-12"
-                onClick={handleConfigureMaterials}
-              >
+              <Button variant="outline" className="w-full justify-start h-12" onClick={handleConfigureMaterials}>
                 <Package className="h-4 w-4 mr-3" />
                 <div className="text-left">
                   <div className="font-medium">Configurer Matériaux</div>
@@ -662,11 +556,7 @@ const Produits = () => {
                 </div>
               </Button>
               
-              <Button
-                variant="outline"
-                className="w-full justify-start h-12"
-                onClick={handleConfigureSizes}
-              >
+              <Button variant="outline" className="w-full justify-start h-12" onClick={handleConfigureSizes}>
                 <Ruler className="h-4 w-4 mr-3" />
                 <div className="text-left">
                   <div className="font-medium">Configurer Tailles</div>
@@ -693,22 +583,18 @@ const Produits = () => {
             {/* No Sizes Option */}
             <div className="p-4 border rounded-lg bg-muted/30">
               <div className="flex items-center space-x-3">
-                <Checkbox
-                  id="no_sizes"
-                  checked={hasNoSizes}
-                  onCheckedChange={(checked) => {
-                    setHasNoSizes(!!checked);
-                    if (checked) {
-                      // Clear all sizes when "no sizes" is selected
-                      setProductSizes({
-                        clothing: {},
-                        numeric_pants: {},
-                        shoes: {},
-                        belts: {}
-                      });
-                    }
-                  }}
-                />
+                <Checkbox id="no_sizes" checked={hasNoSizes} onCheckedChange={checked => {
+                setHasNoSizes(!!checked);
+                if (checked) {
+                  // Clear all sizes when "no sizes" is selected
+                  setProductSizes({
+                    clothing: {},
+                    numeric_pants: {},
+                    shoes: {},
+                    belts: {}
+                  });
+                }
+              }} />
                 <div>
                   <label htmlFor="no_sizes" className="text-sm font-medium">
                     Ce produit n'a pas de tailles
@@ -720,38 +606,27 @@ const Produits = () => {
               </div>
             </div>
 
-            {!hasNoSizes && (
-              <div className="space-y-6"
-                style={{
-                  opacity: hasNoSizes ? 0.5 : 1,
-                  pointerEvents: hasNoSizes ? 'none' : 'auto'
-                }}
-              >
+            {!hasNoSizes && <div className="space-y-6" style={{
+            opacity: hasNoSizes ? 0.5 : 1,
+            pointerEvents: hasNoSizes ? 'none' : 'auto'
+          }}>
             
             {/* Clothing Sizes */}
             <div>
               <h3 className="font-medium mb-3">Tailles Vêtements</h3>
               <div className="grid grid-cols-4 gap-3">
-                {['xs', 's', 'm', 'l', 'xl', 'xxl', '3xl', '4xl'].map(size => (
-                  <div key={size} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`clothing_${size}`}
-                      checked={productSizes.clothing?.[size] || false}
-                      onCheckedChange={(checked) => 
-                        setProductSizes(prev => ({ 
-                          ...prev, 
-                          clothing: { 
-                            ...prev.clothing, 
-                            [size]: !!checked 
-                          } 
-                        }))
-                      }
-                    />
+                {['xs', 's', 'm', 'l', 'xl', 'xxl', '3xl', '4xl'].map(size => <div key={size} className="flex items-center space-x-2">
+                    <Checkbox id={`clothing_${size}`} checked={productSizes.clothing?.[size] || false} onCheckedChange={checked => setProductSizes(prev => ({
+                    ...prev,
+                    clothing: {
+                      ...prev.clothing,
+                      [size]: !!checked
+                    }
+                  }))} />
                     <label htmlFor={`clothing_${size}`} className="text-sm font-medium">
                       {size.toUpperCase()}
                     </label>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
 
@@ -761,29 +636,18 @@ const Produits = () => {
             <div>
               <h3 className="font-medium mb-3">Tailles Numériques (Pantalons/Formel)</h3>
               <div className="grid grid-cols-6 gap-3">
-                {[
-                  '30', '31', '32', '33', '34', '36', '38', '40', '42', '44', '46', '48', 
-                  '50', '52', '54', '56', '58', '60', '62', '64', '66'
-                ].map(size => (
-                  <div key={size} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`numeric_${size}`}
-                      checked={productSizes.numeric_pants?.[size] || false}
-                      onCheckedChange={(checked) => 
-                        setProductSizes(prev => ({ 
-                          ...prev, 
-                          numeric_pants: { 
-                            ...prev.numeric_pants, 
-                            [size]: !!checked 
-                          } 
-                        }))
-                      }
-                    />
+                {['30', '31', '32', '33', '34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54', '56', '58', '60', '62', '64', '66'].map(size => <div key={size} className="flex items-center space-x-2">
+                    <Checkbox id={`numeric_${size}`} checked={productSizes.numeric_pants?.[size] || false} onCheckedChange={checked => setProductSizes(prev => ({
+                    ...prev,
+                    numeric_pants: {
+                      ...prev.numeric_pants,
+                      [size]: !!checked
+                    }
+                  }))} />
                     <label htmlFor={`numeric_${size}`} className="text-sm font-medium">
                       {size}
                     </label>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
 
@@ -793,26 +657,18 @@ const Produits = () => {
             <div>
               <h3 className="font-medium mb-3">Pointures Chaussures</h3>
               <div className="grid grid-cols-6 gap-3">
-                {['39', '40', '41', '42', '43', '44', '45', '46', '47'].map(size => (
-                  <div key={size} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`shoes_${size}`}
-                      checked={productSizes.shoes?.[size] || false}
-                      onCheckedChange={(checked) => 
-                        setProductSizes(prev => ({ 
-                          ...prev, 
-                          shoes: { 
-                            ...prev.shoes, 
-                            [size]: !!checked 
-                          } 
-                        }))
-                      }
-                    />
+                {['39', '40', '41', '42', '43', '44', '45', '46', '47'].map(size => <div key={size} className="flex items-center space-x-2">
+                    <Checkbox id={`shoes_${size}`} checked={productSizes.shoes?.[size] || false} onCheckedChange={checked => setProductSizes(prev => ({
+                    ...prev,
+                    shoes: {
+                      ...prev.shoes,
+                      [size]: !!checked
+                    }
+                  }))} />
                     <label htmlFor={`shoes_${size}`} className="text-sm font-medium">
                       {size}
                     </label>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
 
@@ -822,30 +678,21 @@ const Produits = () => {
             <div>
               <h3 className="font-medium mb-3">Tailles Ceintures/Tour de Taille</h3>
               <div className="grid grid-cols-5 gap-3">
-                {['85', '90', '95', '100', '105', '110', '115', '120', '125'].map(size => (
-                  <div key={size} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`belts_${size}`}
-                      checked={productSizes.belts?.[size] || false}
-                      onCheckedChange={(checked) => 
-                        setProductSizes(prev => ({ 
-                          ...prev, 
-                          belts: { 
-                            ...prev.belts, 
-                            [size]: !!checked 
-                          } 
-                        }))
-                      }
-                    />
+                {['85', '90', '95', '100', '105', '110', '115', '120', '125'].map(size => <div key={size} className="flex items-center space-x-2">
+                    <Checkbox id={`belts_${size}`} checked={productSizes.belts?.[size] || false} onCheckedChange={checked => setProductSizes(prev => ({
+                    ...prev,
+                    belts: {
+                      ...prev.belts,
+                      [size]: !!checked
+                    }
+                  }))} />
                     <label htmlFor={`belts_${size}`} className="text-sm font-medium">
                       {size}
                     </label>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
-            </div>
-            )}
+            </div>}
 
             <div className="flex justify-end space-x-2 pt-4">
               <Button variant="outline" onClick={() => setShowSizesModal(false)}>
@@ -860,14 +707,7 @@ const Produits = () => {
       </Dialog>
 
       {/* Materials Configuration Modal */}
-      <MaterialsConfigurationModal
-        isOpen={showMaterialsModal}
-        onClose={() => setShowMaterialsModal(false)}
-        product={selectedProduct}
-        onSave={handleMaterialsConfigurationSave}
-      />
-    </div>
-  );
+      <MaterialsConfigurationModal isOpen={showMaterialsModal} onClose={() => setShowMaterialsModal(false)} product={selectedProduct} onSave={handleMaterialsConfigurationSave} />
+    </div>;
 };
-
 export default Produits;
