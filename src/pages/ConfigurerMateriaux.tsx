@@ -101,6 +101,12 @@ const ConfigurerMateriaux = () => {
     quantityUsed: number;
   } | null>(null);
 
+  // Long-press fusion states
+  const [longPressSelectedMaterials, setLongPressSelectedMaterials] = useState<number[]>([]);
+  const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [showFusionModal, setShowFusionModal] = useState(false);
+  const [pressingMaterialId, setPressingMaterialId] = useState<number | null>(null);
+
   useEffect(() => {
     loadData();
   }, [productId]);
@@ -262,6 +268,11 @@ const ConfigurerMateriaux = () => {
   }, [autoSave, autoSaveTimeout]);
 
   const openMaterialConfig = (material: Material) => {
+    // Don't open config if in fusion mode
+    if (longPressSelectedMaterials.length > 0) {
+      return;
+    }
+    
     setSelectedMaterial(material);
     setStockErrors({}); // Clear previous errors
 
@@ -423,6 +434,208 @@ const ConfigurerMateriaux = () => {
     setMergeFirstMaterialData(null);
   };
 
+  // Long-press fusion handlers
+  const handleMouseDown = (materialId: number) => {
+    setPressingMaterialId(materialId);
+    const timer = setTimeout(() => {
+      // Toggle selection
+      setLongPressSelectedMaterials(prev => {
+        if (prev.includes(materialId)) {
+          return prev.filter(id => id !== materialId);
+        }
+        return [...prev, materialId];
+      });
+      setPressingMaterialId(null);
+      
+      // Haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate(200);
+      }
+    }, 3000); // 3 seconds
+    setPressTimer(timer);
+  };
+
+  const handleMouseUp = () => {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      setPressTimer(null);
+    }
+    setPressingMaterialId(null);
+  };
+
+  const handleTouchStart = (materialId: number) => {
+    setPressingMaterialId(materialId);
+    const timer = setTimeout(() => {
+      setLongPressSelectedMaterials(prev => {
+        if (prev.includes(materialId)) {
+          return prev.filter(id => id !== materialId);
+        }
+        return [...prev, materialId];
+      });
+      setPressingMaterialId(null);
+      
+      // Haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate(200);
+      }
+    }, 3000);
+    setPressTimer(timer);
+  };
+
+  const handleTouchEnd = () => {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      setPressTimer(null);
+    }
+    setPressingMaterialId(null);
+  };
+
+  const handleFusionClick = () => {
+    if (longPressSelectedMaterials.length < 2) {
+      toast({
+        title: "Sélection insuffisante",
+        description: "Veuillez sélectionner au moins 2 matériaux pour les fusionner",
+        variant: "destructive"
+      });
+      return;
+    }
+    setShowFusionModal(true);
+  };
+
+  const handleFusionConfirm = () => {
+    if (longPressSelectedMaterials.length < 2) return;
+
+    // Calculate combined stock
+    const fusionedMaterials = materials.filter(m => longPressSelectedMaterials.includes(m.id));
+    const totalStock = fusionedMaterials.reduce((sum, m) => sum + m.quantite_stock, 0);
+    
+    // Open the configuration modal with combined stock info
+    const firstMaterial = fusionedMaterials[0];
+    const combinedMaterial: Material = {
+      ...firstMaterial,
+      quantite_stock: totalStock
+    };
+
+    setSelectedMaterial(combinedMaterial);
+    setTempConfig({
+      quantity_type_id: firstMaterial.quantity_type_id || quantityTypes[0]?.id || 1,
+      quantityPerItem: 1
+    });
+    setShowFusionModal(false);
+    setShowConfigModal(true);
+  };
+
+  const saveFusionedMaterialConfig = async () => {
+    if (!selectedMaterial || longPressSelectedMaterials.length < 2) return;
+
+    console.log('💾 SAVING FUSED MATERIALS');
+    console.log('Selected materials for fusion:', longPressSelectedMaterials);
+    console.log('Temp config:', tempConfig);
+
+    // Calculate total items to produce
+    const totalItemsToProduce = Object.values(productionQuantities).reduce((sum, qty) => sum + qty, 0);
+    console.log('Total items to produce:', totalItemsToProduce);
+    
+    // Calculate total stock needed
+    const totalNeeded = tempConfig.quantityPerItem * totalItemsToProduce;
+    console.log('Total needed:', totalNeeded);
+
+    const fusionedMaterials = materials.filter(m => longPressSelectedMaterials.includes(m.id));
+    const totalStock = fusionedMaterials.reduce((sum, m) => sum + m.quantite_stock, 0);
+    console.log('Fused materials:', fusionedMaterials);
+    console.log('Total stock available:', totalStock);
+
+    if (totalNeeded > totalStock) {
+      toast({
+        title: "Stock insuffisant",
+        description: `Le stock combiné (${totalStock}) n'est pas suffisant pour cette production (${totalNeeded} nécessaire)`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Distribute quantities across materials proportionally
+    const newMaterials: ProductMaterial[] = [];
+    let remainingNeeded = totalNeeded;
+
+    // Always add ALL fused materials to ensure they all show as configured
+    for (let i = 0; i < fusionedMaterials.length; i++) {
+      const material = fusionedMaterials[i];
+      const materialStock = material.quantite_stock;
+      
+      // Use stock proportionally
+      const quantityToUse = i === fusionedMaterials.length - 1 
+        ? remainingNeeded // Use remaining for last material
+        : Math.min(materialStock, remainingNeeded);
+
+      // Add entry for every material, even if quantity is 0 (to show as configured)
+      const quantityPerItem = quantityToUse > 0 ? quantityToUse / totalItemsToProduce : 0;
+      newMaterials.push({
+        material_id: material.id,
+        quantity_needed: quantityPerItem,
+        quantity_type_id: tempConfig.quantity_type_id,
+        size_specific: null,
+        notes: '',
+        commentaire: `Fusionné avec ${fusionedMaterials.filter(m => m.id !== material.id).map(m => m.reference).join(', ')}`
+      });
+      
+      if (quantityToUse > 0) {
+        remainingNeeded -= quantityToUse;
+      }
+    }
+
+    console.log('New materials to save:', newMaterials);
+
+    // Replace any existing configuration for these materials
+    const withoutCurrent = selectedMaterials.filter(
+      sm => !longPressSelectedMaterials.includes(sm.material_id)
+    );
+    const updated = [...withoutCurrent, ...newMaterials];
+    
+    console.log('Updated materials list:', updated);
+    
+    // IMMEDIATE SAVE - don't wait for auto-save
+    try {
+      const response = await fetch('https://luccibyey.com.tn/production/api/production_product_materials.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'configure_product_materials',
+          product_id: productId,
+          materials: updated
+        })
+      });
+
+      const data = await response.json();
+      console.log('Save response:', data);
+      
+      if (data.success) {
+        setSelectedMaterials(updated);
+        
+        // Clear fusion state
+        setLongPressSelectedMaterials([]);
+        setShowConfigModal(false);
+        setSelectedMaterial(null);
+        
+        toast({
+          title: "Matériaux fusionnés",
+          description: `${fusionedMaterials.length} matériaux ont été configurés ensemble avec succès`,
+        });
+      } else {
+        throw new Error(data.message || 'Erreur lors de la sauvegarde');
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Impossible de sauvegarder la configuration",
+        variant: "destructive"
+      });
+    }
+  };
+
   const removeSelectedMaterial = async (materialId: number) => {
     const updated = selectedMaterials.filter(sm => sm.material_id !== materialId);
     setSelectedMaterials(updated);
@@ -532,7 +745,9 @@ const ConfigurerMateriaux = () => {
       breakdown: materialConfigs.length > 1 ? materialConfigs.map(config => ({
         size: config.size_specific || 'Toutes tailles',
         quantity: config.quantity_needed
-      })) : null
+      })) : null,
+      isFused: materialConfigs[0].commentaire?.includes('Fusionné avec') || false,
+      fusionInfo: materialConfigs[0].commentaire || ''
     };
   };
 
@@ -597,22 +812,20 @@ const ConfigurerMateriaux = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/produits/${productId}`, { state: { refresh: Date.now() } })}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Retour
-          </Button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">{product?.nom_product}</h1>
-            <p className="text-muted-foreground text-sm md:text-base">
-              Référence: {product?.reference_product}
-            </p>
-          </div>
+      <div className="flex items-center gap-4">
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/produits/${productId}`, { state: { refresh: Date.now() } })}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Retour
+        </Button>
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">{product?.nom_product}</h1>
+          <p className="text-muted-foreground text-sm md:text-base">
+            Référence: {product?.reference_product}
+          </p>
         </div>
       </div>
 
@@ -621,39 +834,70 @@ const ConfigurerMateriaux = () => {
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-lg md:text-xl">Matériaux Disponibles</CardTitle>
-            <p className="text-sm text-muted-foreground mb-4">
-              Cliquez sur un matériau pour l'ajouter à la configuration
-            </p>
+            <div className="space-y-2 mb-4">
+              <p className="text-sm text-muted-foreground">
+                Cliquez sur un matériau pour l'ajouter à la configuration
+              </p>
+              <div className="flex items-start gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <AlertCircle className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-orange-700">
+                  <strong>Astuce:</strong> Maintenez appuyé pendant 3 secondes sur un matériau pour le sélectionner pour une fusion. Vous pouvez sélectionner plusieurs matériaux puis cliquer sur "Fusionner" pour les configurer ensemble.
+                </p>
+              </div>
+            </div>
             
             {/* Search and Filter Controls */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search Input */}
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Rechercher (nom, référence, couleur, location...)"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Search Input */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Rechercher (nom, référence, couleur, location...)"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                {/* Location Filter */}
+                <div className="w-full sm:w-48">
+                  <Select value={locationFilter} onValueChange={setLocationFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Toutes les locations" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Toutes les locations</SelectItem>
+                      {availableLocations.map((location) => (
+                        <SelectItem key={location} value={location || ''}>
+                          📍 {location}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               
-              {/* Location Filter */}
-              <div className="w-full sm:w-48">
-                <Select value={locationFilter} onValueChange={setLocationFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Toutes les locations" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Toutes les locations</SelectItem>
-                    {availableLocations.map((location) => (
-                      <SelectItem key={location} value={location || ''}>
-                        📍 {location}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Fusion Buttons - appears when materials are selected */}
+              {longPressSelectedMaterials.length > 0 && (
+                <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setLongPressSelectedMaterials([])}
+                    className="border-red-500 text-red-600 hover:bg-red-50"
+                  >
+                    Annuler sélection
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleFusionClick}
+                    className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
+                  >
+                    Fusionner ({longPressSelectedMaterials.length})
+                  </Button>
+                </div>
+              )}
             </div>
           </CardHeader>
           <CardContent className="p-4">
@@ -661,15 +905,39 @@ const ConfigurerMateriaux = () => {
               {filteredMaterials.map((material) => (
                 <Card
                   key={material.id}
-                  className={`cursor-pointer transition-all hover:shadow-md border ${
-                    isSelected(material.id)
+                  className={`cursor-pointer transition-all hover:shadow-md border relative overflow-hidden ${
+                    longPressSelectedMaterials.includes(material.id)
+                      ? 'ring-4 ring-red-500 bg-red-50 border-red-500 shadow-lg'
+                      : isSelected(material.id)
                       ? 'ring-2 ring-green-500 bg-green-50 border-green-500'
                       : getStockStatus(material.quantite_stock, material.quantite_min || 0, material.quantite_max || 100).status === 'critical'
                       ? 'hover:bg-destructive-light/20 border-l-4 border-l-destructive bg-destructive-light/10 border-destructive/20'
                       : 'hover:bg-muted/30 border-border'
                   }`}
-                  onClick={() => openMaterialConfig(material)}
+                  onClick={() => {
+                    if (longPressSelectedMaterials.length === 0 && pressingMaterialId === null) {
+                      openMaterialConfig(material);
+                    }
+                  }}
+                  onMouseDown={() => handleMouseDown(material.id)}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  onTouchStart={() => handleTouchStart(material.id)}
+                  onTouchEnd={handleTouchEnd}
+                  onTouchCancel={handleTouchEnd}
                 >
+                  {/* Long-press progress indicator */}
+                  {pressingMaterialId === material.id && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted/30 pointer-events-none z-10">
+                      <div 
+                        className="h-full bg-gradient-to-r from-red-500 via-orange-500 to-red-600"
+                        style={{
+                          animation: 'fillProgress 3s linear forwards',
+                          width: '0%'
+                        }}
+                      />
+                    </div>
+                  )}
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
@@ -677,7 +945,12 @@ const ConfigurerMateriaux = () => {
                         <p className="text-xs text-muted-foreground mb-1">{material.reference}</p>
                         <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{material.description}</p>
                       </div>
-                      {isSelected(material.id) && (
+                      {longPressSelectedMaterials.includes(material.id) && (
+                        <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                          <Badge className="bg-red-500 text-white">Sélectionné</Badge>
+                        </div>
+                      )}
+                      {!longPressSelectedMaterials.includes(material.id) && isSelected(material.id) && (
                         <div className="flex items-center gap-1 flex-shrink-0 ml-2">
                           <Check className="h-4 w-4 text-green-600" />
                           <Button
@@ -756,7 +1029,7 @@ const ConfigurerMateriaux = () => {
                           return configured ? (
                             <div className="w-full">
                               {/* Main configured quantity display - using stock status colors */}
-                              <div className={`border rounded-lg p-2 mb-2 ${
+                               <div className={`border rounded-lg p-2 mb-2 ${
                                 stockStatus.status === 'critical' 
                                   ? 'bg-destructive-light/20 border-destructive/30' 
                                   : stockStatus.status === 'warning' 
@@ -779,7 +1052,7 @@ const ConfigurerMateriaux = () => {
                                         ? 'text-warning' 
                                         : 'text-success'
                                     }`}>
-                                      Configuré
+                                      {configured.isFused ? '🔗 Fusionné' : 'Configuré'}
                                     </span>
                                   </div>
                                   <span className={`text-base font-bold ${
@@ -792,6 +1065,13 @@ const ConfigurerMateriaux = () => {
                                     {configured.total} {configured.unit}
                                   </span>
                                 </div>
+                                {configured.isFused && (
+                                  <div className="mt-1 pt-1 border-t border-orange-200">
+                                    <p className="text-xs text-orange-600 italic">
+                                      {configured.fusionInfo}
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                               
                               {/* Size breakdown - if multiple sizes */}
@@ -885,9 +1165,23 @@ const ConfigurerMateriaux = () => {
           {selectedMaterial && (
             <div className="space-y-4">
               <div className="p-4 bg-muted/30 rounded-lg">
-                <h3 className="font-medium">{selectedMaterial.nom}</h3>
-                <p className="text-sm text-muted-foreground">{selectedMaterial.reference}</p>
-                <p className="text-xs text-muted-foreground mt-1">{selectedMaterial.description}</p>
+                {longPressSelectedMaterials.length > 1 ? (
+                  <>
+                    <h3 className="font-medium">
+                      {materials
+                        .filter(m => longPressSelectedMaterials.includes(m.id))
+                        .map(m => m.reference)
+                        .join(' + ')}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">Matériaux fusionnés</p>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-medium">{selectedMaterial.nom}</h3>
+                    <p className="text-sm text-muted-foreground">{selectedMaterial.reference}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{selectedMaterial.description}</p>
+                  </>
+                )}
                 <div className="flex gap-2 mt-2">
                   <Badge variant="secondary" className="text-xs">
                     {selectedMaterial.category_name}
@@ -954,7 +1248,7 @@ const ConfigurerMateriaux = () => {
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Stock actuel:</span>
                         <span className={`font-semibold ${totalNeeded > selectedMaterial.quantite_stock ? 'text-destructive' : 'text-success'}`}>
-                          {selectedMaterial.quantite_stock} {quantityType?.unite}
+                          {selectedMaterial.quantite_stock.toFixed(2)} {quantityType?.unite}
                         </span>
                       </div>
                       {totalNeeded > selectedMaterial.quantite_stock && (
@@ -972,12 +1266,101 @@ const ConfigurerMateriaux = () => {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfigModal(false)}>
+            <Button variant="outline" onClick={() => {
+              setShowConfigModal(false);
+              setLongPressSelectedMaterials([]);
+            }}>
               Annuler
             </Button>
-            <Button onClick={saveMaterialConfig} disabled={tempConfig.quantityPerItem <= 0}>
+            <Button 
+              onClick={longPressSelectedMaterials.length > 0 ? saveFusionedMaterialConfig : saveMaterialConfig} 
+              disabled={tempConfig.quantityPerItem <= 0}
+            >
               <Check className="h-4 w-4 mr-2" />
-              Ajouter
+              {longPressSelectedMaterials.length > 0 ? 'Fusionner et Ajouter' : 'Ajouter'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Fusion Confirmation Modal */}
+      <Dialog open={showFusionModal} onOpenChange={setShowFusionModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-orange-500" />
+              Fusionner les matériaux
+            </DialogTitle>
+            <DialogDescription>
+              Vous allez fusionner {longPressSelectedMaterials.length} matériaux pour cette production
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Display selected materials */}
+            <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+              <h4 className="font-semibold text-sm">Matériaux sélectionnés:</h4>
+              {materials
+                .filter(m => longPressSelectedMaterials.includes(m.id))
+                .map((material, index) => (
+                  <div key={material.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{material.nom}</p>
+                      <p className="text-xs text-muted-foreground">{material.reference}</p>
+                    </div>
+                    <Badge variant="outline" className="ml-2">
+                      Stock: {material.quantite_stock}
+                    </Badge>
+                  </div>
+                ))}
+            </div>
+
+            {/* Combined stock info */}
+            <div className="border-l-4 border-orange-500 bg-orange-50 p-4 rounded">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold text-sm text-orange-900">Stock combiné total</p>
+                  <p className="text-lg font-bold text-orange-700 mt-1">
+                    {materials
+                      .filter(m => longPressSelectedMaterials.includes(m.id))
+                      .reduce((sum, m) => sum + m.quantite_stock, 0)
+                      .toFixed(2)}
+                    {' '}
+                    {(() => {
+                      const firstMaterial = materials.find(m => longPressSelectedMaterials.includes(m.id));
+                      const qt = quantityTypes.find(qt => qt.id === firstMaterial?.quantity_type_id);
+                      return qt?.unite || '';
+                    })()}
+                  </p>
+                  <div className="mt-3 space-y-1">
+                    <p className="text-xs text-orange-600 font-medium">
+                      📦 Les matériaux seront configurés ensemble avec leurs stocks combinés
+                    </p>
+                    <p className="text-xs text-orange-600">
+                      💾 Chaque matériau sera enregistré séparément au backend avec son nom d'origine
+                    </p>
+                    <p className="text-xs text-orange-600">
+                      ✨ Ils apparaîtront comme "Fusionnés" dans la configuration
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowFusionModal(false);
+              setLongPressSelectedMaterials([]);
+            }}>
+              Annuler
+            </Button>
+            <Button 
+              onClick={handleFusionConfirm}
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+            >
+              Continuer la configuration
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -316,28 +316,54 @@ const ProductDetails = () => {
   const handleDeleteMaterial = async () => {
     if (!materialToDelete) return;
 
+    console.log('🗑️ DELETE MATERIAL - Starting deletion process');
+    console.log('Material to delete:', materialToDelete);
+
     try {
-      const response = await fetch(`https://luccibyey.com.tn/production/api/production_product_materials.php?id=${materialToDelete.id}`, {
-        method: 'DELETE',
-      });
+      // Get all raw material entries from the API
+      const response = await fetch(`https://luccibyey.com.tn/production/api/production_product_materials.php?product_id=${id}`);
       const data = await response.json();
+      console.log('Fetched all product materials:', data);
       
-      if (data.success) {
-        toast({
-          title: "Matériau supprimé",
-          description: "Le matériau a été retiré de la configuration",
+      if (data.success && data.data) {
+        // Find ALL entries for this material (across all sizes)
+        const allEntriesForThisMaterial = data.data.filter((m: any) => 
+          m.material_id === materialToDelete.material_id
+        );
+        
+        console.log('Found ALL entries for material_id', materialToDelete.material_id, ':', allEntriesForThisMaterial);
+        console.log('Number of entries to delete:', allEntriesForThisMaterial.length);
+        
+        // Delete ALL entries for this material
+        const deletePromises = allEntriesForThisMaterial.map((m: any) => {
+          console.log(`Deleting entry ID: ${m.id} (size: ${m.size_specific || 'N/A'})`);
+          return fetch(`https://luccibyey.com.tn/production/api/production_product_materials.php?id=${m.id}`, {
+            method: 'DELETE',
+          });
         });
-        loadConfiguredMaterials(id || '');
-      } else {
-        throw new Error(data.message || 'Erreur lors de la suppression');
+        
+        const results = await Promise.all(deletePromises);
+        console.log('Delete results:', results);
+        
+        const isFused = materialToDelete.commentaire?.includes('Fusionné');
+        
+        toast({
+          title: isFused ? "Matériaux fusionnés supprimés" : "Matériau supprimé",
+          description: `${allEntriesForThisMaterial.length} entrée(s) supprimée(s) avec succès`,
+        });
       }
+      
+      console.log('✅ Deletion successful, reloading materials');
+      loadConfiguredMaterials(id || '');
     } catch (error) {
+      console.error('❌ DELETE ERROR:', error);
       toast({
         title: "Erreur",
         description: error instanceof Error ? error.message : "Impossible de supprimer le matériau",
         variant: "destructive",
       });
     } finally {
+      console.log('🔄 Closing modal and clearing state');
       setShowDeleteMaterialModal(false);
       setMaterialToDelete(null);
     }

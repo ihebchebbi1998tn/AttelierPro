@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes fillProgress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.animate-fill-progress {
+  animation: fillProgress 5s linear forwards;
+}
+
 /* Modern design system with Inter font and sophisticated blue palette 
 Inspired by professional business dashboards
 */
