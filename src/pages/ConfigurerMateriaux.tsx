@@ -43,6 +43,7 @@ interface Product {
   type_product: string;
   color_product: string;
   boutique_origin: string;
+  production_quantities?: string;
 }
 interface ProductSize {
   id: number;
@@ -71,6 +72,8 @@ const ConfigurerMateriaux = () => {
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [productionQuantities, setProductionQuantities] = useState<Record<string, number>>({});
+  const [stockErrors, setStockErrors] = useState<Record<string, string>>({});
   const [tempConfig, setTempConfig] = useState<{
     quantity_type_id: number;
     sizeQuantities: {
@@ -93,6 +96,16 @@ const ConfigurerMateriaux = () => {
       const productData = await productResponse.json();
       if (productData.success && productData.data) {
         setProduct(productData.data);
+
+        // Parse production quantities (Stock à produire)
+        if (productData.data.production_quantities) {
+          try {
+            const prodQty = JSON.parse(productData.data.production_quantities);
+            setProductionQuantities(prodQty);
+          } catch (e) {
+            console.error('Error parsing production quantities:', e);
+          }
+        }
 
         // If product already has materials configured, load them
         if (productData.data.materials && productData.data.materials.length > 0) {
@@ -232,6 +245,7 @@ const ConfigurerMateriaux = () => {
   }, [autoSave, autoSaveTimeout]);
   const openMaterialConfig = (material: Material) => {
     setSelectedMaterial(material);
+    setStockErrors({}); // Clear previous errors
 
     // Check if material is already configured and load existing configuration
     const existingMaterials = selectedMaterials.filter(sm => sm.material_id === material.id);
@@ -293,6 +307,17 @@ const ConfigurerMateriaux = () => {
   };
   const saveMaterialConfig = () => {
     if (!selectedMaterial) return;
+
+    // Check if there are any stock errors
+    if (Object.keys(stockErrors).length > 0) {
+      toast({
+        title: "Erreur de stock",
+        description: "Veuillez corriger les quantités insuffisantes avant de sauvegarder",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const isOneSize = productSizes.length === 1 && productSizes[0].size_type === 'one_size';
 
     // Create one ProductMaterial entry for each size (or null for one size)
@@ -312,6 +337,7 @@ const ConfigurerMateriaux = () => {
     triggerAutoSave(updated);
     setShowConfigModal(false);
     setSelectedMaterial(null);
+    setStockErrors({});
     
     toast({
       title: "Matériau configuré",
@@ -333,6 +359,25 @@ const ConfigurerMateriaux = () => {
     });
   };
   const updateSizeQuantity = (sizeValue: string, quantity: number) => {
+    // Validate stock availability
+    if (selectedMaterial) {
+      const productionQty = productionQuantities[sizeValue] || 0;
+      const totalNeeded = quantity * productionQty;
+      const availableStock = selectedMaterial.quantite_stock;
+      
+      if (totalNeeded > availableStock) {
+        setStockErrors({
+          ...stockErrors,
+          [sizeValue]: `Quantité insuffisante! Stock disponible: ${availableStock}, besoin: ${totalNeeded}`
+        });
+      } else {
+        // Clear error for this size
+        const newErrors = { ...stockErrors };
+        delete newErrors[sizeValue];
+        setStockErrors(newErrors);
+      }
+    }
+
     setTempConfig({
       ...tempConfig,
       sizeQuantities: {
@@ -548,7 +593,7 @@ const ConfigurerMateriaux = () => {
                       <SelectItem value="all">Toutes les locations</SelectItem>
                       {availableLocations.map(location => (
                         <SelectItem key={location} value={location || ''}>
-                          📍 {location}
+                          �� {location}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -585,7 +630,7 @@ const ConfigurerMateriaux = () => {
                                 {material.couleur}
                               </Badge>}
                             {material.location && <Badge variant="outline" className="text-xs px-2 py-0.5">
-                                📍 {material.location}
+                                �� {material.location}
                               </Badge>}
                           </div>
                          
@@ -726,13 +771,49 @@ const ConfigurerMateriaux = () => {
                            Appliquer à toutes
                          </Button>
                        </div>
-                       <div className="space-y-3 max-h-40 overflow-y-auto">
-                         {productSizes.map(size => <div key={size.id} className="flex items-center justify-between gap-3">
-                             <Label className="text-sm font-medium min-w-0 flex-shrink-0">
-                               {size.size_value}
-                             </Label>
-                             <Input type="number" step="0.1" min="0" value={tempConfig.sizeQuantities[size.size_value] || 0} onChange={e => updateSizeQuantity(size.size_value, parseFloat(e.target.value) || 0)} className="w-24" />
-                           </div>)}
+                       <div className="space-y-3 max-h-60 overflow-y-auto">
+                         {productSizes.map(size => {
+                           const prodQty = productionQuantities[size.size_value] || 0;
+                           const materialQty = tempConfig.sizeQuantities[size.size_value] || 0;
+                           const totalNeeded = materialQty * prodQty;
+                           const hasError = stockErrors[size.size_value];
+                           
+                           return (
+                             <div key={size.id} className="space-y-1">
+                               <div className="flex items-center justify-between gap-3">
+                                 <div className="flex-1">
+                                   <Label className="text-sm font-medium">
+                                     {size.size_value}
+                                   </Label>
+                                   {prodQty > 0 && (
+                                     <p className="text-xs text-muted-foreground mt-0.5">
+                                       Stock à produire: <span className="font-semibold text-primary">{prodQty} pièces</span>
+                                     </p>
+                                   )}
+                                 </div>
+                                 <Input 
+                                   type="number" 
+                                   step="0.1" 
+                                   min="0" 
+                                   value={tempConfig.sizeQuantities[size.size_value] || 0} 
+                                   onChange={e => updateSizeQuantity(size.size_value, parseFloat(e.target.value) || 0)} 
+                                   className={`w-24 ${hasError ? 'border-destructive' : ''}`}
+                                 />
+                               </div>
+                               {hasError && (
+                                 <div className="flex items-start gap-1 text-xs text-destructive">
+                                   <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                                   <span>{hasError}</span>
+                                 </div>
+                               )}
+                               {prodQty > 0 && materialQty > 0 && !hasError && (
+                                 <p className="text-xs text-muted-foreground pl-1">
+                                   Total nécessaire: <span className="font-medium">{totalNeeded.toFixed(2)}</span> / Stock: <span className={totalNeeded > (selectedMaterial?.quantite_stock || 0) ? 'text-destructive font-semibold' : 'text-success font-semibold'}>{selectedMaterial?.quantite_stock || 0}</span>
+                                 </p>
+                               )}
+                             </div>
+                           );
+                         })}
                        </div>
                      </div> : <div className="text-center py-4 text-muted-foreground text-sm">
                        Aucune taille configurée pour ce produit
