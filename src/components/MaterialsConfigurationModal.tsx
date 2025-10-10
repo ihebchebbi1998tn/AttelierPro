@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,23 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Get default quantity based on item group
+  const getDefaultQuantityByItemGroup = (itemGroup: string): number => {
+    const itemGroupLower = itemGroup?.toLowerCase() || '';
+    const quantityMap: Record<string, number> = {
+      'pantalon': 1.3,
+      'costume-croise': 2.8,
+      'costume': 2.8,
+      'blazers': 1.7,
+      'chemise': 1.7,
+      'trench': 2,
+      'blouson': 1.7,
+      'manteau': 2,
+      'smoking': 2.7
+    };
+    return quantityMap[itemGroupLower] || 1;
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -153,9 +171,10 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
   }, [autoSave, autoSaveTimeout]);
 
   const addMaterial = () => {
+    const defaultQuantity = getDefaultQuantityByItemGroup(product?.itemgroup_product || '');
     const newMaterial: ProductMaterial = {
       material_id: 0,
-      quantity_needed: 1,
+      quantity_needed: defaultQuantity,
       quantity_type_id: quantityTypes[0]?.id || 1,
       size_specific: 'ALL',
       notes: '',
