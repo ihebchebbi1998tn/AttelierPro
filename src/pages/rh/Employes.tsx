@@ -1410,13 +1410,47 @@ const Employes = () => {
                           continue; // only consider rows with names
                         }
 
-                        // Match employee by prenom & nom (case-insensitive)
-                        const matched = employees.find(e => {
+                        // Match employee by prenom & nom using normalized values
+                        const normPrenom = normalize(prenomVal);
+                        const normNom = normalize(nomVal);
+                        console.log(`[Import] normalized excel name -> '${normPrenom}' '${normNom}'`);
+                        let matched = employees.find(e => {
                           if (!e.prenom || !e.nom) return false;
-                          const ePren = String(e.prenom).trim().toLowerCase();
-                          const eNom = String(e.nom).trim().toLowerCase();
-                          return ePren === prenomVal.toLowerCase() && eNom === nomVal.toLowerCase();
+                          const ePren = normalize(String(e.prenom));
+                          const eNom = normalize(String(e.nom));
+                          // log comparison for debugging
+                          // console.log(`[Import] compare exact: excel='${normPrenom} ${normNom}' emp='${ePren} ${eNom}'`);
+                          return ePren === normPrenom && eNom === normNom;
                         });
+
+                        // If not found, try swapped columns (excel might have Prénom/ Nom reversed)
+                        if (!matched) {
+                          matched = employees.find(e => {
+                            if (!e.prenom || !e.nom) return false;
+                            const ePren = normalize(String(e.prenom));
+                            const eNom = normalize(String(e.nom));
+                            return ePren === normNom && eNom === normPrenom;
+                          });
+                          if (matched) console.log(`[Import] row ${idx} matched by swapped fields to id=${matched.id} (${matched.prenom} ${matched.nom})`);
+                        }
+
+                        // If still not matched, try fuzzy matching on full name (normalized)
+                        if (!matched) {
+                          const excelFull = normalize(`${prenomVal} ${nomVal}`);
+                          let best: { emp?: Employee; dist: number } = { emp: undefined, dist: Infinity };
+                          for (const e of employees) {
+                            if (!e.prenom || !e.nom) continue;
+                            const empFull = normalize(`${e.prenom} ${e.nom}`);
+                            const d = levenshtein(excelFull, empFull);
+                            if (d < best.dist) best = { emp: e, dist: d };
+                          }
+                          if (best.emp && best.dist <= 2) {
+                            matched = best.emp;
+                            console.log(`[Import] row ${idx} fuzzy matched to id=${matched.id} (${matched.prenom} ${matched.nom}) with dist=${best.dist}`);
+                          } else if (best.emp) {
+                            console.log(`[Import] row ${idx} best fuzzy candidate id=${best.emp.id} (${best.emp.prenom} ${best.emp.nom}) dist=${best.dist} - too far`);
+                          }
+                        }
 
                         if (!matched) {
                           // push to unmatched list for manual mapping
@@ -1424,7 +1458,7 @@ const Employes = () => {
                           console.log(`[Import] row ${idx} no match found for '${prenomVal} ${nomVal}' -> added to unmatchedRows`);
                           continue;
                         }
-                        console.log(`[Import] row ${idx} matched employee id=${matched.id} (${matched.prenom} ${matched.nom})`);
+                        console.log(`[Import] row ${idx} FINAL matched employee id=${matched.id} (${matched.prenom} ${matched.nom})`);
 
                         // Parse date to month
                         let monthLabel = 'unknown';
@@ -1549,6 +1583,72 @@ const Employes = () => {
             {unmatchedRows.length > 0 && (
               <div className="space-y-2 border-t pt-3">
                 <h3 className="text-sm font-medium">Lignes non appariées ({unmatchedRows.length})</h3>
+                {/* Global apply-to-all mapping control */}
+                <div className="flex items-center gap-2 mb-2">
+                  <select id="apply-all-select" className="rounded border px-2 py-1 text-sm">
+                    <option value="">-- Appliquer à tous --</option>
+                    {employees.map(emp => (
+                      <option key={`apply-all-${emp.id}`} value={emp.id}>{emp.prenom} {emp.nom} ({emp.id})</option>
+                    ))}
+                  </select>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const sel = (document.getElementById('apply-all-select') as HTMLSelectElement | null);
+                      if (!sel) return;
+                      const val = sel.value;
+                      if (!val) return;
+                      const empId = Number(val);
+                      const emp = employees.find(e => e.id === empId);
+                      if (!emp) return;
+
+                      // For each unmatched row, compute month and update importRows aggregation
+                      setImportRows(prev => {
+                        const copy = [...prev];
+                        const toProcess = [...unmatchedRows];
+                        for (const r of toProcess) {
+                          const monthLabel = (() => {
+                            try {
+                              const dm = String(r.date).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                              if (dm) {
+                                const m = parseInt(dm[2], 10) - 1;
+                                return new Date(parseInt(dm[3],10), m, parseInt(dm[1],10)).toLocaleString('en-US', { month: 'long' }).toLowerCase();
+                              }
+                              const d2 = new Date(r.date);
+                              if (!isNaN(d2.getTime())) return d2.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+                            } catch (e) {}
+                            return 'unknown';
+                          })();
+
+                          const keyExists = copy.find(p => p.employee_id === emp.id && p.month === monthLabel);
+                          const jrInc = (r.entree && r.sortie && (!r.absent || r.absent === 'false')) ? 1 : 0;
+                          const absInc = (['true','1','yes','oui'].includes(String(r.absent).toLowerCase()) ? 1 : 0);
+                          if (keyExists) {
+                            keyExists.jr_travaille_count = (keyExists.jr_travaille_count || 0) + jrInc;
+                            keyExists.absent_count = (keyExists.absent_count || 0) + absInc;
+                          } else {
+                            copy.push({
+                              employee_id: emp.id,
+                              prenom: emp.prenom,
+                              nom: emp.nom,
+                              month: monthLabel,
+                              jr_travaille_count: jrInc,
+                              absent_count: absInc
+                            });
+                          }
+                        }
+                        return copy;
+                      });
+
+                      // Clear unmatched rows since we've applied mapping
+                      setUnmatchedRows([]);
+                      // reset the select
+                      sel.value = '';
+                      toast({ title: 'Mapping appliqué', description: `Toutes les lignes non appariées ont été associées à ${emp.prenom} ${emp.nom}` });
+                    }}
+                  >Appliquer à tous</Button>
+                </div>
+
                 <div className="overflow-x-auto border rounded">
                   <table className="min-w-full text-sm">
                     <thead className="bg-muted">
