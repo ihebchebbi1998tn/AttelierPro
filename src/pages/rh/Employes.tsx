@@ -246,6 +246,38 @@ const Employes = () => {
     }
   };
 
+  // Save import preview to server (production/api/rh_employe_pointage.php)
+  const savePointage = async () => {
+    if (!importRows || importRows.length === 0) return;
+    setImportLoading(true);
+    try {
+      // build payload
+      const payload = { rows: importRows };
+      const res = await fetch('https://luccibyey.com.tn/production/api/rh_employe_pointage.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        toast({ title: 'Enregistré', description: data.message || 'Pointage enregistré avec succès' });
+        // clear preview and unmatched rows
+        setImportRows([]);
+        setImportColumns([]);
+        setUnmatchedRows([]);
+        setImportFileName(null);
+        setShowImportModal(false);
+      } else {
+        throw new Error(data && data.message ? data.message : 'Erreur serveur');
+      }
+    } catch (err: any) {
+      console.error('Save pointage error:', err);
+      toast({ title: 'Erreur', description: err.message || 'Erreur lors de l\'enregistrement', variant: 'destructive' });
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = (
       employee.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1746,11 +1778,8 @@ const Employes = () => {
             }}>
               Annuler
             </Button>
-            <Button onClick={() => {
-              // For now we only preview; here you can call an API to import rows server-side
-              toast({ title: 'Import terminé', description: `${importRows.length} ligne(s) prêtes à être traitées` });
-            }} disabled={importRows.length === 0 || importLoading}>
-              {importLoading ? 'Chargement...' : 'Traiter l\'import'}
+            <Button onClick={savePointage} disabled={importRows.length === 0 || importLoading}>
+              {importLoading ? 'Enregistrement...' : 'Enregistrer'}
             </Button>
           </DialogFooter>
         </DialogContent>
