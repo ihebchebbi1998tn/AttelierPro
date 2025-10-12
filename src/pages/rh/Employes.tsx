@@ -99,6 +99,7 @@ const Employes = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importRows, setImportRows] = useState<any[]>([]);
   const [importColumns, setImportColumns] = useState<string[]>([]);
+  const [unmatchedRows, setUnmatchedRows] = useState<any[]>([]);
   const [importFileName, setImportFileName] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [importLoading, setImportLoading] = useState(false);
@@ -1317,12 +1318,15 @@ const Employes = () => {
                     const workbook = XLSX.read(data, { type: 'array' });
                     const sheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[sheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet, { defval: '' }) as any[];
+                      const json = XLSX.utils.sheet_to_json(worksheet, { defval: '' }) as any[];
                     if (!Array.isArray(json) || json.length === 0) {
                       setImportError('Fichier invalide ou feuille vide');
                       setImportRows([]);
                       setImportColumns([]);
                     } else {
+                      console.log('[Import] parsed rows count:', json.length);
+                      console.log('[Import] sample rows:', json.slice(0, 5));
+                      console.log('[Import] employees loaded count:', employees.length, 'sample:', employees.slice(0, 5));
                       // Helper to find a column value by a list of possible header names
                       const findField = (row: any, candidates: string[]) => {
                         const keys = Object.keys(row || {});
@@ -1342,6 +1346,37 @@ const Employes = () => {
                         return '';
                       };
 
+                      // Normalization helpers (remove accents, lowercase, collapse spaces)
+                      const normalize = (s: string) => {
+                        if (!s && s !== '') return '';
+                        const str = String(s);
+                        return str
+                          .normalize('NFD')
+                          .replace(/\p{Diacritic}/gu, '')
+                          .replace(/\s+/g, ' ')
+                          .trim()
+                          .toLowerCase();
+                      };
+
+                      // Levenshtein distance for fuzzy matching
+                      const levenshtein = (a: string, b: string) => {
+                        if (a === b) return 0;
+                        const al = a.length; const bl = b.length;
+                        if (al === 0) return bl;
+                        if (bl === 0) return al;
+                        const v = new Array(bl + 1).fill(0).map((_, i) => i);
+                        for (let i = 0; i < al; i++) {
+                          let prev = i + 1;
+                          for (let j = 0; j < bl; j++) {
+                            const cur = v[j + 1];
+                            const cost = a[i] === b[j] ? 0 : 1;
+                            v[j + 1] = Math.min(v[j + 1] + 1, v[j] + 1, prev + cost);
+                            prev = cur;
+                          }
+                        }
+                        return v[bl];
+                      };
+
                       const prenomNames = ['prénom', 'prénom.', 'prenom', 'prenom.','prénom '];
                       const nomNames = ['nom', 'nom.'];
                       const dateNames = ['date', 'date.'];
@@ -1350,10 +1385,16 @@ const Employes = () => {
                       const entreeNames = ['entrée', 'entree', 'entrée.','entrée '];
                       const sortieNames = ['sortie', 'sortie.'];
 
+                      // Log normalized header keys to help debugging
+                      const rawHeaders = Object.keys(json[0] || {});
+                      const normalizedHeaders = rawHeaders.map(h => ({ raw: h, normalized: normalize(h) }));
+                      console.log('[Import] detected headers:', normalizedHeaders);
+
                       // Build a map keyed by employeeId|month
                       const map: Record<string, { employeeId?: number; prenom: string; nom: string; month: string; totalWorked: number; absentCount: number } > = {};
 
-                      for (const row of json) {
+                      for (let idx = 0; idx < json.length; idx++) {
+                        const row = json[idx];
                         const prenomVal = String(findField(row, prenomNames) || '').trim();
                         const nomVal = String(findField(row, nomNames) || '').trim();
                         const dateVal = String(findField(row, dateNames) || '').trim();
@@ -1362,11 +1403,28 @@ const Employes = () => {
                         const entreeVal = String(findField(row, entreeNames) || '').trim();
                         const sortieVal = String(findField(row, sortieNames) || '').trim();
 
-                        if (!prenomVal || !nomVal) continue; // only consider rows with names
+                        console.log(`[Import] row ${idx} raw -> prenom:'${prenomVal}', nom:'${nomVal}', date:'${dateVal}', entree:'${entreeVal}', sortie:'${sortieVal}', absent:'${absentRaw}'`);
+
+                        if (!prenomVal || !nomVal) {
+                          console.log(`[Import] row ${idx} skipped: missing prenom or nom`);
+                          continue; // only consider rows with names
+                        }
 
                         // Match employee by prenom & nom (case-insensitive)
-                        const matched = employees.find(e => e.prenom && e.nom && e.prenom.toString().trim().toLowerCase() === prenomVal.toLowerCase() && e.nom.toString().trim().toLowerCase() === nomVal.toLowerCase());
-                        if (!matched) continue;
+                        const matched = employees.find(e => {
+                          if (!e.prenom || !e.nom) return false;
+                          const ePren = String(e.prenom).trim().toLowerCase();
+                          const eNom = String(e.nom).trim().toLowerCase();
+                          return ePren === prenomVal.toLowerCase() && eNom === nomVal.toLowerCase();
+                        });
+
+                        if (!matched) {
+                          // push to unmatched list for manual mapping
+                          setUnmatchedRows(prev => [...prev, { __rowIndex: idx, raw: row, prenom: prenomVal, nom: nomVal, date: dateVal, entree: entreeVal, sortie: sortieVal, absent: absentRaw }] );
+                          console.log(`[Import] row ${idx} no match found for '${prenomVal} ${nomVal}' -> added to unmatchedRows`);
+                          continue;
+                        }
+                        console.log(`[Import] row ${idx} matched employee id=${matched.id} (${matched.prenom} ${matched.nom})`);
 
                         // Parse date to month
                         let monthLabel = 'unknown';
@@ -1486,6 +1544,96 @@ const Employes = () => {
                 <div className="text-xs text-muted-foreground mt-1">Aperçu limité aux 200 premières lignes</div>
               )}
             </div>
+
+            {/* Unmatched rows mapping UI */}
+            {unmatchedRows.length > 0 && (
+              <div className="space-y-2 border-t pt-3">
+                <h3 className="text-sm font-medium">Lignes non appariées ({unmatchedRows.length})</h3>
+                <div className="overflow-x-auto border rounded">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-muted">
+                      <tr>
+                        <th className="py-2 px-3 text-left">#</th>
+                        <th className="py-2 px-3 text-left">Prénom</th>
+                        <th className="py-2 px-3 text-left">Nom</th>
+                        <th className="py-2 px-3 text-left">Date</th>
+                        <th className="py-2 px-3 text-left">Mapper</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {unmatchedRows.map((r, i) => (
+                        <tr key={i} className={i % 2 === 0 ? '' : 'bg-muted/20'}>
+                          <td className="py-2 px-3">{r.__rowIndex}</td>
+                          <td className="py-2 px-3">{r.prenom}</td>
+                          <td className="py-2 px-3">{r.nom}</td>
+                          <td className="py-2 px-3">{r.date}</td>
+                          <td className="py-2 px-3">
+                            <div className="flex gap-2 items-center">
+                              <select
+                                className="rounded border px-2 py-1 text-sm"
+                                defaultValue=""
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (!val) return;
+                                  const empId = Number(val);
+                                  const emp = employees.find(x => x.id === empId);
+                                  if (!emp) return;
+                                  // assign this unmatched row to emp and recalculate aggregated preview
+                                  // create a synthetic matched object for this row
+                                  const monthLabel = (() => {
+                                    try {
+                                      const dm = String(r.date).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                                      if (dm) {
+                                        const m = parseInt(dm[2], 10) - 1;
+                                        return new Date(parseInt(dm[3],10), m, parseInt(dm[1],10)).toLocaleString('en-US', { month: 'long' }).toLowerCase();
+                                      }
+                                      const d2 = new Date(r.date);
+                                      if (!isNaN(d2.getTime())) return d2.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+                                    } catch (e) {}
+                                    return 'unknown';
+                                  })();
+
+                                  setImportRows(prev => {
+                                    // add or update aggregated row for emp+month
+                                    const key = `${emp.id}|${monthLabel}`;
+                                    const exists = prev.find(p => p.employee_id === emp.id && p.month === monthLabel);
+                                    if (exists) {
+                                      // increment counts conservatively: if we can detect absent
+                                      exists.jr_travaille_count = (exists.jr_travaille_count || 0) + (r.entree && r.sortie && (!r.absent || r.absent === 'false') ? 1 : 0);
+                                      exists.absent_count = (exists.absent_count || 0) + (['true','1','yes','oui'].includes(String(r.absent).toLowerCase()) ? 1 : 0);
+                                      return [...prev];
+                                    } else {
+                                      const newRow = {
+                                        employee_id: emp.id,
+                                        prenom: emp.prenom,
+                                        nom: emp.nom,
+                                        month: monthLabel,
+                                        jr_travaille_count: (r.entree && r.sortie && (!r.absent || r.absent === 'false')) ? 1 : 0,
+                                        absent_count: (['true','1','yes','oui'].includes(String(r.absent).toLowerCase()) ? 1 : 0)
+                                      };
+                                      return [...prev, newRow];
+                                    }
+                                  });
+
+                                  // remove from unmatchedRows
+                                  setUnmatchedRows(prev => prev.filter(u => u.__rowIndex !== r.__rowIndex));
+                                }}
+                              >
+                                <option value="">-- choisir --</option>
+                                {employees.map(emp => (
+                                  <option key={emp.id} value={emp.id}>{emp.prenom} {emp.nom} ({emp.id})</option>
+                                ))}
+                              </select>
+                              <Button variant="ghost" size="sm" onClick={() => setUnmatchedRows(prev => prev.filter(u => u.__rowIndex !== r.__rowIndex))}>Ignorer</Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
