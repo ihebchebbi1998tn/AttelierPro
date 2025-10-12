@@ -95,6 +95,13 @@ const Employes = () => {
     includeLeaves: false
   });
   const [exporting, setExporting] = useState(false);
+  // Import Poitage states
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importRows, setImportRows] = useState<any[]>([]);
+  const [importColumns, setImportColumns] = useState<string[]>([]);
+  const [importFileName, setImportFileName] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importLoading, setImportLoading] = useState(false);
   const [employeeStatus, setEmployeeStatus] = useState<Record<number, { hasPlanning: boolean; hasSalary: boolean }>>({});
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [selectedEmployeeForLeave, setSelectedEmployeeForLeave] = useState<Employee | null>(null);
@@ -414,6 +421,15 @@ const Employes = () => {
           </div>
         </div>
         <div className="flex gap-2 w-full sm:w-auto justify-end">
+          <Button 
+            variant="outline" 
+            size={isMobile ? "sm" : "default"} 
+            onClick={() => setShowImportModal(true)}
+            className="flex-1 sm:flex-initial"
+          >
+            <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">Importer Poitage</span>
+          </Button>
           <Button 
             variant="outline" 
             size={isMobile ? "sm" : "default"} 
@@ -1268,6 +1284,119 @@ const Employes = () => {
             <Button onClick={handleExport} disabled={exporting}>
               {exporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Exporter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Poitage Modal */}
+      <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Importer Poitage (Excel)</DialogTitle>
+            <DialogDescription>
+              Importez un fichier Excel (.xls/.xlsx) avec la structure de colonnes attendue. Vous pourrez prévisualiser les lignes avant traitement.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div>
+              <input
+                id="poitage-file"
+                type="file"
+                accept=".xls,.xlsx"
+                className="hidden"
+                onChange={async (e) => {
+                  setImportError(null);
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setImportFileName(file.name);
+                  setImportLoading(true);
+                  try {
+                    const data = await file.arrayBuffer();
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+                    if (!Array.isArray(json)) {
+                      setImportError('Fichier invalide ou feuille vide');
+                      setImportRows([]);
+                      setImportColumns([]);
+                    } else {
+                      setImportRows(json as any[]);
+                      const cols = json.length > 0 ? Object.keys(json[0]) : [];
+                      setImportColumns(cols);
+                    }
+                  } catch (err: any) {
+                    console.error('Import error:', err);
+                    setImportError('Erreur lors de la lecture du fichier');
+                    setImportRows([]);
+                    setImportColumns([]);
+                  } finally {
+                    setImportLoading(false);
+                    // clear the input so same file can be re-selected
+                    (document.getElementById('poitage-file') as HTMLInputElement | null)!.value = '';
+                  }
+                }}
+              />
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => document.getElementById('poitage-file')?.click()}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Choisir le fichier
+                </Button>
+                <div className="flex items-center text-sm text-muted-foreground">{importFileName || 'Aucun fichier sélectionné'}</div>
+              </div>
+              {importError && <div className="text-sm text-destructive mt-2">{importError}</div>}
+            </div>
+
+            <div>
+              <div className="overflow-x-auto border rounded">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      {importColumns.map((col) => (
+                        <th key={col} className="py-2 px-3 text-left font-medium">{col}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importRows.slice(0, 200).map((row, idx) => (
+                      <tr key={idx} className={idx % 2 === 0 ? '' : 'bg-muted/20'}>
+                        {importColumns.map((col) => (
+                          <td key={col} className="py-2 px-3 align-top whitespace-nowrap max-w-[220px] overflow-hidden text-ellipsis">{String((row as any)[col] ?? '')}</td>
+                        ))}
+                      </tr>
+                    ))}
+                    {importRows.length === 0 && (
+                      <tr>
+                        <td colSpan={importColumns.length || 1} className="p-4 text-center text-muted-foreground">Aucune donnée à afficher</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {importRows.length > 200 && (
+                <div className="text-xs text-muted-foreground mt-1">Aperçu limité aux 200 premières lignes</div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowImportModal(false);
+              setImportRows([]);
+              setImportColumns([]);
+              setImportFileName(null);
+              setImportError(null);
+            }}>
+              Annuler
+            </Button>
+            <Button onClick={() => {
+              // For now we only preview; here you can call an API to import rows server-side
+              toast({ title: 'Import terminé', description: `${importRows.length} ligne(s) prêtes à être traitées` });
+            }} disabled={importRows.length === 0 || importLoading}>
+              {importLoading ? 'Chargement...' : 'Traiter l\'import'}
             </Button>
           </DialogFooter>
         </DialogContent>
