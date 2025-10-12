@@ -70,7 +70,8 @@ try {
                 }
                 
                 // Get current stock
-                $stockStmt = $pdo->prepare("SELECT quantite_stock, nom FROM matieres WHERE id = ?");
+                // Use the production_matieres table (consistent with other APIs)
+                $stockStmt = $pdo->prepare("SELECT quantite_stock, nom FROM production_matieres WHERE id = ?");
                 $stockStmt->execute([$material_id]);
                 $material = $stockStmt->fetch(PDO::FETCH_ASSOC);
                 
@@ -83,7 +84,7 @@ try {
                 if ($difference > 0) {
                     // Add back to stock (used less than configured)
                     $updateStmt = $pdo->prepare("
-                        UPDATE matieres 
+                        UPDATE production_matieres 
                         SET quantite_stock = quantite_stock + ? 
                         WHERE id = ?
                     ");
@@ -137,7 +138,7 @@ try {
                     }
                     
                     $updateStmt = $pdo->prepare("
-                        UPDATE matieres 
+                        UPDATE production_matieres 
                         SET quantite_stock = quantite_stock - ? 
                         WHERE id = ?
                     ");

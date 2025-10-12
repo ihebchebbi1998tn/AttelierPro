@@ -47,7 +47,7 @@ try {
         $stmt = $pdo->prepare("
             SELECT ppm.*, m.quantite_stock, m.nom as material_name
             FROM production_product_materials ppm
-            JOIN matieres m ON m.id = ppm.material_id
+            JOIN production_matieres m ON m.id = ppm.material_id
             WHERE ppm.product_id = ?
         ");
         $stmt->execute([$product_id]);
@@ -85,7 +85,7 @@ try {
                 
                 // Deduct from stock
                 $updateStmt = $pdo->prepare("
-                    UPDATE matieres 
+                    UPDATE production_matieres 
                     SET quantite_stock = quantite_stock - ? 
                     WHERE id = ?
                 ");

@@ -1858,8 +1858,27 @@ const BatchDetails = () => {
       return;
     }
     
-    // Parse the value - supports decimals like 9.5, 10.75, etc.
-    const numValue = parseFloat(value);
+    // Parse the value - support decimals using either ',' or '.' as decimal separator
+    const parseNumberLocalized = (str: string) => {
+      if (!str) return NaN;
+      // Remove spaces and non-numeric thousand separators, keep '-' and decimal separators
+      const cleaned = String(str).trim()
+        .replace(/\s+/g, '')
+        // If string contains both comma and dot, assume dot is thousand separator and comma is decimal (e.g. "1.234,56")
+        .replace(/(?<=\d)\.(?=\d{3}(?:\D|$))/g, '')
+        .replace(/(?<=\d),(?=\d{3}(?:\D|$))/g, '')
+        ;
+
+      // Normalize comma decimal to dot decimal: '10,5' -> '10.5'
+      const normalized = cleaned.indexOf(',') > -1 && cleaned.indexOf('.') === -1
+        ? cleaned.replace(',', '.')
+        : cleaned;
+
+      const n = Number(normalized);
+      return isNaN(n) ? NaN : n;
+    };
+
+    const numValue = parseNumberLocalized(value);
     
     // Only update if it's a valid number
     if (!isNaN(numValue) && numValue >= 0) {
