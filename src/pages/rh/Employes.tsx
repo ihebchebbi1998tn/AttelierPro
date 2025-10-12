@@ -1317,15 +1317,121 @@ const Employes = () => {
                     const workbook = XLSX.read(data, { type: 'array' });
                     const sheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[sheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-                    if (!Array.isArray(json)) {
+                    const json = XLSX.utils.sheet_to_json(worksheet, { defval: '' }) as any[];
+                    if (!Array.isArray(json) || json.length === 0) {
                       setImportError('Fichier invalide ou feuille vide');
                       setImportRows([]);
                       setImportColumns([]);
                     } else {
-                      setImportRows(json as any[]);
-                      const cols = json.length > 0 ? Object.keys(json[0]) : [];
-                      setImportColumns(cols);
+                      // Helper to find a column value by a list of possible header names
+                      const findField = (row: any, candidates: string[]) => {
+                        const keys = Object.keys(row || {});
+                        for (const k of keys) {
+                          const kn = k.trim().toLowerCase();
+                          for (const c of candidates) {
+                            if (kn === c.toLowerCase().trim()) return row[k];
+                          }
+                        }
+                        // try contains
+                        for (const k of keys) {
+                          const kn = k.trim().toLowerCase();
+                          for (const c of candidates) {
+                            if (kn.indexOf(c.toLowerCase().trim()) !== -1) return row[k];
+                          }
+                        }
+                        return '';
+                      };
+
+                      const prenomNames = ['prénom', 'prénom.', 'prenom', 'prenom.','prénom '];
+                      const nomNames = ['nom', 'nom.'];
+                      const dateNames = ['date', 'date.'];
+                      const jrTravNames = ['jr. travaillé.', 'jr. travaillé', 'jr travaille', 'jr. travaillé', 'jr travaillé', 'jr.travaill '];
+                      const absentNames = ['absent', 'absent.'];
+                      const entreeNames = ['entrée', 'entree', 'entrée.','entrée '];
+                      const sortieNames = ['sortie', 'sortie.'];
+
+                      // Build a map keyed by employeeId|month
+                      const map: Record<string, { employeeId?: number; prenom: string; nom: string; month: string; totalWorked: number; absentCount: number } > = {};
+
+                      for (const row of json) {
+                        const prenomVal = String(findField(row, prenomNames) || '').trim();
+                        const nomVal = String(findField(row, nomNames) || '').trim();
+                        const dateVal = String(findField(row, dateNames) || '').trim();
+                        const jrValRaw = findField(row, jrTravNames) || '';
+                        const absentRaw = String(findField(row, absentNames) || '').trim();
+                        const entreeVal = String(findField(row, entreeNames) || '').trim();
+                        const sortieVal = String(findField(row, sortieNames) || '').trim();
+
+                        if (!prenomVal || !nomVal) continue; // only consider rows with names
+
+                        // Match employee by prenom & nom (case-insensitive)
+                        const matched = employees.find(e => e.prenom && e.nom && e.prenom.toString().trim().toLowerCase() === prenomVal.toLowerCase() && e.nom.toString().trim().toLowerCase() === nomVal.toLowerCase());
+                        if (!matched) continue;
+
+                        // Parse date to month
+                        let monthLabel = 'unknown';
+                        try {
+                          let parsedDate: Date | null = null;
+                          const dm = dateVal.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                          if (dm) {
+                            // dd/mm/yyyy
+                            const d = parseInt(dm[1], 10);
+                            const m = parseInt(dm[2], 10) - 1;
+                            const y = parseInt(dm[3], 10);
+                            parsedDate = new Date(y, m, d);
+                          } else {
+                            const tryDate = new Date(dateVal);
+                            if (!isNaN(tryDate.getTime())) parsedDate = tryDate;
+                          }
+                          if (parsedDate) {
+                            monthLabel = parsedDate.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+                          }
+                        } catch (e) {
+                          monthLabel = 'unknown';
+                        }
+
+                        // Determine Jr. travaillé for this row
+                        let jrWorked = 0;
+                        if (jrValRaw !== '') {
+                          const jrNum = Number(String(jrValRaw).replace(',', '.'));
+                          jrWorked = !isNaN(jrNum) && jrNum >= 1 ? 1 : 0;
+                        } else {
+                          // fallback: if entry and sortie exist and not absent
+                          const absentFlag = String(absentRaw).trim().toLowerCase();
+                          const isAbsent = ['true', '1', 'yes', 'oui'].includes(absentFlag);
+                          if (entreeVal && sortieVal && !isAbsent) jrWorked = 1;
+                        }
+
+                        const absentFlag = String(absentRaw).trim().toLowerCase();
+                        const isAbsentRow = ['true', '1', 'yes', 'oui'].includes(absentFlag);
+
+                        const key = `${matched.id}|${monthLabel}`;
+                        if (!map[key]) {
+                          map[key] = {
+                            employeeId: matched.id,
+                            prenom: matched.prenom,
+                            nom: matched.nom,
+                            month: monthLabel,
+                            totalWorked: 0,
+                            absentCount: 0
+                          };
+                        }
+                        map[key].totalWorked += jrWorked;
+                        map[key].absentCount += isAbsentRow ? 1 : 0;
+                      }
+
+                      // Convert map to rows for preview
+                      const previewRows = Object.values(map).map(r => ({
+                        employee_id: r.employeeId,
+                        prenom: r.prenom,
+                        nom: r.nom,
+                        month: r.month,
+                        jr_travaille_count: r.totalWorked,
+                        absent_count: r.absentCount
+                      }));
+
+                      setImportRows(previewRows);
+                      setImportColumns(['employee_id', 'prenom', 'nom', 'month', 'jr_travaille_count', 'absent_count']);
                     }
                   } catch (err: any) {
                     console.error('Import error:', err);
