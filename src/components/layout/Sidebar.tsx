@@ -111,7 +111,7 @@ const sidebarItems: SidebarItem[] = [
   },
   {
     title: "Gestion RH",
-    href: "/rh",
+    href: "/rh/employes",
     icon: UsersIcon,
     roles: ["admin", "rh"],
   },
@@ -137,7 +137,7 @@ export function AppSidebar({ currentUser, onLogout, isMobile }: AppSidebarProps)
     // Check if user already has RH access
     const rhAccess = sessionStorage.getItem("rh_access");
     if (rhAccess === "granted") {
-      navigate("/rh");
+      navigate("/rh/employes");
       // Close sidebar on mobile after navigation
       if (isMobile) {
         setOpenMobile(false);
@@ -149,7 +149,7 @@ export function AppSidebar({ currentUser, onLogout, isMobile }: AppSidebarProps)
 
   const handleRHPasswordSuccess = () => {
     setShowRHPassword(false);
-    navigate("/rh");
+    navigate("/rh/employes");
     // Close sidebar on mobile after navigation
     if (isMobile) {
       setOpenMobile(false);
@@ -217,7 +217,7 @@ export function AppSidebar({ currentUser, onLogout, isMobile }: AppSidebarProps)
               {filteredItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild>
-                    {item.href === "/rh" ? (
+                    {item.href === "/rh/employes" ? (
                       <button
                         onClick={handleRHAccess}
                         className={getNavClassName(item.href)}

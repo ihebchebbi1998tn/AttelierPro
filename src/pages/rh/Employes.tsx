@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,15 +96,12 @@ const Employes = () => {
     includeLeaves: false
   });
   const [exporting, setExporting] = useState(false);
-  // Import Poitage states
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [importRows, setImportRows] = useState<any[]>([]);
-  const [importColumns, setImportColumns] = useState<string[]>([]);
-  const [unmatchedRows, setUnmatchedRows] = useState<any[]>([]);
-  const [importFileName, setImportFileName] = useState<string | null>(null);
-  const [importError, setImportError] = useState<string | null>(null);
-  const [importLoading, setImportLoading] = useState(false);
-  const [employeeStatus, setEmployeeStatus] = useState<Record<number, { hasPlanning: boolean; hasSalary: boolean }>>({});
+  const [employeeStatus, setEmployeeStatus] = useState<Record<number, { 
+    hasPlanning: boolean; 
+    hasSalary: boolean;
+    workedDays: number;
+    absences: number;
+  }>>({});
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [selectedEmployeeForLeave, setSelectedEmployeeForLeave] = useState<Employee | null>(null);
   const [leaveData, setLeaveData] = useState({
@@ -186,27 +184,50 @@ const Employes = () => {
   };
 
   const loadEmployeeStatus = async (employees: Employee[]) => {
-    const statusMap: Record<number, { hasPlanning: boolean; hasSalary: boolean }> = {};
+    const statusMap: Record<number, { 
+      hasPlanning: boolean; 
+      hasSalary: boolean;
+      workedDays: number;
+      absences: number;
+    }> = {};
     
     await Promise.all(
       employees.map(async (employee) => {
         try {
           // Check for planning (shift templates or schedules)
-          const [templates, schedules, salaries] = await Promise.all([
+          const [templates, schedules, salaries, timeEntries, holidays] = await Promise.all([
             shiftTemplateService.getAll(employee.id),
             scheduleService.getAll({ employee_id: employee.id }),
-            salaryService.getAll({ employee_id: employee.id })
+            salaryService.getAll({ employee_id: employee.id }),
+            timeEntryService.getAll({ employee_id: employee.id }),
+            holidayService.getAll({ employee_id: employee.id, status: 'approved' })
           ]);
+          
+          // Count worked days
+          const workedDays = timeEntries.filter(entry => 
+            entry.total_hours && entry.total_hours > 0
+          ).length;
+          
+          // Count absences (approved holidays)
+          const absences = holidays.reduce((sum, holiday) => {
+            if (holiday.half_day === 'FULL') return sum + 1;
+            if (holiday.half_day === 'AM' || holiday.half_day === 'PM') return sum + 0.5;
+            return sum;
+          }, 0);
           
           statusMap[employee.id] = {
             hasPlanning: templates.length > 0 || schedules.length > 0,
-            hasSalary: salaries.length > 0
+            hasSalary: salaries.length > 0,
+            workedDays,
+            absences
           };
         } catch (error) {
           // If error, mark as not filled
           statusMap[employee.id] = {
             hasPlanning: false,
-            hasSalary: false
+            hasSalary: false,
+            workedDays: 0,
+            absences: 0
           };
         }
       })
@@ -243,38 +264,6 @@ const Employes = () => {
         description: error instanceof Error ? error.message : "Erreur lors de la suppression",
         variant: "destructive"
       });
-    }
-  };
-
-  // Save import preview to server (production/api/rh_employe_pointage.php)
-  const savePointage = async () => {
-    if (!importRows || importRows.length === 0) return;
-    setImportLoading(true);
-    try {
-      // build payload
-      const payload = { rows: importRows };
-      const res = await fetch('https://luccibyey.com.tn/production/api/rh_employe_pointage.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data && data.success) {
-        toast({ title: 'Enregistré', description: data.message || 'Pointage enregistré avec succès' });
-        // clear preview and unmatched rows
-        setImportRows([]);
-        setImportColumns([]);
-        setUnmatchedRows([]);
-        setImportFileName(null);
-        setShowImportModal(false);
-      } else {
-        throw new Error(data && data.message ? data.message : 'Erreur serveur');
-      }
-    } catch (err: any) {
-      console.error('Save pointage error:', err);
-      toast({ title: 'Erreur', description: err.message || 'Erreur lors de l\'enregistrement', variant: 'destructive' });
-    } finally {
-      setImportLoading(false);
     }
   };
 
@@ -457,15 +446,6 @@ const Employes = () => {
           <Button 
             variant="outline" 
             size={isMobile ? "sm" : "default"} 
-            onClick={() => setShowImportModal(true)}
-            className="flex-1 sm:flex-initial"
-          >
-            <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="text-xs sm:text-sm">Importer Poitage</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            size={isMobile ? "sm" : "default"} 
             onClick={() => setShowExportModal(true)}
             className="flex-1 sm:flex-initial"
           >
@@ -638,7 +618,7 @@ const Employes = () => {
           ) : isMobile ? (
             <div className="space-y-2">
               {filteredEmployees.map((employee) => {
-                const status = employeeStatus[employee.id] || { hasPlanning: false, hasSalary: false };
+                const status = employeeStatus[employee.id] || { hasPlanning: false, hasSalary: false, workedDays: 0, absences: 0 };
                 return (
                 <Card 
                   key={employee.id} 
@@ -806,6 +786,8 @@ const Employes = () => {
                   <TableHead>Contact</TableHead>
                   <TableHead>Statut Civil</TableHead>
                   <TableHead className="text-center">Planning/Salaire</TableHead>
+                  <TableHead className="text-center">Jours Travaillés</TableHead>
+                  <TableHead className="text-center">Absences</TableHead>
                   <TableHead>Date d'embauche</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -866,7 +848,7 @@ const Employes = () => {
                     <TableCell>
                       <div className="flex items-center justify-center gap-2">
                         {(() => {
-                          const status = employeeStatus[employee.id] || { hasPlanning: false, hasSalary: false };
+                          const status = employeeStatus[employee.id] || { hasPlanning: false, hasSalary: false, workedDays: 0, absences: 0 };
                           return (
                             <>
                               <div title={status.hasPlanning ? "Planning rempli" : "Planning manquant"}>
@@ -879,6 +861,16 @@ const Employes = () => {
                           );
                         })()}
                       </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline">
+                        {employeeStatus[employee.id]?.workedDays || 0}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={employeeStatus[employee.id]?.absences > 0 ? "destructive" : "outline"}>
+                        {employeeStatus[employee.id]?.absences || 0}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center">
@@ -1317,469 +1309,6 @@ const Employes = () => {
             <Button onClick={handleExport} disabled={exporting}>
               {exporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Exporter
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Import Poitage Modal */}
-      <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
-        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Importer Poitage (Excel)</DialogTitle>
-            <DialogDescription>
-              Importez un fichier Excel (.xls/.xlsx) avec la structure de colonnes attendue. Vous pourrez prévisualiser les lignes avant traitement.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div>
-              <input
-                id="poitage-file"
-                type="file"
-                accept=".xls,.xlsx"
-                className="hidden"
-                onChange={async (e) => {
-                  setImportError(null);
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  setImportFileName(file.name);
-                  setImportLoading(true);
-                  try {
-                    const data = await file.arrayBuffer();
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                      const json = XLSX.utils.sheet_to_json(worksheet, { defval: '' }) as any[];
-                    if (!Array.isArray(json) || json.length === 0) {
-                      setImportError('Fichier invalide ou feuille vide');
-                      setImportRows([]);
-                      setImportColumns([]);
-                    } else {
-                      console.log('[Import] parsed rows count:', json.length);
-                      console.log('[Import] sample rows:', json.slice(0, 5));
-                      console.log('[Import] employees loaded count:', employees.length, 'sample:', employees.slice(0, 5));
-                      // Helper to find a column value by a list of possible header names
-                      const findField = (row: any, candidates: string[]) => {
-                        const keys = Object.keys(row || {});
-                        for (const k of keys) {
-                          const kn = k.trim().toLowerCase();
-                          for (const c of candidates) {
-                            if (kn === c.toLowerCase().trim()) return row[k];
-                          }
-                        }
-                        // try contains
-                        for (const k of keys) {
-                          const kn = k.trim().toLowerCase();
-                          for (const c of candidates) {
-                            if (kn.indexOf(c.toLowerCase().trim()) !== -1) return row[k];
-                          }
-                        }
-                        return '';
-                      };
-
-                      // Normalization helpers (remove accents, lowercase, collapse spaces)
-                      const normalize = (s: string) => {
-                        if (!s && s !== '') return '';
-                        const str = String(s);
-                        return str
-                          .normalize('NFD')
-                          .replace(/\p{Diacritic}/gu, '')
-                          .replace(/\s+/g, ' ')
-                          .trim()
-                          .toLowerCase();
-                      };
-
-                      // Levenshtein distance for fuzzy matching
-                      const levenshtein = (a: string, b: string) => {
-                        if (a === b) return 0;
-                        const al = a.length; const bl = b.length;
-                        if (al === 0) return bl;
-                        if (bl === 0) return al;
-                        const v = new Array(bl + 1).fill(0).map((_, i) => i);
-                        for (let i = 0; i < al; i++) {
-                          let prev = i + 1;
-                          for (let j = 0; j < bl; j++) {
-                            const cur = v[j + 1];
-                            const cost = a[i] === b[j] ? 0 : 1;
-                            v[j + 1] = Math.min(v[j + 1] + 1, v[j] + 1, prev + cost);
-                            prev = cur;
-                          }
-                        }
-                        return v[bl];
-                      };
-
-                      const prenomNames = ['prénom', 'prénom.', 'prenom', 'prenom.','prénom '];
-                      const nomNames = ['nom', 'nom.'];
-                      const dateNames = ['date', 'date.'];
-                      const jrTravNames = ['jr. travaillé.', 'jr. travaillé', 'jr travaille', 'jr. travaillé', 'jr travaillé', 'jr.travaill '];
-                      const absentNames = ['absent', 'absent.'];
-                      const entreeNames = ['entrée', 'entree', 'entrée.','entrée '];
-                      const sortieNames = ['sortie', 'sortie.'];
-
-                      // Log normalized header keys to help debugging
-                      const rawHeaders = Object.keys(json[0] || {});
-                      const normalizedHeaders = rawHeaders.map(h => ({ raw: h, normalized: normalize(h) }));
-                      console.log('[Import] detected headers:', normalizedHeaders);
-
-                      // Build a map keyed by employeeId|month
-                      const map: Record<string, { employeeId?: number; prenom: string; nom: string; month: string; totalWorked: number; absentCount: number } > = {};
-
-                      for (let idx = 0; idx < json.length; idx++) {
-                        const row = json[idx];
-                        const prenomVal = String(findField(row, prenomNames) || '').trim();
-                        const nomVal = String(findField(row, nomNames) || '').trim();
-                        const dateVal = String(findField(row, dateNames) || '').trim();
-                        const jrValRaw = findField(row, jrTravNames) || '';
-                        const absentRaw = String(findField(row, absentNames) || '').trim();
-                        const entreeVal = String(findField(row, entreeNames) || '').trim();
-                        const sortieVal = String(findField(row, sortieNames) || '').trim();
-
-                        console.log(`[Import] row ${idx} raw -> prenom:'${prenomVal}', nom:'${nomVal}', date:'${dateVal}', entree:'${entreeVal}', sortie:'${sortieVal}', absent:'${absentRaw}'`);
-
-                        if (!prenomVal || !nomVal) {
-                          console.log(`[Import] row ${idx} skipped: missing prenom or nom`);
-                          continue; // only consider rows with names
-                        }
-
-                        // Match employee by prenom & nom using normalized values
-                        const normPrenom = normalize(prenomVal);
-                        const normNom = normalize(nomVal);
-                        console.log(`[Import] normalized excel name -> '${normPrenom}' '${normNom}'`);
-                        let matched = employees.find(e => {
-                          if (!e.prenom || !e.nom) return false;
-                          const ePren = normalize(String(e.prenom));
-                          const eNom = normalize(String(e.nom));
-                          // log comparison for debugging
-                          // console.log(`[Import] compare exact: excel='${normPrenom} ${normNom}' emp='${ePren} ${eNom}'`);
-                          return ePren === normPrenom && eNom === normNom;
-                        });
-
-                        // If not found, try swapped columns (excel might have Prénom/ Nom reversed)
-                        if (!matched) {
-                          matched = employees.find(e => {
-                            if (!e.prenom || !e.nom) return false;
-                            const ePren = normalize(String(e.prenom));
-                            const eNom = normalize(String(e.nom));
-                            return ePren === normNom && eNom === normPrenom;
-                          });
-                          if (matched) console.log(`[Import] row ${idx} matched by swapped fields to id=${matched.id} (${matched.prenom} ${matched.nom})`);
-                        }
-
-                        // If still not matched, try fuzzy matching on full name (normalized)
-                        if (!matched) {
-                          const excelFull = normalize(`${prenomVal} ${nomVal}`);
-                          let best: { emp?: Employee; dist: number } = { emp: undefined, dist: Infinity };
-                          for (const e of employees) {
-                            if (!e.prenom || !e.nom) continue;
-                            const empFull = normalize(`${e.prenom} ${e.nom}`);
-                            const d = levenshtein(excelFull, empFull);
-                            if (d < best.dist) best = { emp: e, dist: d };
-                          }
-                          if (best.emp && best.dist <= 2) {
-                            matched = best.emp;
-                            console.log(`[Import] row ${idx} fuzzy matched to id=${matched.id} (${matched.prenom} ${matched.nom}) with dist=${best.dist}`);
-                          } else if (best.emp) {
-                            console.log(`[Import] row ${idx} best fuzzy candidate id=${best.emp.id} (${best.emp.prenom} ${best.emp.nom}) dist=${best.dist} - too far`);
-                          }
-                        }
-
-                        if (!matched) {
-                          // push to unmatched list for manual mapping
-                          setUnmatchedRows(prev => [...prev, { __rowIndex: idx, raw: row, prenom: prenomVal, nom: nomVal, date: dateVal, entree: entreeVal, sortie: sortieVal, absent: absentRaw }] );
-                          console.log(`[Import] row ${idx} no match found for '${prenomVal} ${nomVal}' -> added to unmatchedRows`);
-                          continue;
-                        }
-                        console.log(`[Import] row ${idx} FINAL matched employee id=${matched.id} (${matched.prenom} ${matched.nom})`);
-
-                        // Parse date to month
-                        let monthLabel = 'unknown';
-                        try {
-                          let parsedDate: Date | null = null;
-                          const dm = dateVal.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-                          if (dm) {
-                            // dd/mm/yyyy
-                            const d = parseInt(dm[1], 10);
-                            const m = parseInt(dm[2], 10) - 1;
-                            const y = parseInt(dm[3], 10);
-                            parsedDate = new Date(y, m, d);
-                          } else {
-                            const tryDate = new Date(dateVal);
-                            if (!isNaN(tryDate.getTime())) parsedDate = tryDate;
-                          }
-                          if (parsedDate) {
-                            monthLabel = parsedDate.toLocaleString('en-US', { month: 'long' }).toLowerCase();
-                          }
-                        } catch (e) {
-                          monthLabel = 'unknown';
-                        }
-
-                        // Determine Jr. travaillé for this row
-                        let jrWorked = 0;
-                        if (jrValRaw !== '') {
-                          const jrNum = Number(String(jrValRaw).replace(',', '.'));
-                          jrWorked = !isNaN(jrNum) && jrNum >= 1 ? 1 : 0;
-                        } else {
-                          // fallback: if entry and sortie exist and not absent
-                          const absentFlag = String(absentRaw).trim().toLowerCase();
-                          const isAbsent = ['true', '1', 'yes', 'oui'].includes(absentFlag);
-                          if (entreeVal && sortieVal && !isAbsent) jrWorked = 1;
-                        }
-
-                        const absentFlag = String(absentRaw).trim().toLowerCase();
-                        const isAbsentRow = ['true', '1', 'yes', 'oui'].includes(absentFlag);
-
-                        const key = `${matched.id}|${monthLabel}`;
-                        if (!map[key]) {
-                          map[key] = {
-                            employeeId: matched.id,
-                            prenom: matched.prenom,
-                            nom: matched.nom,
-                            month: monthLabel,
-                            totalWorked: 0,
-                            absentCount: 0
-                          };
-                        }
-                        map[key].totalWorked += jrWorked;
-                        map[key].absentCount += isAbsentRow ? 1 : 0;
-                      }
-
-                      // Convert map to rows for preview
-                      const previewRows = Object.values(map).map(r => ({
-                        employee_id: r.employeeId,
-                        prenom: r.prenom,
-                        nom: r.nom,
-                        month: r.month,
-                        jr_travaille_count: r.totalWorked,
-                        absent_count: r.absentCount
-                      }));
-
-                      setImportRows(previewRows);
-                      setImportColumns(['employee_id', 'prenom', 'nom', 'month', 'jr_travaille_count', 'absent_count']);
-                    }
-                  } catch (err: any) {
-                    console.error('Import error:', err);
-                    setImportError('Erreur lors de la lecture du fichier');
-                    setImportRows([]);
-                    setImportColumns([]);
-                  } finally {
-                    setImportLoading(false);
-                    // clear the input so same file can be re-selected
-                    (document.getElementById('poitage-file') as HTMLInputElement | null)!.value = '';
-                  }
-                }}
-              />
-
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => document.getElementById('poitage-file')?.click()}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Choisir le fichier
-                </Button>
-                <div className="flex items-center text-sm text-muted-foreground">{importFileName || 'Aucun fichier sélectionné'}</div>
-              </div>
-              {importError && <div className="text-sm text-destructive mt-2">{importError}</div>}
-            </div>
-
-            <div>
-              <div className="overflow-x-auto border rounded">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      {importColumns.map((col) => (
-                        <th key={col} className="py-2 px-3 text-left font-medium">{col}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {importRows.slice(0, 200).map((row, idx) => (
-                      <tr key={idx} className={idx % 2 === 0 ? '' : 'bg-muted/20'}>
-                        {importColumns.map((col) => (
-                          <td key={col} className="py-2 px-3 align-top whitespace-nowrap max-w-[220px] overflow-hidden text-ellipsis">{String((row as any)[col] ?? '')}</td>
-                        ))}
-                      </tr>
-                    ))}
-                    {importRows.length === 0 && (
-                      <tr>
-                        <td colSpan={importColumns.length || 1} className="p-4 text-center text-muted-foreground">Aucune donnée à afficher</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              {importRows.length > 200 && (
-                <div className="text-xs text-muted-foreground mt-1">Aperçu limité aux 200 premières lignes</div>
-              )}
-            </div>
-
-            {/* Unmatched rows mapping UI */}
-            {unmatchedRows.length > 0 && (
-              <div className="space-y-2 border-t pt-3">
-                <h3 className="text-sm font-medium">Lignes non appariées ({unmatchedRows.length})</h3>
-                {/* Global apply-to-all mapping control */}
-                <div className="flex items-center gap-2 mb-2">
-                  <select id="apply-all-select" className="rounded border px-2 py-1 text-sm">
-                    <option value="">-- Appliquer à tous --</option>
-                    {employees.map(emp => (
-                      <option key={`apply-all-${emp.id}`} value={emp.id}>{emp.prenom} {emp.nom} ({emp.id})</option>
-                    ))}
-                  </select>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const sel = (document.getElementById('apply-all-select') as HTMLSelectElement | null);
-                      if (!sel) return;
-                      const val = sel.value;
-                      if (!val) return;
-                      const empId = Number(val);
-                      const emp = employees.find(e => e.id === empId);
-                      if (!emp) return;
-
-                      // For each unmatched row, compute month and update importRows aggregation
-                      setImportRows(prev => {
-                        const copy = [...prev];
-                        const toProcess = [...unmatchedRows];
-                        for (const r of toProcess) {
-                          const monthLabel = (() => {
-                            try {
-                              const dm = String(r.date).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-                              if (dm) {
-                                const m = parseInt(dm[2], 10) - 1;
-                                return new Date(parseInt(dm[3],10), m, parseInt(dm[1],10)).toLocaleString('en-US', { month: 'long' }).toLowerCase();
-                              }
-                              const d2 = new Date(r.date);
-                              if (!isNaN(d2.getTime())) return d2.toLocaleString('en-US', { month: 'long' }).toLowerCase();
-                            } catch (e) {}
-                            return 'unknown';
-                          })();
-
-                          const keyExists = copy.find(p => p.employee_id === emp.id && p.month === monthLabel);
-                          const jrInc = (r.entree && r.sortie && (!r.absent || r.absent === 'false')) ? 1 : 0;
-                          const absInc = (['true','1','yes','oui'].includes(String(r.absent).toLowerCase()) ? 1 : 0);
-                          if (keyExists) {
-                            keyExists.jr_travaille_count = (keyExists.jr_travaille_count || 0) + jrInc;
-                            keyExists.absent_count = (keyExists.absent_count || 0) + absInc;
-                          } else {
-                            copy.push({
-                              employee_id: emp.id,
-                              prenom: emp.prenom,
-                              nom: emp.nom,
-                              month: monthLabel,
-                              jr_travaille_count: jrInc,
-                              absent_count: absInc
-                            });
-                          }
-                        }
-                        return copy;
-                      });
-
-                      // Clear unmatched rows since we've applied mapping
-                      setUnmatchedRows([]);
-                      // reset the select
-                      sel.value = '';
-                      toast({ title: 'Mapping appliqué', description: `Toutes les lignes non appariées ont été associées à ${emp.prenom} ${emp.nom}` });
-                    }}
-                  >Appliquer à tous</Button>
-                </div>
-
-                <div className="overflow-x-auto border rounded">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-muted">
-                      <tr>
-                        <th className="py-2 px-3 text-left">#</th>
-                        <th className="py-2 px-3 text-left">Prénom</th>
-                        <th className="py-2 px-3 text-left">Nom</th>
-                        <th className="py-2 px-3 text-left">Date</th>
-                        <th className="py-2 px-3 text-left">Mapper</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {unmatchedRows.map((r, i) => (
-                        <tr key={i} className={i % 2 === 0 ? '' : 'bg-muted/20'}>
-                          <td className="py-2 px-3">{r.__rowIndex}</td>
-                          <td className="py-2 px-3">{r.prenom}</td>
-                          <td className="py-2 px-3">{r.nom}</td>
-                          <td className="py-2 px-3">{r.date}</td>
-                          <td className="py-2 px-3">
-                            <div className="flex gap-2 items-center">
-                              <select
-                                className="rounded border px-2 py-1 text-sm"
-                                defaultValue=""
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  if (!val) return;
-                                  const empId = Number(val);
-                                  const emp = employees.find(x => x.id === empId);
-                                  if (!emp) return;
-                                  // assign this unmatched row to emp and recalculate aggregated preview
-                                  // create a synthetic matched object for this row
-                                  const monthLabel = (() => {
-                                    try {
-                                      const dm = String(r.date).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-                                      if (dm) {
-                                        const m = parseInt(dm[2], 10) - 1;
-                                        return new Date(parseInt(dm[3],10), m, parseInt(dm[1],10)).toLocaleString('en-US', { month: 'long' }).toLowerCase();
-                                      }
-                                      const d2 = new Date(r.date);
-                                      if (!isNaN(d2.getTime())) return d2.toLocaleString('en-US', { month: 'long' }).toLowerCase();
-                                    } catch (e) {}
-                                    return 'unknown';
-                                  })();
-
-                                  setImportRows(prev => {
-                                    // add or update aggregated row for emp+month
-                                    const key = `${emp.id}|${monthLabel}`;
-                                    const exists = prev.find(p => p.employee_id === emp.id && p.month === monthLabel);
-                                    if (exists) {
-                                      // increment counts conservatively: if we can detect absent
-                                      exists.jr_travaille_count = (exists.jr_travaille_count || 0) + (r.entree && r.sortie && (!r.absent || r.absent === 'false') ? 1 : 0);
-                                      exists.absent_count = (exists.absent_count || 0) + (['true','1','yes','oui'].includes(String(r.absent).toLowerCase()) ? 1 : 0);
-                                      return [...prev];
-                                    } else {
-                                      const newRow = {
-                                        employee_id: emp.id,
-                                        prenom: emp.prenom,
-                                        nom: emp.nom,
-                                        month: monthLabel,
-                                        jr_travaille_count: (r.entree && r.sortie && (!r.absent || r.absent === 'false')) ? 1 : 0,
-                                        absent_count: (['true','1','yes','oui'].includes(String(r.absent).toLowerCase()) ? 1 : 0)
-                                      };
-                                      return [...prev, newRow];
-                                    }
-                                  });
-
-                                  // remove from unmatchedRows
-                                  setUnmatchedRows(prev => prev.filter(u => u.__rowIndex !== r.__rowIndex));
-                                }}
-                              >
-                                <option value="">-- choisir --</option>
-                                {employees.map(emp => (
-                                  <option key={emp.id} value={emp.id}>{emp.prenom} {emp.nom} ({emp.id})</option>
-                                ))}
-                              </select>
-                              <Button variant="ghost" size="sm" onClick={() => setUnmatchedRows(prev => prev.filter(u => u.__rowIndex !== r.__rowIndex))}>Ignorer</Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setShowImportModal(false);
-              setImportRows([]);
-              setImportColumns([]);
-              setImportFileName(null);
-              setImportError(null);
-            }}>
-              Annuler
-            </Button>
-            <Button onClick={savePointage} disabled={importRows.length === 0 || importLoading}>
-              {importLoading ? 'Enregistrement...' : 'Enregistrer'}
             </Button>
           </DialogFooter>
         </DialogContent>

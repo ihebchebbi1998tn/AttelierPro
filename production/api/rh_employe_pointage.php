@@ -10,17 +10,47 @@ $input = json_decode(file_get_contents('php://input'), true);
 try {
     switch ($method) {
         case 'GET':
-            if (isset($_GET['employee_id'])) {
-                $stmt = $db->prepare("SELECT * FROM production_employe_pointage WHERE employee_id = ? ORDER BY month DESC");
-                $stmt->execute([$_GET['employee_id']]);
-                $rows = $stmt->fetchAll();
-                echo json_encode(['success' => true, 'data' => $rows]);
-            } else {
-                $stmt = $db->prepare("SELECT * FROM production_employe_pointage ORDER BY employee_id, month DESC");
-                $stmt->execute([]);
-                $rows = $stmt->fetchAll();
-                echo json_encode(['success' => true, 'data' => $rows]);
+            // Optional filters: employee_id and month (month expected in YYYY-MM or legacy english month name)
+            $params = [];
+            $where = [];
+
+            if (isset($_GET['employee_id']) && $_GET['employee_id'] !== '') {
+                $where[] = 'employee_id = ?';
+                $params[] = $_GET['employee_id'];
             }
+
+            if (isset($_GET['month']) && $_GET['month'] !== '') {
+                $monthParam = $_GET['month'];
+                // If month param is in YYYY-MM, also allow matching legacy english month names for backward compatibility
+                if (preg_match('/^\d{4}-\d{2}$/', $monthParam)) {
+                    // map month number to english month name
+                    $parts = explode('-', $monthParam);
+                    $year = intval($parts[0]);
+                    $mon = intval($parts[1]);
+                    $months = [1=>'january','february','march','april','may','june','july','august','september','october','november','december'];
+                    $monthName = isset($months[$mon]) ? $months[$mon] : '';
+
+                    if ($monthName !== '') {
+                        $where[] = '(month = ? OR month = ?)';
+                        $params[] = $monthParam; // YYYY-MM
+                        $params[] = $monthName; // legacy name
+                    } else {
+                        $where[] = 'month = ?';
+                        $params[] = $monthParam;
+                    }
+                } else {
+                    // use provided month string directly (legacy behavior)
+                    $where[] = 'month = ?';
+                    $params[] = $monthParam;
+                }
+            }
+
+            $whereClause = empty($where) ? '' : ('WHERE ' . implode(' AND ', $where));
+            $sql = "SELECT * FROM production_employe_pointage $whereClause ORDER BY employee_id, month DESC";
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+            echo json_encode(['success' => true, 'data' => $rows]);
             break;
 
         case 'POST':
