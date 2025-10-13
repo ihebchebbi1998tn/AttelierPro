@@ -103,6 +103,9 @@ const ConfigurerMateriaux = () => {
     quantityPerItem: 0
   });
   
+  // Step state: 1 for tissues (category_id=1), 2 for buttons (category_id=3)
+  const [currentStep, setCurrentStep] = useState(1);
+  
   // Stock insufficiency and merge states
   const [showStockInsufficiencyModal, setShowStockInsufficiencyModal] = useState(false);
   const [showMergeMaterialModal, setShowMergeMaterialModal] = useState(false);
@@ -823,6 +826,11 @@ const ConfigurerMateriaux = () => {
   )).sort();
 
   const filteredMaterials = materials.filter(material => {
+    // STEP FILTER: Show only category_id=1 for step 1, category_id=3 for step 2
+    const materialCategoryId = (material as any).category_id;
+    if (currentStep === 1 && materialCategoryId !== 1) return false;
+    if (currentStep === 2 && materialCategoryId !== 3) return false;
+    
     // Filter by search term - search across all relevant fields
     const matchesSearch = (material.nom || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
       (material.reference || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -889,14 +897,51 @@ const ConfigurerMateriaux = () => {
             </p>
           </div>
         </div>
-        
       </div>
+
+      {/* Step Indicator */}
+      <Card className="bg-gradient-to-r from-blue-50 to-purple-50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Badge variant={currentStep === 1 ? "default" : "outline"} className="text-sm px-4 py-2">
+                Étape 1: Tissus
+              </Badge>
+              <Badge variant={currentStep === 2 ? "default" : "outline"} className="text-sm px-4 py-2">
+                Étape 2: Boutons
+              </Badge>
+            </div>
+            <div className="flex gap-2">
+              {currentStep === 2 && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setCurrentStep(1)}
+                  size="sm"
+                >
+                  ← Retour aux Tissus
+                </Button>
+              )}
+              {currentStep === 1 && (
+                <Button 
+                  onClick={() => setCurrentStep(2)}
+                  size="sm"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                >
+                  Continuer vers Boutons →
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="space-y-6">
         {/* Available Materials */}
         <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg md:text-xl">Matériaux Disponibles</CardTitle>
+            <CardTitle className="text-lg md:text-xl">
+              {currentStep === 1 ? 'Tissus Disponibles' : 'Boutons Disponibles'}
+            </CardTitle>
             <div className="space-y-2 mb-4">
               <p className="text-sm text-muted-foreground">
                 Cliquez sur un matériau pour l'ajouter à la configuration
