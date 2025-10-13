@@ -25,6 +25,7 @@ interface Material {
   couleur?: string;
   description: string;
   quantity_type_id: number;
+  laize?: string;
   location?: string;
 }
 
@@ -75,6 +76,38 @@ const PREDEFINED_QUANTITIES: Record<string, number> = {
   'short': 1.0,
   'costume-croise': 2.8,
   'manteau': 2.0
+};
+
+// Buttons: nested map by itemgroup -> laize -> quantity
+const BUTTON_QUANTITIES: Record<string, Record<string, number>> = {
+  'smoking': { '40': 2, '22': 2, '32': 2 },
+  'blazer croise': { '40': 2, '22': 2, '32': 2 },
+  'blazers': { '40': 2, '22': 2, '32': 2 },
+  'chemise': { '40': 2, '22': 2, '32': 2 },
+  'costume': { '40': 2, '22': 2, '32': 2 },
+  'blazer': { '40': 2, '22': 2, '32': 2 },
+  'pantalon': { '40': 2, '22': 2, '32': 2 },
+  'trench': { '40': 2, '22': 2, '32': 2 },
+  'short': { '40': 2, '22': 2, '32': 2 },
+  'costume-croise': { '40': 2, '22': 2, '32': 2 },
+  'manteau': { '40': 2, '22': 2, '32': 2 }
+};
+
+const getDefaultQuantityByItemGroup = (itemGroup: string | undefined, isButton = false, laize?: string) => {
+  const ig = (itemGroup || '').toLowerCase().trim();
+  if (isButton) {
+    const groupMap = BUTTON_QUANTITIES[ig];
+    if (groupMap) {
+      const la = (laize || '').toString().replace(/[^0-9]/g, '');
+      if (la && groupMap[la] !== undefined) return groupMap[la];
+      // fallback to first defined
+      const first = Object.values(groupMap)[0];
+      return first ?? 2;
+    }
+    return 2;
+  }
+
+  return PREDEFINED_QUANTITIES[ig] ?? 1;
 };
 
 const ConfigurerMateriaux = () => {
@@ -182,6 +215,7 @@ const ConfigurerMateriaux = () => {
           couleur: m.couleur,
           description: m.description,
           quantity_type_id: parseInt(m.quantity_type_id),
+          laize: m.laize,
           location: m.location
         }));
         setMaterials(normalizedMaterials);
@@ -333,7 +367,8 @@ const ConfigurerMateriaux = () => {
 
     // Get predefined quantity based on itemgroup_product
     const itemGroup = product?.itemgroup_product?.toLowerCase().trim() || '';
-    const predefinedQty = PREDEFINED_QUANTITIES[itemGroup] || 1;
+  const isButtonMaterial = (material as any).category_id === 3 || (material.category_name || '').toLowerCase().includes('bouton');
+  const predefinedQty = getDefaultQuantityByItemGroup(product?.itemgroup_product, isButtonMaterial, material.laize) || 1;
     
     console.log('🔍 Material Config Debug:', {
       itemgroup_product: product?.itemgroup_product,

@@ -15,10 +15,13 @@ interface Material {
   id: number;
   nom: string;
   reference: string;
+  category_id?: number;
   category_name: string;
   quantite_stock: number;
   prix_unitaire: number;
+  quantity_type_id?: number;
   couleur?: string;
+  laize?: string;
   location?: string;
 }
 
@@ -55,14 +58,14 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Get default quantity based on item group
-  const getDefaultQuantityByItemGroup = (itemGroup: string): number => {
+  // If isButton is true, return the button-specific quantity depending on laize
+  const getDefaultQuantityByItemGroup = (itemGroup: string, isButton = false, laize?: string): number => {
     const itemGroupLower = itemGroup?.toLowerCase() || '';
     console.log('🔍 Item Group Debug:', {
       original: itemGroup,
       lowercase: itemGroupLower,
       productName: product?.nom_product
     });
-    
     const quantityMap: Record<string, number> = {
       'pantalon': 1.3,
       'costume-croise': 2.8,
@@ -74,7 +77,35 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
       'manteau': 2,
       'smoking': 2.7
     };
-    
+
+    // Buttons: nested map by itemgroup -> laize -> quantity
+    const buttonQuantityMap: Record<string, Record<string, number>> = {
+      'pantalon': { '40': 2, '22': 2, '32': 2 },
+      'costume-croise': { '40': 2, '22': 2, '32': 2 },
+      'costume': { '40': 2, '22': 2, '32': 2 },
+      'blazers': { '40': 2, '22': 2, '32': 2 },
+      'chemise': { '40': 2, '22': 2, '32': 2 },
+      'trench': { '40': 2, '22': 2, '32': 2 },
+      'blouson': { '40': 2, '22': 2, '32': 2 },
+      'manteau': { '40': 2, '22': 2, '32': 2 },
+      'smoking': { '40': 2, '22': 2, '32': 2 }
+    };
+
+    if (isButton) {
+      // Normalize laize to digits only (e.g., '40"' -> '40')
+      const laizeKey = (laize || '').toString().replace(/[^0-9]/g, '') || '';
+      const groupMap = buttonQuantityMap[itemGroupLower];
+      if (groupMap) {
+        if (laizeKey && groupMap[laizeKey] !== undefined) {
+          return groupMap[laizeKey];
+        }
+        // fallback to any defined laize value or default 2
+        const firstDefined = Object.values(groupMap)[0];
+        return firstDefined ?? 2;
+      }
+      return 2;
+    }
+
     const defaultQuantity = quantityMap[itemGroupLower] || 1;
     console.log('✅ Default Quantity:', defaultQuantity);
     return defaultQuantity;
@@ -197,6 +228,32 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
   const updateMaterial = (index: number, field: keyof ProductMaterial, value: any) => {
     const updated = [...productMaterials];
     updated[index] = { ...updated[index], [field]: value };
+
+    // If user selected a material, auto-adjust defaults for buttons
+    if (field === 'material_id') {
+      const selectedMaterial = materials.find(m => m.id === parseInt(String(value)));
+      if (selectedMaterial) {
+        const isButton = (selectedMaterial.category_id === 3) || (selectedMaterial.category_name || '').toLowerCase().includes('bouton');
+
+        if (isButton) {
+          // For buttons, use the button map per itemgroup and laize when available
+          updated[index].quantity_needed = getDefaultQuantityByItemGroup(product?.itemgroup_product || '', true, selectedMaterial.laize);
+        } else {
+          // For non-buttons, if quantity is empty/zero, use product itemgroup default
+          if (!updated[index].quantity_needed || updated[index].quantity_needed === 0) {
+            updated[index].quantity_needed = getDefaultQuantityByItemGroup(product?.itemgroup_product || '');
+          }
+        }
+
+        // Set quantity type default from material if available
+        if (selectedMaterial.quantity_type_id) {
+          updated[index].quantity_type_id = selectedMaterial.quantity_type_id;
+        } else if (!updated[index].quantity_type_id) {
+          updated[index].quantity_type_id = quantityTypes[0]?.id || 1;
+        }
+      }
+    }
+
     setProductMaterials(updated);
     triggerAutoSave(updated);
   };
@@ -345,135 +402,151 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {productMaterials.map((pm, index) => (
-                      <Card key={index} className="border-l-4 border-l-primary/20">
-                         <CardContent className="p-4">
-                           <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                             {/* Material Selection */}
-                             <div>
-                               <Label className="text-sm font-medium">Matériau</Label>
-                               <Select 
-                                 value={pm.material_id.toString()} 
-                                 onValueChange={(value) => updateMaterial(index, 'material_id', parseInt(value))}
-                               >
-                                 <SelectTrigger className="mt-1">
-                                   <SelectValue placeholder="Sélectionner" />
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                    {materials.map((material) => (
-                                      <SelectItem key={material.id} value={material.id.toString()}>
-                                        <div className="flex flex-col">
-                                          <span className="font-medium">{material.nom}</span>
-                                          <span className="text-xs text-muted-foreground">
-                                            {material.reference} • Stock: {material.quantite_stock}
-                                            {material.location && ` • 📍 ${material.location}`}
-                                          </span>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                 </SelectContent>
-                               </Select>
-                             </div>
-
-                              {/* Quantity */}
+                    {productMaterials.map((pm, index) => {
+                      const selectedMaterial = materials.find(m => m.id === pm.material_id);
+                      return (
+                        <Card key={index} className="border-l-4 border-l-primary/20">
+                          <CardContent className="p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                              {/* Material Selection */}
                               <div>
-                                <Label className="text-sm font-medium">
-                                  Quantité par pièce {product?.itemgroup_product && (
-                                    <span className="text-red-500">
-                                      ({product.itemgroup_product}, {getDefaultQuantityByItemGroup(product.itemgroup_product)} préconfiguré)
-                                    </span>
-                                  )}
-                                </Label>
+                                <Label className="text-sm font-medium">Matériau</Label>
+                                <Select 
+                                  value={pm.material_id.toString()} 
+                                  onValueChange={(value) => updateMaterial(index, 'material_id', parseInt(value))}
+                                >
+                                  <SelectTrigger className="mt-1">
+                                    <SelectValue placeholder="Sélectionner" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                     {materials.map((material) => (
+                                       <SelectItem key={material.id} value={material.id.toString()}>
+                                         <div className="flex flex-col">
+                                           <span className="font-medium">{material.nom}</span>
+                                           <span className="text-xs text-muted-foreground">
+                                             {material.reference} • Stock: {material.quantite_stock}
+                                             {material.location && ` • 📍 ${material.location}`}
+                                           </span>
+                                         </div>
+                                       </SelectItem>
+                                     ))}
+                                  </SelectContent>
+                                </Select>
+
+                                {/* Laize / Diamètre hint */}
+                                {selectedMaterial && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {selectedMaterial.category_id === 1 ? (
+                                          `Laize: ${selectedMaterial.laize || 'N/A'} — Quantité par pièce recommandée: ${getDefaultQuantityByItemGroup(product?.itemgroup_product || '', false, selectedMaterial.laize)}`
+                                        ) : selectedMaterial.category_id === 3 ? (
+                                          `Diamètre: ${selectedMaterial.laize || 'N/A'} — Quantité par pièce recommandée: ${getDefaultQuantityByItemGroup(product?.itemgroup_product || '', true, selectedMaterial.laize)}`
+                                        ) : (
+                                          `Laize: ${selectedMaterial.laize || 'N/A'} — Quantité par pièce recommandée: ${getDefaultQuantityByItemGroup(product?.itemgroup_product || '', false, selectedMaterial.laize)}`
+                                        )}
+                                  </p>
+                                )}
+                              </div>
+
+                               {/* Quantity */}
+                               <div>
+                                 <Label className="text-sm font-medium">
+                                   Quantité par pièce {product?.itemgroup_product && (
+                                     <span className="text-red-500">
+                                       ({product.itemgroup_product}, {getDefaultQuantityByItemGroup(product.itemgroup_product)} préconfiguré)
+                                     </span>
+                                   )}
+                                 </Label>
+                                 <Input
+                                   type="number"
+                                   step="0.1"
+                                   min="0"
+                                   value={pm.quantity_needed}
+                                   onChange={(e) => updateMaterial(index, 'quantity_needed', parseFloat(e.target.value) || 0)}
+                                   className="mt-1"
+                                 />
+                               </div>
+
+                              {/* Commentaire */}
+                              <div>
+                                <Label className="text-sm font-medium">Commentaire</Label>
                                 <Input
-                                  type="number"
-                                  step="0.1"
-                                  min="0"
-                                  value={pm.quantity_needed}
-                                  onChange={(e) => updateMaterial(index, 'quantity_needed', parseFloat(e.target.value) || 0)}
+                                  type="text"
+                                  value={pm.commentaire || ''}
+                                  onChange={(e) => updateMaterial(index, 'commentaire', e.target.value)}
+                                  placeholder="Commentaire (optionnel)"
                                   className="mt-1"
                                 />
                               </div>
 
-                             {/* Commentaire */}
+                              {/* Quantity Type */}
+                              <div>
+                                <Label className="text-sm font-medium">Unité</Label>
+                               <Select 
+                                 value={pm.quantity_type_id.toString()} 
+                                 onValueChange={(value) => updateMaterial(index, 'quantity_type_id', parseInt(value))}
+                               >
+                                 <SelectTrigger className="mt-1">
+                                   <SelectValue />
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                   {quantityTypes.map((qt) => (
+                                     <SelectItem key={qt.id} value={qt.id.toString()}>
+                                       {qt.nom} ({qt.unit})
+                                     </SelectItem>
+                                   ))}
+                                 </SelectContent>
+                               </Select>
+                             </div>
+
+                             {/* Size Specific */}
                              <div>
-                               <Label className="text-sm font-medium">Commentaire</Label>
-                               <Input
-                                 type="text"
-                                 value={pm.commentaire || ''}
-                                 onChange={(e) => updateMaterial(index, 'commentaire', e.target.value)}
-                                 placeholder="Commentaire (optionnel)"
+                               <Label className="text-sm font-medium">Tailles</Label>
+                               <Select 
+                                 value={pm.size_specific} 
+                                 onValueChange={(value) => updateMaterial(index, 'size_specific', value)}
+                               >
+                                 <SelectTrigger className="mt-1">
+                                   <SelectValue />
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                   <SelectItem value="ALL">Toutes les tailles</SelectItem>
+                                   <SelectItem value="S">S</SelectItem>
+                                   <SelectItem value="M">M</SelectItem>
+                                   <SelectItem value="L">L</SelectItem>
+                                   <SelectItem value="XL">XL</SelectItem>
+                                   <SelectItem value="XXL">XXL</SelectItem>
+                                 </SelectContent>
+                               </Select>
+                             </div>
+
+                              {/* Actions */}
+                              <div className="flex items-end">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => removeMaterial(index)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+
+                              {/* Notes - Full Width */}
+                              <div className="md:col-span-6">
+                               <Label className="text-sm font-medium">Notes (optionnel)</Label>
+                               <Textarea
+                                 value={pm.notes}
+                                 onChange={(e) => updateMaterial(index, 'notes', e.target.value)}
+                                 placeholder="Notes sur l'utilisation de ce matériau..."
                                  className="mt-1"
+                                 rows={2}
                                />
                              </div>
-
-                             {/* Quantity Type */}
-                             <div>
-                               <Label className="text-sm font-medium">Unité</Label>
-                              <Select 
-                                value={pm.quantity_type_id.toString()} 
-                                onValueChange={(value) => updateMaterial(index, 'quantity_type_id', parseInt(value))}
-                              >
-                                <SelectTrigger className="mt-1">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {quantityTypes.map((qt) => (
-                                    <SelectItem key={qt.id} value={qt.id.toString()}>
-                                      {qt.nom} ({qt.unit})
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {/* Size Specific */}
-                            <div>
-                              <Label className="text-sm font-medium">Tailles</Label>
-                              <Select 
-                                value={pm.size_specific} 
-                                onValueChange={(value) => updateMaterial(index, 'size_specific', value)}
-                              >
-                                <SelectTrigger className="mt-1">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="ALL">Toutes les tailles</SelectItem>
-                                  <SelectItem value="S">S</SelectItem>
-                                  <SelectItem value="M">M</SelectItem>
-                                  <SelectItem value="L">L</SelectItem>
-                                  <SelectItem value="XL">XL</SelectItem>
-                                  <SelectItem value="XXL">XXL</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                             {/* Actions */}
-                             <div className="flex items-end">
-                               <Button
-                                 variant="outline"
-                                 size="sm"
-                                 onClick={() => removeMaterial(index)}
-                                 className="text-red-600 hover:text-red-700"
-                               >
-                                 <X className="h-4 w-4" />
-                               </Button>
-                             </div>
-
-                             {/* Notes - Full Width */}
-                             <div className="md:col-span-6">
-                              <Label className="text-sm font-medium">Notes (optionnel)</Label>
-                              <Textarea
-                                value={pm.notes}
-                                onChange={(e) => updateMaterial(index, 'notes', e.target.value)}
-                                placeholder="Notes sur l'utilisation de ce matériau..."
-                                className="mt-1"
-                                rows={2}
-                              />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                           </div>
+                         </CardContent>
+                       </Card>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
