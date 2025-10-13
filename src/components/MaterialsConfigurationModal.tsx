@@ -57,15 +57,65 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
   const [saving, setSaving] = useState(false);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
+  // Get material-specific default quantity based on material name and description
+  const getMaterialSpecificQuantity = (materialNom: string, materialDescription: string): number | undefined => {
+    const nomUpper = (materialNom || '').toUpperCase();
+    const descriptionLower = (materialDescription || '').toLowerCase().trim();
+
+    console.log('🔍 Checking Material-Specific Rules:', { materialNom, nomUpper, materialDescription, descriptionLower });
+
+    // Rule 1: EPAUNOVA specific quantities
+    if (nomUpper === 'EPAUNOVA') {
+      console.log('✅ EPAUNOVA Material Detected!');
+      if (descriptionLower === 'cigarette') {
+        console.log('✅ EPAUNOVA + cigarette → Quantity: 2');
+        return 2;
+      }
+      if (descriptionLower === 'plastron') {
+        console.log('✅ EPAUNOVA + plastron → Quantity: 3');
+        return 3;
+      }
+      if (descriptionLower === 'epaulette') {
+        console.log('✅ EPAUNOVA + epaulette → Quantity: 1');
+        return 1;
+      }
+      console.log('⚠️ EPAUNOVA detected but description doesn\'t match (cigarette/plastron/epaulette)');
+    }
+
+    // Rule 2: Materials containing 'LAPIN' in name
+    if (nomUpper.includes('LAPIN')) {
+      console.log('✅ LAPIN Material Detected in name!');
+      if (descriptionLower === 'plastron') {
+        console.log('✅ LAPIN + plastron → Quantity: 2');
+        return 2;
+      }
+      if (descriptionLower === 'cigarette') {
+        console.log('✅ LAPIN + cigarette → Quantity: 2');
+        return 2;
+      }
+      if (descriptionLower === 'epaulette') {
+        console.log('✅ LAPIN + epaulette → Quantity: 2');
+        return 2;
+      }
+      console.log('⚠️ LAPIN detected but description doesn\'t match (plastron/cigarette/epaulette)');
+    }
+
+    console.log('ℹ️ No specific material rule applies');
+    return undefined; // No specific rule applies
+  };
+
   // Get default quantity based on item group
   // If isButton is true, return the button-specific quantity depending on laize
   const getDefaultQuantityByItemGroup = (itemGroup: string, isButton = false, laize?: string): number => {
     const itemGroupLower = itemGroup?.toLowerCase() || '';
+    const productNameLower = (product?.nom_product || '').toLowerCase();
     console.log('🔍 Item Group Debug:', {
       original: itemGroup,
       lowercase: itemGroupLower,
-      productName: product?.nom_product
+      productName: product?.nom_product,
+      productNameLower
     });
+    
     const quantityMap: Record<string, number> = {
       'pantalon': 1.3,
       'costume-croise': 2.8,
@@ -78,36 +128,108 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
       'smoking': 2.7
     };
 
-    // Buttons: nested map by itemgroup -> laize -> quantity
+    // Buttons: nested map with keyword-specific configurations
+    // Structure: itemgroup -> keyword? -> laize -> quantity
     const buttonQuantityMap: Record<string, Record<string, number>> = {
       'pantalon': { '40': 2, '22': 2, '32': 2 },
       'costume-croise': { '40': 2, '22': 2, '32': 2 },
       'costume': { '40': 2, '22': 2, '32': 2 },
       'blazers': { '40': 2, '22': 2, '32': 2 },
       'chemise': { '40': 2, '22': 2, '32': 2 },
-      'trench': { '40': 2, '22': 2, '32': 2 },
+      'trench': { '40': 0, '22': 0, '32': 11 },
       'blouson': { '40': 2, '22': 2, '32': 2 },
       'manteau': { '40': 2, '22': 2, '32': 2 },
-      'smoking': { '40': 2, '22': 2, '32': 2 }
+      'smoking': { '40': 2, '22': 2, '32': 2 },
+      'veste': { '40': 2, '22': 2, '32': 2 },
+      'gilet': { '40': 0, '22': 6, '32': 0 }
+    };
+
+    // Keyword-specific button configurations for specific itemgroups + product name combinations
+    const keywordButtonQuantityMap: Record<string, Array<{ keywords: string[], config: Record<string, number> }>> = {
+      'veste': [
+        {
+          keywords: ['safari'],
+          config: { '40': 2, '22': 2, '32': 2 }
+        },
+        {
+          keywords: ['croise', 'croiser', 'croisé'],
+          config: { '40': 2, '22': 3, '32': 3 }
+        },
+        {
+          keywords: ['nor'],
+          config: { '40': 2, '22': 2, '32': 2 }
+        }
+      ],
+      'manteau': [
+        {
+          keywords: ['classique'],
+          config: { '42': 3, '22': 0, '32': 9 }
+        },
+        {
+          keywords: ['parka bt metali'],
+          config: { '40': 0, '32': 14, '22': 8 }
+        },
+        {
+          keywords: ['parka bt'],
+          config: { '40': 0, '32': 14, '22': 8 }
+        }
+      ]
     };
 
     if (isButton) {
+      // Special rule: if product name contains 'old money' (case-insensitive), return 10
+      if (productNameLower.includes('old money')) {
+        console.log('💰 ✅ OLD MONEY product detected! Setting button quantity to 10');
+        return 10;
+      }
+
       // Normalize laize to digits only (e.g., '40"' -> '40')
       const laizeKey = (laize || '').toString().replace(/[^0-9]/g, '') || '';
+      console.log('🔘 Button Processing:', { itemGroup: itemGroupLower, laize, laizeKey });
+      
+      // Check for keyword-specific configuration first
+      if (keywordButtonQuantityMap[itemGroupLower]) {
+        console.log('🔍 Checking keyword rules for itemgroup:', itemGroupLower);
+        for (const rule of keywordButtonQuantityMap[itemGroupLower]) {
+          // Check if any keyword matches in the product name (case-insensitive)
+          const hasKeyword = rule.keywords.some(keyword => 
+            productNameLower.includes(keyword.toLowerCase())
+          );
+          
+          if (hasKeyword) {
+            console.log('✅ Keyword match found!', { keywords: rule.keywords, config: rule.config });
+            if (laizeKey && rule.config[laizeKey] !== undefined) {
+              console.log(`✅ Using keyword config for ${itemGroupLower}, laize ${laizeKey}:`, rule.config[laizeKey]);
+              return rule.config[laizeKey];
+            }
+            // fallback to first defined value in this keyword config
+            const firstDefined = Object.values(rule.config)[0];
+            console.log('✅ Using first defined value from keyword config:', firstDefined);
+            return firstDefined ?? 2;
+          }
+        }
+        console.log('ℹ️ No keyword match found in product name');
+      }
+      
+      // Fallback to standard itemgroup config if no keyword match
       const groupMap = buttonQuantityMap[itemGroupLower];
       if (groupMap) {
+        console.log('📋 Using standard button config for itemgroup:', itemGroupLower);
         if (laizeKey && groupMap[laizeKey] !== undefined) {
+          console.log(`✅ Standard config for laize ${laizeKey}:`, groupMap[laizeKey]);
           return groupMap[laizeKey];
         }
         // fallback to any defined laize value or default 2
         const firstDefined = Object.values(groupMap)[0];
+        console.log('✅ Using first defined value from standard config:', firstDefined);
         return firstDefined ?? 2;
       }
+      console.log('⚠️ No button config found, using default: 2');
       return 2;
     }
 
     const defaultQuantity = quantityMap[itemGroupLower] || 1;
-    console.log('✅ Default Quantity:', defaultQuantity);
+    console.log('📦 Non-Button Material - Using itemgroup default:', { itemGroup: itemGroupLower, defaultQuantity });
     return defaultQuantity;
   };
 
@@ -233,15 +355,41 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
     if (field === 'material_id') {
       const selectedMaterial = materials.find(m => m.id === parseInt(String(value)));
       if (selectedMaterial) {
-        const isButton = (selectedMaterial.category_id === 3) || (selectedMaterial.category_name || '').toLowerCase().includes('bouton');
+        console.log('🎯 Material Selected:', {
+          id: selectedMaterial.id,
+          nom: selectedMaterial.nom,
+          reference: selectedMaterial.reference,
+          category_id: selectedMaterial.category_id,
+          category_name: selectedMaterial.category_name,
+          laize: selectedMaterial.laize
+        });
 
-        if (isButton) {
+        const isButton = (selectedMaterial.category_id === 3) || (selectedMaterial.category_name || '').toLowerCase().includes('bouton');
+        console.log('🔘 Is Button?', isButton);
+
+        // Check for material-specific quantity rules first (based on nom and description)
+        const materialSpecificQty = getMaterialSpecificQuantity(
+          selectedMaterial.nom, 
+          selectedMaterial.reference // Using reference as description field
+        );
+
+        if (materialSpecificQty !== undefined) {
+          // Apply material-specific quantity
+          console.log('✅ Applying Material-Specific Quantity:', materialSpecificQty);
+          updated[index].quantity_needed = materialSpecificQty;
+        } else if (isButton) {
           // For buttons, use the button map per itemgroup and laize when available
-          updated[index].quantity_needed = getDefaultQuantityByItemGroup(product?.itemgroup_product || '', true, selectedMaterial.laize);
+          const buttonQty = getDefaultQuantityByItemGroup(product?.itemgroup_product || '', true, selectedMaterial.laize);
+          console.log('✅ Applying Button Quantity by ItemGroup:', buttonQty);
+          updated[index].quantity_needed = buttonQty;
         } else {
           // For non-buttons, if quantity is empty/zero, use product itemgroup default
           if (!updated[index].quantity_needed || updated[index].quantity_needed === 0) {
-            updated[index].quantity_needed = getDefaultQuantityByItemGroup(product?.itemgroup_product || '');
+            const defaultQty = getDefaultQuantityByItemGroup(product?.itemgroup_product || '');
+            console.log('✅ Applying Default Quantity by ItemGroup:', defaultQty);
+            updated[index].quantity_needed = defaultQty;
+          } else {
+            console.log('ℹ️ Keeping existing quantity:', updated[index].quantity_needed);
           }
         }
 
@@ -450,15 +598,7 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
                                {/* Quantity */}
                                <div>
                                  <Label className="text-sm font-medium">
-                                   Quantité par pièce {product?.itemgroup_product && (
-                                     <span className="text-red-500">
-                                       ({product.itemgroup_product}, {selectedMaterial ? getDefaultQuantityByItemGroup(
-                                         product.itemgroup_product || '',
-                                         ((selectedMaterial.category_id === 3) || (selectedMaterial.category_name || '').toLowerCase().includes('bouton')),
-                                         selectedMaterial.laize
-                                       ) : getDefaultQuantityByItemGroup(product.itemgroup_product)} préconfiguré)
-                                     </span>
-                                   )}
+                                   Quantité par pièce
                                  </Label>
                                  <Input
                                    type="number"
