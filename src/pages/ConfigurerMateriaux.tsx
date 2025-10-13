@@ -942,19 +942,20 @@ const ConfigurerMateriaux = () => {
         <CardContent className="p-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <Badge variant={currentStep === 1 ? "default" : "outline"} className="text-sm px-4 py-2">
+              <Badge variant={currentStep === 1 ? "default" : "outline"} className="text-xs md:text-sm px-2 md:px-4 py-1 md:py-2">
                 Étape 1: Tissus
               </Badge>
-              <Badge variant={currentStep === 2 ? "default" : "outline"} className="text-sm px-4 py-2">
+              <Badge variant={currentStep === 2 ? "default" : "outline"} className="text-xs md:text-sm px-2 md:px-4 py-1 md:py-2">
                 Étape 2: Boutons
               </Badge>
             </div>
             <div className="flex gap-2">
-              {currentStep === 2 && (
+                {currentStep === 2 && (
                 <Button 
                   variant="outline" 
                   onClick={() => setCurrentStep(1)}
                   size="sm"
+                  className="text-xs md:text-sm px-2"
                 >
                   ← Retour aux Tissus
                 </Button>
@@ -963,7 +964,7 @@ const ConfigurerMateriaux = () => {
                 <Button 
                   onClick={() => setCurrentStep(2)}
                   size="sm"
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  className="text-xs md:text-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 >
                   Continuer vers Boutons →
                 </Button>
