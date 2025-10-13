@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -140,6 +139,12 @@ const ConfigurerMateriaux = () => {
   
   // Step state: 1=tissues (cat=1), 2=buttons (cat=3), 3=epaulette (cat=7), 4=cigarette (cat=6), 5=plastron (cat=5)
   const [currentStep, setCurrentStep] = useState(1);
+
+  // Helper to change step and clear search input for better UX on mobile
+  const goToStep = (step: number) => {
+    setSearchTerm('');
+    setCurrentStep(step);
+  };
   
   // Stock insufficiency and merge states
   const [showStockInsufficiencyModal, setShowStockInsufficiencyModal] = useState(false);
@@ -992,7 +997,7 @@ const ConfigurerMateriaux = () => {
               {currentStep > 1 && (
                 <Button 
                   variant="outline" 
-                  onClick={() => setCurrentStep(currentStep - 1)}
+                  onClick={() => goToStep(currentStep - 1)}
                   size="sm"
                   className="text-xs md:text-sm px-2"
                 >
@@ -1001,7 +1006,7 @@ const ConfigurerMateriaux = () => {
               )}
               {currentStep < 5 && (
                 <Button 
-                  onClick={() => setCurrentStep(currentStep + 1)}
+                  onClick={() => goToStep(currentStep + 1)}
                   size="sm"
                   className="text-xs md:text-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 >
