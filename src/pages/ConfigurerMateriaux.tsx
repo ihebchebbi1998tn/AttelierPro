@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -137,7 +138,7 @@ const ConfigurerMateriaux = () => {
     quantityPerItem: 0
   });
   
-  // Step state: 1 for tissues (category_id=1), 2 for buttons (category_id=3)
+  // Step state: 1=tissues (cat=1), 2=buttons (cat=3), 3=epaulette (cat=7), 4=cigarette (cat=6), 5=plastron (cat=5)
   const [currentStep, setCurrentStep] = useState(1);
   
   // Stock insufficiency and merge states
@@ -864,10 +865,13 @@ const ConfigurerMateriaux = () => {
   )).sort();
 
   const filteredMaterials = materials.filter(material => {
-    // STEP FILTER: Show only category_id=1 for step 1, category_id=3 for step 2
+    // STEP FILTER: Show only matching category_id per step
     const materialCategoryId = (material as any).category_id;
     if (currentStep === 1 && materialCategoryId !== 1) return false;
     if (currentStep === 2 && materialCategoryId !== 3) return false;
+    if (currentStep === 3 && materialCategoryId !== 7) return false; // epaulette
+    if (currentStep === 4 && materialCategoryId !== 6) return false; // cigarette
+    if (currentStep === 5 && materialCategoryId !== 5) return false; // plastron
     
     // Filter by search term - search across all relevant fields
     const matchesSearch = (material.nom || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -941,28 +945,63 @@ const ConfigurerMateriaux = () => {
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50">
         <CardContent className="p-4">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Badge variant={currentStep === 1 ? "default" : "outline"} className="text-[11px] md:text-sm px-1 md:px-4 py-0.5 md:py-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Show all steps on desktop (md and up), only current +/- 1 on mobile */}
+              <Badge 
+                variant={currentStep === 1 ? "default" : "outline"} 
+                className={`text-[11px] md:text-sm px-1 md:px-4 py-0.5 md:py-2 ${
+                  currentStep > 2 ? 'hidden md:inline-flex' : ''
+                }`}
+              >
                 Étape 1: Tissus
               </Badge>
-              <Badge variant={currentStep === 2 ? "default" : "outline"} className="text-[11px] md:text-sm px-1 md:px-4 py-0.5 md:py-2">
+              <Badge 
+                variant={currentStep === 2 ? "default" : "outline"} 
+                className={`text-[11px] md:text-sm px-1 md:px-4 py-0.5 md:py-2 ${
+                  currentStep < 1 || currentStep > 3 ? 'hidden md:inline-flex' : ''
+                }`}
+              >
                 Étape 2: Boutons
+              </Badge>
+              <Badge 
+                variant={currentStep === 3 ? "default" : "outline"} 
+                className={`text-[11px] md:text-sm px-1 md:px-4 py-0.5 md:py-2 ${
+                  currentStep < 2 || currentStep > 4 ? 'hidden md:inline-flex' : ''
+                }`}
+              >
+                Étape 3: Epaulette
+              </Badge>
+              <Badge 
+                variant={currentStep === 4 ? "default" : "outline"} 
+                className={`text-[11px] md:text-sm px-1 md:px-4 py-0.5 md:py-2 ${
+                  currentStep < 3 || currentStep > 5 ? 'hidden md:inline-flex' : ''
+                }`}
+              >
+                Étape 4: Cigarette
+              </Badge>
+              <Badge 
+                variant={currentStep === 5 ? "default" : "outline"} 
+                className={`text-[11px] md:text-sm px-1 md:px-4 py-0.5 md:py-2 ${
+                  currentStep < 4 ? 'hidden md:inline-flex' : ''
+                }`}
+              >
+                Étape 5: Plastron
               </Badge>
             </div>
             <div className="flex gap-2">
-                {currentStep === 2 && (
+              {currentStep > 1 && (
                 <Button 
                   variant="outline" 
-                  onClick={() => setCurrentStep(1)}
+                  onClick={() => setCurrentStep(currentStep - 1)}
                   size="sm"
                   className="text-xs md:text-sm px-2"
                 >
-                  ← Retour aux Tissus
+                  ← Retour
                 </Button>
               )}
-              {currentStep === 1 && (
+              {currentStep < 5 && (
                 <Button 
-                  onClick={() => setCurrentStep(2)}
+                  onClick={() => setCurrentStep(currentStep + 1)}
                   size="sm"
                   className="text-xs md:text-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 >
@@ -979,7 +1018,11 @@ const ConfigurerMateriaux = () => {
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-lg md:text-xl">
-              {currentStep === 1 ? 'Tissus Disponibles' : 'Boutons Disponibles'}
+              {currentStep === 1 && 'Tissus Disponibles'}
+              {currentStep === 2 && 'Boutons Disponibles'}
+              {currentStep === 3 && 'Epaulette Disponibles'}
+              {currentStep === 4 && 'Cigarette Disponibles'}
+              {currentStep === 5 && 'Plastron Disponibles'}
             </CardTitle>
             <div className="space-y-2 mb-4">
               <p className="text-sm text-muted-foreground">
