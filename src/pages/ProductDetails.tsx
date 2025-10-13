@@ -360,10 +360,11 @@ const ProductDetails = () => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              matiere_id: materialToDelete.material_id,
-              type_transaction: 'entree',
-              quantite: totalQuantityToRestore,
-              commentaire: `Retour stock - Suppression matériau du produit #${id}`
+              material_id: materialToDelete.material_id,
+              type: 'in',
+              quantity: totalQuantityToRestore,
+              // include a comment as motif if the API is extended to use it later
+              user_id: null
             })
           });
           

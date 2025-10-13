@@ -133,11 +133,11 @@ try {
                 ");
                 
                 // Create stock transactions
-                $insertTransactionStmt = $pdo->prepare("
-                    INSERT INTO production_stock_transactions 
-                    (matiere_id, type_transaction, quantite, commentaire, utilisateur_id)
-                    VALUES (?, 'in', ?, ?, ?)
-                ");
+                    $insertTransactionStmt = $pdo->prepare("
+                        INSERT INTO production_transactions_stock 
+                        (material_id, type_mouvement, quantite, notes, user_id, date_transaction)
+                        VALUES (?, ?, ?, ?, ?, NOW())
+                    ");
                 
                 // Mark leftovers as readded
                 $markReaddedStmt = $pdo->prepare("
@@ -155,8 +155,10 @@ try {
                     
                     // Create transaction record
                     $comment = "Retour de surplus du lot #{$leftover['batch_id']}";
+                    // Map to production_transactions_stock: material_id, type_mouvement, quantite, notes, user_id
                     $insertTransactionStmt->execute([
                         $leftover['material_id'],
+                        'in',
                         $leftover['leftover_quantity'],
                         $comment,
                         $user_id
