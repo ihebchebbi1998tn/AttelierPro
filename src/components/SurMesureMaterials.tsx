@@ -560,7 +560,7 @@ export const SurMesureMaterials: React.FC<SurMesureMaterialsProps> = ({
                 <TableCell>
                   <Input
                     type="text"
-                    placeholder=""
+                    placeholder="0"
                     className="w-24"
                     inputMode="decimal"
                     disabled={!newMaterialId}
@@ -640,7 +640,7 @@ export const SurMesureMaterials: React.FC<SurMesureMaterialsProps> = ({
                       type="text"
                       value={usedQuantity > 0 ? formatQuantity(usedQuantity) : ''}
                       onChange={(e) => handleQuantityChange(material.id.toString(), e.target.value)}
-                      placeholder=""
+                      placeholder="0"
                       className="w-24"
                       inputMode="decimal"
                       disabled={isSaved}

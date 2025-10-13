@@ -1,6 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Import images from assets
+import lucciLogo from '@/assets/lucci-by-ey-logo.png';
+import spadaLogo from '@/assets/spada-di-battaglia-logo.png';
+import placeholder from '@/assets/placeholder.svg';
+
 const Boutiques = () => {
   const navigate = useNavigate();
 
@@ -9,13 +14,13 @@ const Boutiques = () => {
       id: 'lucci-by-ey',
       name: 'Lucci By Ey',
       route: '/lucci-by-ey',
-      image: '/lucci-by-ey-logo.png'
+      image: lucciLogo
     },
     {
       id: 'spadadibattaglia',
       name: 'Spada di Battaglia',
       route: '/spadadibattaglia',
-      image: '/spada-di-battaglia-logo.png'
+      image: spadaLogo
     }
   ];
 
@@ -51,7 +56,7 @@ const Boutiques = () => {
                     alt={boutique.name}
                     className="max-h-48 w-auto object-contain p-8 transition-transform duration-300 group-hover:scale-110"
                     onError={(e) => {
-                      e.currentTarget.src = '/placeholder.svg';
+                      e.currentTarget.src = placeholder;
                     }}
                   />
                 </div>

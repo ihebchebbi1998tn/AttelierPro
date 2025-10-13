@@ -22,6 +22,7 @@ export interface SalaryCalculationResult {
   breakdown: {
     deduction_chef_famille: number;
     deduction_enfants: number;
+    deduction_professionnelle: number;
   };
 }
 
@@ -43,18 +44,18 @@ export interface SalaryConfigParams {
 const DEFAULT_CONFIG: SalaryConfigParams = {
   cnss_rate: 0.0968, // 9.18% + 0.5% FOPROLOS
   css_rate: 0.01, // 1%
-  deduction_chef_famille: 150,
-  deduction_per_child: 100,
-  // 2025 Progressive tax brackets (monthly)
+  deduction_chef_famille: 300, // Annual: 300 TND
+  deduction_per_child: 100, // Annual: 100 TND per child
+  // 2025 Progressive tax brackets (ANNUAL amounts in TND)
   tax_brackets: [
-    { min_amount: 0.000, max_amount: 416.667, tax_rate: 0.0000 },      // 0-416.67 TND: 0%
-    { min_amount: 416.667, max_amount: 833.333, tax_rate: 0.1500 },    // 416.67-833.33: 15%
-    { min_amount: 833.333, max_amount: 1666.667, tax_rate: 0.2500 },   // 833.33-1,666.67: 25%
-    { min_amount: 1666.667, max_amount: 2500.000, tax_rate: 0.3000 },  // 1,666.67-2,500: 30%
-    { min_amount: 2500.000, max_amount: 3333.333, tax_rate: 0.3300 },  // 2,500-3,333.33: 33%
-    { min_amount: 3333.333, max_amount: 4166.667, tax_rate: 0.3600 },  // 3,333.33-4,166.67: 36%
-    { min_amount: 4166.667, max_amount: 5833.333, tax_rate: 0.3800 },  // 4,166.67-5,833.33: 38%
-    { min_amount: 5833.333, max_amount: null, tax_rate: 0.4000 }       // > 5,833.33: 40%
+    { min_amount: 0, max_amount: 5000, tax_rate: 0.0000 },      // 0-5,000: 0%
+    { min_amount: 5000, max_amount: 10000, tax_rate: 0.1500 },    // 5,000-10,000: 15%
+    { min_amount: 10000, max_amount: 20000, tax_rate: 0.2500 },   // 10,000-20,000: 25%
+    { min_amount: 20000, max_amount: 30000, tax_rate: 0.3000 },  // 20,000-30,000: 30%
+    { min_amount: 30000, max_amount: 40000, tax_rate: 0.3300 },  // 30,000-40,000: 33%
+    { min_amount: 40000, max_amount: 50000, tax_rate: 0.3600 },  // 40,000-50,000: 36%
+    { min_amount: 50000, max_amount: 70000, tax_rate: 0.3800 },  // 50,000-70,000: 38%
+    { min_amount: 70000, max_amount: null, tax_rate: 0.4000 }       // > 70,000: 40%
   ]
 };
 
@@ -100,8 +101,9 @@ function calculateIRPP(baseImposable: number, taxBrackets: TaxBracketConfig[]): 
 }
 
 /**
- * Calculate complete salary breakdown according to Tunisian law
- * @param input - Salary calculation input
+ * Calculate complete salary breakdown according to Tunisian law 2025
+ * This follows the ANNUAL calculation method as per official tax law
+ * @param input - Salary calculation input (monthly gross)
  * @param config - Optional configuration parameters (uses defaults if not provided)
  */
 export function calculateTunisianSalary(
@@ -110,28 +112,47 @@ export function calculateTunisianSalary(
 ): SalaryCalculationResult {
   const { salaire_brut, chef_de_famille, nombre_enfants } = input;
   
-  // Step 1: Calculate CNSS (employee social contribution)
-  const cnss = Math.round(salaire_brut * config.cnss_rate * 1000) / 1000;
+  // Step 1: Convert to annual amounts for IRPP calculation
+  const salaire_brut_annuel = salaire_brut * 12;
   
-  // Step 2: Calculate taxable salary
-  const salaire_brut_imposable = Math.round((salaire_brut - cnss) * 1000) / 1000;
+  // Step 2: Calculate annual CNSS (employee social contribution: 9.68%)
+  const cnss_annuel = salaire_brut_annuel * config.cnss_rate;
   
-  // Step 3: Calculate fiscal deductions
+  // Step 3: Calculate salary after CNSS
+  const salaire_apres_cnss = salaire_brut_annuel - cnss_annuel;
+  
+  // Step 4: Calculate professional deduction (10% capped at 2,000 TND annually)
+  const deduction_professionnelle = Math.min(salaire_apres_cnss * 0.10, 2000);
+  
+  // Step 5: Calculate family deductions (annual amounts)
   const deduction_chef_famille = chef_de_famille ? config.deduction_chef_famille : 0;
-  const deduction_enfants = nombre_enfants * config.deduction_per_child;
-  const deductions_fiscales = deduction_chef_famille + deduction_enfants;
+  const deduction_enfants = Math.min(nombre_enfants, 4) * config.deduction_per_child; // Max 4 children
+  const deductions_familiales = deduction_chef_famille + deduction_enfants;
   
-  // Step 4: Calculate taxable base after deductions
-  const base_imposable = Math.max(0, salaire_brut_imposable - deductions_fiscales);
+  // Step 6: Calculate annual taxable base
+  const base_imposable_annuelle = Math.max(0, 
+    salaire_apres_cnss - deduction_professionnelle - deductions_familiales
+  );
   
-  // Step 5: Calculate income tax (IRPP) using provided tax brackets
-  const irpp = calculateIRPP(base_imposable, config.tax_brackets);
+  // Step 7: Calculate annual IRPP using progressive tax brackets
+  const irpp_annuel = calculateIRPP(base_imposable_annuelle, config.tax_brackets);
   
-  // Step 6: Calculate social solidarity contribution (CSS)
-  const css = Math.round(salaire_brut_imposable * config.css_rate * 1000) / 1000;
+  // Step 8: Calculate annual CSS (1% of gross after CNSS)
+  const css_annuel = salaire_apres_cnss * config.css_rate;
   
-  // Step 7: Calculate net salary
-  const salaire_net = Math.round((salaire_brut - cnss - irpp - css) * 1000) / 1000;
+  // Step 9: Calculate annual net salary
+  const salaire_net_annuel = salaire_brut_annuel - cnss_annuel - irpp_annuel - css_annuel;
+  
+  // Step 10: Convert back to monthly amounts
+  const cnss = Math.round((cnss_annuel / 12) * 1000) / 1000;
+  const salaire_brut_imposable = Math.round((salaire_apres_cnss / 12) * 1000) / 1000;
+  const irpp = Math.round((irpp_annuel / 12) * 1000) / 1000;
+  const css = Math.round((css_annuel / 12) * 1000) / 1000;
+  const salaire_net = Math.round((salaire_net_annuel / 12) * 1000) / 1000;
+  
+  // Monthly deductions for display (divided by 12)
+  const deductions_fiscales = Math.round(((deduction_professionnelle + deductions_familiales) / 12) * 1000) / 1000;
+  const base_imposable = Math.round((base_imposable_annuelle / 12) * 1000) / 1000;
   
   return {
     salaire_brut,
@@ -143,8 +164,9 @@ export function calculateTunisianSalary(
     css,
     salaire_net,
     breakdown: {
-      deduction_chef_famille,
-      deduction_enfants
+      deduction_chef_famille: Math.round((deduction_chef_famille / 12) * 1000) / 1000,
+      deduction_enfants: Math.round((deduction_enfants / 12) * 1000) / 1000,
+      deduction_professionnelle: Math.round((deduction_professionnelle / 12) * 1000) / 1000
     }
   };
 }

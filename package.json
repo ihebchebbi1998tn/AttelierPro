@@ -2,7 +2,10 @@
   "name": "vite_react_shadcn_ts",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "description": "Attelier Desktop App built with Electron",
+"author": "Your Name",
+"main": "main.js",
+"type": "commonjs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

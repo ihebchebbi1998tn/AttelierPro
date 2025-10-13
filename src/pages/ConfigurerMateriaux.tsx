@@ -16,7 +16,6 @@ interface Material {
   id: number;
   nom: string;
   reference: string;
-  category_id: number;
   category_name: string;
   quantite_stock: number;
   quantite_min: number;
@@ -25,7 +24,6 @@ interface Material {
   couleur?: string;
   description: string;
   quantity_type_id: number;
-  laize?: string;
   location?: string;
 }
 
@@ -52,7 +50,6 @@ interface Product {
   color_product: string;
   boutique_origin: string;
   production_quantities?: string;
-  itemgroup_product?: string;
 }
 
 interface ProductSize {
@@ -62,53 +59,6 @@ interface ProductSize {
   size_value: string;
   is_active: boolean;
 }
-
-// Predefined quantities per item group
-const PREDEFINED_QUANTITIES: Record<string, number> = {
-  'smoking': 2.7,
-  'blazer croise': 1.7,
-  'blazers': 1.7,
-  'chemise': 1.7,
-  'costume': 2.8,
-  'blazer': 1.7,
-  'pantalon': 1.3,
-  'trench': 2.0,
-  'short': 1.0,
-  'costume-croise': 2.8,
-  'manteau': 2.0
-};
-
-// Buttons: nested map by itemgroup -> laize -> quantity
-const BUTTON_QUANTITIES: Record<string, Record<string, number>> = {
-  'smoking': { '40': 2, '22': 2, '32': 2 },
-  'blazer croise': { '40': 2, '22': 2, '32': 2 },
-  'blazers': { '40': 2, '22': 2, '32': 2 },
-  'chemise': { '40': 2, '22': 2, '32': 2 },
-  'costume': { '40': 2, '22': 2, '32': 2 },
-  'blazer': { '40': 2, '22': 2, '32': 2 },
-  'pantalon': { '40': 2, '22': 2, '32': 2 },
-  'trench': { '40': 2, '22': 2, '32': 2 },
-  'short': { '40': 2, '22': 2, '32': 2 },
-  'costume-croise': { '40': 2, '22': 2, '32': 2 },
-  'manteau': { '40': 2, '22': 2, '32': 2 }
-};
-
-const getDefaultQuantityByItemGroup = (itemGroup: string | undefined, isButton = false, laize?: string) => {
-  const ig = (itemGroup || '').toLowerCase().trim();
-  if (isButton) {
-    const groupMap = BUTTON_QUANTITIES[ig];
-    if (groupMap) {
-      const la = (laize || '').toString().replace(/[^0-9]/g, '');
-      if (la && groupMap[la] !== undefined) return groupMap[la];
-      // fallback to first defined
-      const first = Object.values(groupMap)[0];
-      return first ?? 2;
-    }
-    return 2;
-  }
-
-  return PREDEFINED_QUANTITIES[ig] ?? 1;
-};
 
 const ConfigurerMateriaux = () => {
   const { productId } = useParams();
@@ -136,15 +86,6 @@ const ConfigurerMateriaux = () => {
     quantity_type_id: 1,
     quantityPerItem: 0
   });
-  
-  // Step state: 1=tissues (cat=1), 2=buttons (cat=3), 3=epaulette (cat=7), 4=cigarette (cat=6), 5=plastron (cat=5)
-  const [currentStep, setCurrentStep] = useState(1);
-
-  // Helper to change step and clear search input for better UX on mobile
-  const goToStep = (step: number) => {
-    setSearchTerm('');
-    setCurrentStep(step);
-  };
   
   // Stock insufficiency and merge states
   const [showStockInsufficiencyModal, setShowStockInsufficiencyModal] = useState(false);
@@ -211,9 +152,7 @@ const ConfigurerMateriaux = () => {
           id: parseInt(m.id),
           nom: m.nom,
           reference: m.reference,
-            // Ensure we include category_id because UI filters rely on it (1 = tissus, 3 = boutons)
-            category_id: parseInt(m.category_id ?? m.category ?? 0),
-            category_name: m.category_name,
+          category_name: m.category_name,
           quantite_stock: parseFloat(m.quantite_stock),
           quantite_min: parseFloat(m.quantite_min),
           quantite_max: parseFloat(m.quantite_max),
@@ -221,7 +160,6 @@ const ConfigurerMateriaux = () => {
           couleur: m.couleur,
           description: m.description,
           quantity_type_id: parseInt(m.quantity_type_id),
-          laize: m.laize,
           location: m.location
         }));
         setMaterials(normalizedMaterials);
@@ -306,48 +244,15 @@ const ConfigurerMateriaux = () => {
 
       const data = await response.json();
       if (data.success) {
-        // Automatically deduct stock after successful save
-        await deductStockForMaterials();
-        
         toast({
           title: "Auto-sauvegarde",
-          description: "Configuration sauvegardée et stock déduit automatiquement",
+          description: "Configuration sauvegardée automatiquement",
         });
       }
     } catch (error) {
       console.error('Auto-save error:', error);
     }
   }, [productId, toast]);
-
-  const deductStockForMaterials = async () => {
-    try {
-      const response = await fetch('https://luccibyey.com.tn/production/api/deduct_materials_stock.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          product_id: productId,
-          quantities_to_produce: productionQuantities
-        })
-      });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        if (data.insufficient_materials) {
-          const insufficientList = data.insufficient_materials
-            .map((m: any) => `${m.material_name}: ${m.shortage.toFixed(2)} manquant`)
-            .join(', ');
-          
-          console.log('Stock insuffisant:', insufficientList);
-        }
-      }
-    } catch (error) {
-      console.error('Error deducting stock:', error);
-    }
-  };
-
 
   // Debounced auto-save trigger
   const triggerAutoSave = useCallback((materials: ProductMaterial[]) => {
@@ -371,18 +276,6 @@ const ConfigurerMateriaux = () => {
     setSelectedMaterial(material);
     setStockErrors({}); // Clear previous errors
 
-    // Get predefined quantity based on itemgroup_product
-    const itemGroup = product?.itemgroup_product?.toLowerCase().trim() || '';
-  const isButtonMaterial = (material as any).category_id === 3 || (material.category_name || '').toLowerCase().includes('bouton');
-  const predefinedQty = getDefaultQuantityByItemGroup(product?.itemgroup_product, isButtonMaterial, material.laize) || 1;
-    
-    console.log('🔍 Material Config Debug:', {
-      itemgroup_product: product?.itemgroup_product,
-      itemGroup,
-      predefinedQty,
-      PREDEFINED_QUANTITIES
-    });
-
     // Check if material is already configured and load existing configuration
     const existingMaterials = selectedMaterials.filter(sm => sm.material_id === material.id);
     if (existingMaterials.length > 0) {
@@ -392,10 +285,10 @@ const ConfigurerMateriaux = () => {
         quantityPerItem: existingMaterials[0].quantity_needed
       });
     } else {
-      // Initialize with predefined or default quantity per item
+      // Initialize with default quantity per item
       setTempConfig({
         quantity_type_id: material.quantity_type_id || quantityTypes[0]?.id || 1,
-        quantityPerItem: predefinedQty
+        quantityPerItem: 1
       });
     }
     setShowConfigModal(true);
@@ -870,14 +763,6 @@ const ConfigurerMateriaux = () => {
   )).sort();
 
   const filteredMaterials = materials.filter(material => {
-    // STEP FILTER: Show only matching category_id per step
-    const materialCategoryId = (material as any).category_id;
-    if (currentStep === 1 && materialCategoryId !== 1) return false;
-    if (currentStep === 2 && materialCategoryId !== 3) return false;
-    if (currentStep === 3 && materialCategoryId !== 7) return false; // epaulette
-    if (currentStep === 4 && materialCategoryId !== 6) return false; // cigarette
-    if (currentStep === 5 && materialCategoryId !== 5) return false; // plastron
-    
     // Filter by search term - search across all relevant fields
     const matchesSearch = (material.nom || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
       (material.reference || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -927,108 +812,28 @@ const ConfigurerMateriaux = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/produits/${productId}`, { state: { refresh: Date.now() } })}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Retour
-          </Button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">{product?.nom_product}</h1>
-            <p className="text-muted-foreground text-sm md:text-base">
-              Référence: {product?.reference_product}
-            </p>
-          </div>
+      <div className="flex items-center gap-4">
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/produits/${productId}`, { state: { refresh: Date.now() } })}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Retour
+        </Button>
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">{product?.nom_product}</h1>
+          <p className="text-muted-foreground text-sm md:text-base">
+            Référence: {product?.reference_product}
+          </p>
         </div>
       </div>
-
-      {/* Step Indicator */}
-      <Card className="bg-gradient-to-r from-blue-50 to-purple-50">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Show all steps on desktop (md and up), only current +/- 1 on mobile */}
-              <Badge 
-                variant={currentStep === 1 ? "default" : "outline"} 
-                className={`text-[11px] md:text-sm px-1 md:px-4 py-0.5 md:py-2 ${
-                  currentStep > 2 ? 'hidden md:inline-flex' : ''
-                }`}
-              >
-                Étape 1: Tissus
-              </Badge>
-              <Badge 
-                variant={currentStep === 2 ? "default" : "outline"} 
-                className={`text-[11px] md:text-sm px-1 md:px-4 py-0.5 md:py-2 ${
-                  currentStep < 1 || currentStep > 3 ? 'hidden md:inline-flex' : ''
-                }`}
-              >
-                Étape 2: Boutons
-              </Badge>
-              <Badge 
-                variant={currentStep === 3 ? "default" : "outline"} 
-                className={`text-[11px] md:text-sm px-1 md:px-4 py-0.5 md:py-2 ${
-                  currentStep < 2 || currentStep > 4 ? 'hidden md:inline-flex' : ''
-                }`}
-              >
-                Étape 3: Epaulette
-              </Badge>
-              <Badge 
-                variant={currentStep === 4 ? "default" : "outline"} 
-                className={`text-[11px] md:text-sm px-1 md:px-4 py-0.5 md:py-2 ${
-                  currentStep < 3 || currentStep > 5 ? 'hidden md:inline-flex' : ''
-                }`}
-              >
-                Étape 4: Cigarette
-              </Badge>
-              <Badge 
-                variant={currentStep === 5 ? "default" : "outline"} 
-                className={`text-[11px] md:text-sm px-1 md:px-4 py-0.5 md:py-2 ${
-                  currentStep < 4 ? 'hidden md:inline-flex' : ''
-                }`}
-              >
-                Étape 5: Plastron
-              </Badge>
-            </div>
-            <div className="flex gap-2">
-              {currentStep > 1 && (
-                <Button 
-                  variant="outline" 
-                  onClick={() => goToStep(currentStep - 1)}
-                  size="sm"
-                  className="text-xs md:text-sm px-2"
-                >
-                  ← Retour
-                </Button>
-              )}
-              {currentStep < 5 && (
-                <Button 
-                  onClick={() => goToStep(currentStep + 1)}
-                  size="sm"
-                  className="text-xs md:text-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                >
-                  Continuer →
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="space-y-6">
         {/* Available Materials */}
         <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg md:text-xl">
-              {currentStep === 1 && 'Tissus Disponibles'}
-              {currentStep === 2 && 'Boutons Disponibles'}
-              {currentStep === 3 && 'Epaulette Disponibles'}
-              {currentStep === 4 && 'Cigarette Disponibles'}
-              {currentStep === 5 && 'Plastron Disponibles'}
-            </CardTitle>
+            <CardTitle className="text-lg md:text-xl">Matériaux Disponibles</CardTitle>
             <div className="space-y-2 mb-4">
               <p className="text-sm text-muted-foreground">
                 Cliquez sur un matériau pour l'ajouter à la configuration
@@ -1412,33 +1217,16 @@ const ConfigurerMateriaux = () => {
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Quantité par pièce</Label>
-                  {(() => {
-                    const itemGroup = product?.itemgroup_product?.toLowerCase().trim() || '';
-                    const predefinedQty = PREDEFINED_QUANTITIES[itemGroup];
-                    
-                    if (predefinedQty) {
-                      return (
-                        <span className="text-xs text-red-600 font-medium">
-                          {product?.itemgroup_product} ({predefinedQty})
-                        </span>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
+                <Label className="text-sm font-medium">Quantité par pièce</Label>
                 <Input
-                  type="text"
-                  inputMode="decimal"
+                  type="number"
+                  step="0.1"
+                  min="0"
                   value={tempConfig.quantityPerItem}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(',', '.');
-                    setTempConfig({
-                      ...tempConfig,
-                      quantityPerItem: parseFloat(value) || 0
-                    });
-                  }}
+                  onChange={(e) => setTempConfig({
+                    ...tempConfig,
+                    quantityPerItem: parseFloat(e.target.value) || 0
+                  })}
                   className="w-full"
                   placeholder="Quantité nécessaire pour 1 pièce"
                 />

@@ -95,6 +95,7 @@ export const PaySlipModal = ({
   }, [open, month, employee.id, providedWorkDays]);
 
   const workDays = calculatedWorkDays;
+  const standardWorkDays = 26; // Standard work month in Tunisia
 
   // Use calculated salary if provided, otherwise use saved salary
   const salaryData = calculatedSalary || {
@@ -105,6 +106,13 @@ export const PaySlipModal = ({
     css: Number(salary?.css || 0),
     salaire_net: Number(salary?.salaire_net || salary?.net_total || 0),
   };
+
+  // Calculate prorated amounts if work days differ from standard
+  const isProrated = workDays !== standardWorkDays;
+  const dailyRate = salaryData.salaire_net / standardWorkDays;
+  const proratedNet = dailyRate * workDays;
+  const daysNotWorked = standardWorkDays - workDays;
+  const deductionAmount = dailyRate * daysNotWorked;
 
   const handlePrint = () => {
     const printContent = document.getElementById('pay-slip-content');
@@ -379,7 +387,7 @@ export const PaySlipModal = ({
                       padding: '10px 16px',
                       fontSize: '12px'
                     }}>
-                      <span style={{ fontWeight: 'bold' }}>Nb.j:</span> {workDays}
+                      <span style={{ fontWeight: 'bold' }}>Nb.j travaillés:</span> {workDays} / {standardWorkDays}
                     </div>
                   </div>
                   <div className="info-row" style={{
@@ -618,11 +626,58 @@ export const PaySlipModal = ({
                         <td style={{ padding: '12px', border: '1px solid #666', textAlign: 'right', fontWeight: 'bold', fontSize: '12px', color: '#000' }}>{(salaryData.cnss + salaryData.irpp + salaryData.css).toFixed(3)}</td>
                       </tr>
                       
-                      {/* Net to Pay */}
+                      {/* Net to Pay - Base for 26 days */}
                       <tr style={{ background: '#fff' }}>
-                        <td colSpan={3} style={{ padding: '8.5px 12px', border: '1px solid #666', textAlign: 'center', fontWeight: 'bold', fontSize: '12px', color: '#000' }}>Net à payer</td>
-                        <td colSpan={2} style={{ padding: '8.5px 12px', border: '1px solid #666', textAlign: 'right', fontWeight: 'bold', fontSize: '12px', color: '#000' }}>{salaryData.salaire_net.toFixed(3)}</td>
+                        <td colSpan={3} style={{ padding: '8.5px 12px', border: '1px solid #666', textAlign: 'center', fontWeight: 'bold', fontSize: '12px', color: '#000' }}>
+                          Net à payer (base {standardWorkDays} jours)
+                        </td>
+                        <td colSpan={2} style={{ padding: '8.5px 12px', border: '1px solid #666', textAlign: 'right', fontWeight: 'bold', fontSize: '12px', color: '#000' }}>
+                          {salaryData.salaire_net.toFixed(3)}
+                        </td>
                       </tr>
+
+                      {/* Prorated Section - Only show if not full month */}
+                      {isProrated && (
+                        <>
+                          <tr style={{ background: '#fef3c7' }}>
+                            <td colSpan={5} style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'center', fontWeight: 'bold', fontSize: '11px', color: '#92400e' }}>
+                              CALCUL PRORATA ({workDays} jours travaillés sur {standardWorkDays})
+                            </td>
+                          </tr>
+                          <tr style={{ background: '#fffbeb' }}>
+                            <td colSpan={3} style={{ padding: '8px 12px', border: '1px solid #666', fontSize: '11px', color: '#78350f' }}>
+                              Taux journalier ({salaryData.salaire_net.toFixed(3)} ÷ {standardWorkDays})
+                            </td>
+                            <td colSpan={2} style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'right', fontSize: '11px', color: '#78350f' }}>
+                              {dailyRate.toFixed(3)} TND/jour
+                            </td>
+                          </tr>
+                          <tr style={{ background: '#fffbeb' }}>
+                            <td colSpan={3} style={{ padding: '8px 12px', border: '1px solid #666', fontSize: '11px', color: '#78350f' }}>
+                              Jours non travaillés
+                            </td>
+                            <td colSpan={2} style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'right', fontSize: '11px', color: '#78350f' }}>
+                              {daysNotWorked} jours
+                            </td>
+                          </tr>
+                          <tr style={{ background: '#fffbeb' }}>
+                            <td colSpan={3} style={{ padding: '8px 12px', border: '1px solid #666', fontSize: '11px', color: '#78350f' }}>
+                              Déduction ({dailyRate.toFixed(3)} × {daysNotWorked})
+                            </td>
+                            <td colSpan={2} style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'right', fontWeight: '600', fontSize: '11px', color: '#b45309' }}>
+                              -{deductionAmount.toFixed(3)}
+                            </td>
+                          </tr>
+                          <tr style={{ background: '#fef3c7' }}>
+                            <td colSpan={3} style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center', fontWeight: 'bold', fontSize: '13px', color: '#000' }}>
+                              NET FINAL À PAYER
+                            </td>
+                            <td colSpan={2} style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right', fontWeight: 'bold', fontSize: '13px', color: '#000' }}>
+                              {proratedNet.toFixed(3)} TND
+                            </td>
+                          </tr>
+                        </>
+                      )}
                     </tbody>
                   </table>
                 </div>

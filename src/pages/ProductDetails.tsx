@@ -334,13 +334,6 @@ const ProductDetails = () => {
         console.log('Found ALL entries for material_id', materialToDelete.material_id, ':', allEntriesForThisMaterial);
         console.log('Number of entries to delete:', allEntriesForThisMaterial.length);
         
-        // Calculate total quantity to add back to stock
-        const totalQuantityToRestore = allEntriesForThisMaterial.reduce((sum: number, entry: any) => {
-          return sum + (parseFloat(entry.quantity) || 0);
-        }, 0);
-        
-        console.log('Total quantity to restore to stock:', totalQuantityToRestore);
-        
         // Delete ALL entries for this material
         const deletePromises = allEntriesForThisMaterial.map((m: any) => {
           console.log(`Deleting entry ID: ${m.id} (size: ${m.size_specific || 'N/A'})`);
@@ -352,30 +345,11 @@ const ProductDetails = () => {
         const results = await Promise.all(deletePromises);
         console.log('Delete results:', results);
         
-        // Add stock back to the material
-        if (totalQuantityToRestore > 0) {
-          const restoreStockResponse = await fetch('https://luccibyey.com.tn/production/api/transactions_stock.php', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              matiere_id: materialToDelete.material_id,
-              type_transaction: 'entree',
-              quantite: totalQuantityToRestore,
-              commentaire: `Retour stock - Suppression matériau du produit #${id}`
-            })
-          });
-          
-          const restoreData = await restoreStockResponse.json();
-          console.log('Stock restoration result:', restoreData);
-        }
-        
         const isFused = materialToDelete.commentaire?.includes('Fusionné');
         
         toast({
           title: isFused ? "Matériaux fusionnés supprimés" : "Matériau supprimé",
-          description: `${allEntriesForThisMaterial.length} entrée(s) supprimée(s) et ${totalQuantityToRestore} unité(s) ajoutée(s) au stock`,
+          description: `${allEntriesForThisMaterial.length} entrée(s) supprimée(s) avec succès`,
         });
       }
       
