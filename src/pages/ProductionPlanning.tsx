@@ -417,47 +417,6 @@ const ProductionPlanning = () => {
               </p>
             </CardHeader>
             <CardContent className="p-6">
-              {hasNoSizes ? <div className="bg-accent/10 border border-accent/20 rounded-xl p-6">
-                  <div className="text-center mb-6">
-                    <div className="p-3 bg-accent/20 rounded-full inline-block mb-3">
-                      <Package className="h-6 w-6 text-accent-foreground" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
-                      Production Sans Tailles
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Ce produit ne nécessite pas de configuration par taille
-                    </p>
-                  </div>
-                  <div className="max-w-md mx-auto">
-                    <Label htmlFor="total" className="text-sm font-semibold text-foreground block mb-2">
-                      Quantité Totale à Produire
-                    </Label>
-                    <Input id="total" type="number" min="0" value={plannedQuantities['none'] || ''} onChange={e => handleQuantityChange('none', e.target.value)} placeholder="Entrez le nombre de pièces" className="text-center text-lg font-medium h-12" />
-                  </div>
-                </div> : <div className="space-y-8">
-                  {Object.entries(configuredSizes)
-                    .filter(([_, sizes]) => sizes && sizes.length > 0)
-                    .map(([sizeType, sizes]) => <div key={sizeType} className="bg-card border border-border/50 rounded-xl p-6">
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <Package className="h-5 w-5 text-primary" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-foreground">
-                          {sizeType === 'clothing' ? 'Tailles Vêtements' : sizeType === 'numeric_pants' ? 'Tailles Numériques' : sizeType === 'shoes' ? 'Pointures Chaussures' : sizeType === 'belts' ? 'Tailles Ceintures' : sizeType.charAt(0).toUpperCase() + sizeType.slice(1)}
-                        </h3>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {sizes.map(size => <div key={size} className="space-y-2">
-                            <Label htmlFor={`size_${size}`} className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
-                               {size ? size.toUpperCase() : 'Sans taille'}
-                             </Label>
-                            <Input id={`size_${size}`} type="number" min="0" value={plannedQuantities[size] || ''} onChange={e => handleQuantityChange(size, e.target.value)} placeholder="0" className="text-center font-medium h-10 focus:ring-2 focus:ring-primary/20" />
-                          </div>)}
-                      </div>
-                    </div>)}
-                </div>}
-
               {totalPlanned > 0 && <div className="mt-8 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20 rounded-xl p-6">
                   <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                     <div className="space-y-2">
