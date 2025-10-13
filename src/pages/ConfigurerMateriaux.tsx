@@ -16,6 +16,7 @@ interface Material {
   id: number;
   nom: string;
   reference: string;
+  category_id: number;
   category_name: string;
   quantite_stock: number;
   quantite_min: number;
@@ -171,7 +172,9 @@ const ConfigurerMateriaux = () => {
           id: parseInt(m.id),
           nom: m.nom,
           reference: m.reference,
-          category_name: m.category_name,
+            // Ensure we include category_id because UI filters rely on it (1 = tissus, 3 = boutons)
+            category_id: parseInt(m.category_id ?? m.category ?? 0),
+            category_name: m.category_name,
           quantite_stock: parseFloat(m.quantite_stock),
           quantite_min: parseFloat(m.quantite_min),
           quantite_max: parseFloat(m.quantite_max),
