@@ -452,7 +452,11 @@ const MaterialsConfigurationModal = ({ isOpen, onClose, product, onSave }: Mater
                                  <Label className="text-sm font-medium">
                                    Quantité par pièce {product?.itemgroup_product && (
                                      <span className="text-red-500">
-                                       ({product.itemgroup_product}, {getDefaultQuantityByItemGroup(product.itemgroup_product)} préconfiguré)
+                                       ({product.itemgroup_product}, {selectedMaterial ? getDefaultQuantityByItemGroup(
+                                         product.itemgroup_product || '',
+                                         ((selectedMaterial.category_id === 3) || (selectedMaterial.category_name || '').toLowerCase().includes('bouton')),
+                                         selectedMaterial.laize
+                                       ) : getDefaultQuantityByItemGroup(product.itemgroup_product)} préconfiguré)
                                      </span>
                                    )}
                                  </Label>
