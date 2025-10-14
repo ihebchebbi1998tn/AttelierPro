@@ -1759,44 +1759,52 @@ const BatchDetails = () => {
         throw new Error(saveData.error || "Erreur lors de la sauvegarde des quantités");
       }
       
-      // Step 2: Calculate adjustments based on configured vs actual quantities
-      const materials_adjustments = batch.materials_used?.map(material => {
-        const configured_quantity = material.quantity_used || 0;
-        const actual_quantity = materialsQuantities[material.material_id] || 0;
-        
-        return {
-          material_id: material.material_id,
-          configured_quantity: configured_quantity,
-          actual_quantity: actual_quantity
-        };
-      }) || [];
-      
-      console.log('Adjusting stock based on configured vs actual:', materials_adjustments);
-      
-      const adjustResponse = await fetch('https://luccibyey.com.tn/production/api/adjust_materials_stock.php', {
+      // Step 2: Deduct stock using actual filled quantities (not estimated)
+      // Prepare totals per material to avoid ambiguity on server side
+      const materialsTotals: Record<string, number> = Object.fromEntries(
+        Object.entries(materialsQuantities).map(([materialId, perPiece]) => {
+          const perPieceNum = Number(perPiece) || 0;
+          const total = perPieceNum * (Number(batch.quantity_to_produce) || 0);
+          return [materialId, total];
+        })
+      );
+
+      console.log('Deducting stock with actual quantities (per-piece + totals):', {
+        action: 'deduct_stock_with_actual_quantities',
+        batch_id: batch.id,
+        materials_quantities: materialsQuantities,
+        materials_quantities_totals: materialsTotals,
+        production_number: batch.batch_reference
+      });
+
+      const deductResponse = await fetch('https://luccibyey.com.tn/production/api/production_stock_deduction.php', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         body: JSON.stringify({
+          action: 'deduct_stock_with_actual_quantities',
           batch_id: batch.id,
-          materials_adjustments: materials_adjustments
+          materials_quantities: materialsQuantities,
+          materials_quantities_totals: materialsTotals,
+          production_number: batch.batch_reference,
+          user_id: 1
         }),
       });
       
-      if (!adjustResponse.ok) {
-        throw new Error(`Stock adjustment HTTP error! status: ${adjustResponse.status}`);
+      if (!deductResponse.ok) {
+        throw new Error(`Stock deduction HTTP error! status: ${deductResponse.status}`);
       }
       
-      const adjustData = await adjustResponse.json();
-      console.log('Adjust stock response:', adjustData);
+      const deductData = await deductResponse.json();
+      console.log('Deduct stock response:', deductData);
       
-      if (!adjustData.success) {
-        // Quantities saved but stock adjustment failed
+      if (!deductData.success) {
+        // Quantities saved but stock deduction failed
         toast({
           title: "Avertissement",
-          description: adjustData.error || "Quantités sauvegardées mais le stock n'a pas pu être ajusté. Veuillez vérifier le stock.",
+          description: deductData.message || "Quantités sauvegardées mais le stock n'a pas pu être déduit. Veuillez vérifier le stock.",
           variant: "destructive",
         });
         setQuantitiesSaved(true);
@@ -1807,21 +1815,10 @@ const BatchDetails = () => {
       // Both operations succeeded
       setQuantitiesSaved(true);
       
-      const adjustmentCount = adjustData.adjustments?.length || 0;
-      const addedCount = adjustData.adjustments?.filter((a: any) => a.adjustment_type === 'added').length || 0;
-      const deductedCount = adjustData.adjustments?.filter((a: any) => a.adjustment_type === 'deducted').length || 0;
-      
-      let description = `Quantités sauvegardées avec succès.`;
-      if (adjustmentCount > 0) {
-        description += ` ${adjustmentCount} ajustement(s) de stock effectué(s)`;
-        if (addedCount > 0) description += ` (${addedCount} retour(s))`;
-        if (deductedCount > 0) description += ` (${deductedCount} déduction(s))`;
-        description += `.`;
-      }
-      
+      const transactionCount = deductData.transactions?.length || 0;
       toast({
         title: "Succès",
-        description: description,
+        description: `Quantités sauvegardées avec succès. ${transactionCount} transaction(s) de stock créée(s).`,
       });
       
       // Refresh batch details to show updated data
@@ -1831,7 +1828,7 @@ const BatchDetails = () => {
       console.error('Error in confirmSaveMaterialsQuantities:', error);
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Erreur lors de la sauvegarde des quantités et de l'ajustement du stock",
+        description: error instanceof Error ? error.message : "Erreur lors de la sauvegarde des quantités et de la déduction du stock",
         variant: "destructive",
       });
     } finally {
@@ -1858,27 +1855,8 @@ const BatchDetails = () => {
       return;
     }
     
-    // Parse the value - support decimals using either ',' or '.' as decimal separator
-    const parseNumberLocalized = (str: string) => {
-      if (!str) return NaN;
-      // Remove spaces and non-numeric thousand separators, keep '-' and decimal separators
-      const cleaned = String(str).trim()
-        .replace(/\s+/g, '')
-        // If string contains both comma and dot, assume dot is thousand separator and comma is decimal (e.g. "1.234,56")
-        .replace(/(?<=\d)\.(?=\d{3}(?:\D|$))/g, '')
-        .replace(/(?<=\d),(?=\d{3}(?:\D|$))/g, '')
-        ;
-
-      // Normalize comma decimal to dot decimal: '10,5' -> '10.5'
-      const normalized = cleaned.indexOf(',') > -1 && cleaned.indexOf('.') === -1
-        ? cleaned.replace(',', '.')
-        : cleaned;
-
-      const n = Number(normalized);
-      return isNaN(n) ? NaN : n;
-    };
-
-    const numValue = parseNumberLocalized(value);
+    // Parse the value - supports decimals like 9.5, 10.75, etc.
+    const numValue = parseFloat(value);
     
     // Only update if it's a valid number
     if (!isNaN(numValue) && numValue >= 0) {
@@ -2409,6 +2387,37 @@ const BatchDetails = () => {
         </div>
       </div>
 
+      {/* Production Note Alert - Highlighted at Top */}
+      {batch.production_specifications && 
+       batch.production_specifications !== 'null' && 
+       batch.production_specifications !== '{}' && (() => {
+         try {
+           const specs = typeof batch.production_specifications === 'string' 
+             ? JSON.parse(batch.production_specifications) 
+             : batch.production_specifications;
+           
+           // Check if there's a "Note" field
+           if (specs && specs.Note) {
+             return (
+               <Card className="border-amber-500 bg-amber-50 shadow-lg">
+                 <CardContent className="p-4 md:p-6">
+                   <div className="flex items-start gap-3">
+                     <AlertCircle className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" />
+                     <div className="flex-1">
+                       <h3 className="text-lg font-bold text-amber-900 mb-2">Note importante de production</h3>
+                       <p className="text-base text-amber-800 font-medium">{specs.Note}</p>
+                     </div>
+                   </div>
+                 </CardContent>
+               </Card>
+             );
+           }
+         } catch (e) {
+           console.error('Error parsing production specifications for note:', e);
+         }
+         return null;
+       })()}
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-6">
         <Card className="bg-gradient-to-br from-primary/10 to-primary/20 border-primary/20">
@@ -2519,14 +2528,13 @@ const BatchDetails = () => {
                         </TableCell>
                         <TableCell>
                           <Input
-                            type="text"
-                            inputMode="decimal"
+                            type="number"
+                            step="0.01"
+                            min="0"
                             value={quantityValue}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(',', '.');
-                              handleMaterialQuantityChange(material.material_id, value);
-                            }}
+                            onChange={(e) => handleMaterialQuantityChange(material.material_id, e.target.value)}
                             className={`w-28 ${!quantityValue || quantityValue === 0 ? 'border-destructive' : ''}`}
+                            placeholder="0"
                           />
                         </TableCell>
                         <TableCell>
@@ -2592,6 +2600,45 @@ const BatchDetails = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Production Specifications - Prominent Display */}
+      {batch.production_specifications && 
+       batch.production_specifications !== 'null' && 
+       batch.production_specifications !== '{}' && (() => {
+         try {
+           const specs = typeof batch.production_specifications === 'string' 
+             ? JSON.parse(batch.production_specifications) 
+             : batch.production_specifications;
+           
+           if (specs && Object.keys(specs).length > 0) {
+             return (
+               <Card className="border-primary/30 shadow-lg bg-primary/5">
+                 <CardHeader className="pb-3">
+                   <CardTitle className="flex items-center gap-2 text-lg">
+                     <AlertTriangle className="h-5 w-5 text-primary" />
+                     Spécifications de Production - Note Important
+                   </CardTitle>
+                 </CardHeader>
+                 <CardContent>
+                   <div className="bg-background p-4 rounded-lg border border-primary/20">
+                     <div className="space-y-3">
+                       {Object.entries(specs).map(([key, value], index) => (
+                         <div key={index} className="flex justify-between items-start gap-4 py-2 border-b last:border-b-0">
+                           <span className="font-semibold text-sm">{key}:</span>
+                           <span className="text-sm text-right font-medium">{value as string}</span>
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 </CardContent>
+               </Card>
+             );
+           }
+         } catch (e) {
+           console.error('Error parsing production specifications:', e);
+         }
+         return null;
+       })()}
 
       {/* Progress Timeline */}
       <Card>
@@ -2917,36 +2964,6 @@ const BatchDetails = () => {
                   </div>
                 )}
 
-                {batch.production_specifications && 
-                 batch.production_specifications !== 'null' && 
-                 batch.production_specifications !== '{}' && (() => {
-                   try {
-                     const specs = typeof batch.production_specifications === 'string' 
-                       ? JSON.parse(batch.production_specifications) 
-                       : batch.production_specifications;
-                     
-                     if (specs && Object.keys(specs).length > 0) {
-                       return (
-                         <div className="pt-4 border-t">
-                           <p className="text-sm text-muted-foreground mb-2">Spécifications de production</p>
-                           <div className="bg-muted p-3 rounded-md">
-                             <div className="space-y-2">
-                               {Object.entries(specs).map(([key, value], index) => (
-                                 <div key={index} className="flex justify-between items-start text-sm">
-                                   <span className="font-medium">{key}:</span>
-                                   <span className="text-right ml-2">{value as string}</span>
-                                 </div>
-                               ))}
-                             </div>
-                           </div>
-                         </div>
-                       );
-                     }
-                   } catch (e) {
-                     console.error('Error parsing production specifications:', e);
-                   }
-                   return null;
-                 })()}
               </CardContent>
             </Card>
 
