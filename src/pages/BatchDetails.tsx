@@ -439,6 +439,80 @@ const BatchDetails = () => {
   };
 
   const generateBatchReportHTML = (reportContent: string) => {
+    // If the rendered reportContent is missing the materials table, append it explicitly
+    let finalReportContent = reportContent;
+    try {
+      if (!/MAT.{0,20}ÉRIAUX\s+UTILIS[ÉE]S/i.test(reportContent) && batch && batch.materials_used && batch.materials_used.length > 0) {
+        // Build materials HTML (same structure as BatchReport component)
+        const grouped: any = {};
+        (batch.materials_used || []).forEach((m: any) => {
+          const key = `${m.nom_matiere}-${m.couleur || 'N/A'}`;
+          if (!grouped[key]) grouped[key] = { ...m, quantity_used: Number(m.quantity_used) || 0 };
+          else grouped[key].quantity_used += Number(m.quantity_used) || 0;
+        });
+
+        const sizesObj = (() => {
+          try {
+            return batch.sizes_breakdown ? JSON.parse(batch.sizes_breakdown) : {};
+          } catch (e) {
+            return {};
+          }
+        })();
+
+        let materialsHtml = `\n<div class="mb-6">\n  <h2 class="text-lg font-bold border-b-2 border-black pb-1 mb-3">MATÉRIAUX UTILISÉS</h2>\n  <div class="border-2 border-black">\n    <table class="w-full text-xs">\n      <thead>\n        <tr class="border-b-2 border-black bg-gray-100">\n          <th class="text-left p-2 border-r border-black">MATÉRIAU</th>\n          <th class="text-left p-2 border-r border-black">COULEUR</th>\n          <th class="text-left p-2 border-r border-black">RÉPARTITION PAR TAILLE</th>\n          <th class="text-left p-2 border-r border-black">TOTAL</th>\n          <th class="text-left p-2 border-r border-black">UNITÉ</th>\n          <th class="text-left p-2">COMMENTAIRE</th>\n        </tr>\n      </thead>\n      <tbody>\n`;
+
+        Object.values(grouped).forEach((material: any, idx: number) => {
+          // compute size breakdown
+          let sizeBreakdown: any = {};
+          try {
+            const parsedSizes: any = sizesObj || {};
+            const totalQuantity = Number(material.quantity_used) || 0;
+            const totalPieces = Object.values(parsedSizes).reduce((s: number, v: any) => s + Number(v || 0), 0);
+            if (totalPieces > 0) {
+              Object.entries(parsedSizes).forEach(([size, pieces]) => {
+                const numPieces = Number(pieces) || 0;
+                if (numPieces > 0) {
+                  const proportion = numPieces / totalPieces;
+                  sizeBreakdown[size] = (totalQuantity * proportion).toFixed(1);
+                }
+              });
+            }
+          } catch (e) {
+            sizeBreakdown = {};
+          }
+
+          materialsHtml += `        <tr class="${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">\n` +
+            `          <td class="p-2 border-r border-black font-medium">${material.nom_matiere}</td>\n` +
+            `          <td class="p-2 border-r border-black">${material.couleur || 'N/A'}</td>\n` +
+            `          <td class="p-2 border-r border-black">`;
+
+          if (Object.keys(sizeBreakdown).length > 0) {
+            materialsHtml += `<div class="flex flex-wrap gap-2">`;
+            Object.entries(sizeBreakdown).forEach(([size, quantity]) => {
+              materialsHtml += `<div class="bg-gray-100 px-2 py-1 rounded"><span class="font-medium">${size === 'none' ? 'Standard' : size.toUpperCase()}:</span> <span class="ml-1">${quantity} ${material.quantity_unit}</span></div>`;
+            });
+            materialsHtml += `</div>`;
+          } else {
+            materialsHtml += `<span class="text-gray-600 italic">Toutes tailles</span>`;
+          }
+
+          materialsHtml += `</td>\n` +
+            `          <td class="p-2 border-r border-black font-bold">${material.quantity_used} ${material.quantity_unit}</td>\n` +
+            `          <td class="p-2 border-r border-black text-center">${material.quantity_type_name || ''}</td>\n` +
+            `          <td class="p-2">${material.commentaire || '-'}</td>\n` +
+            `        </tr>\n`;
+        });
+
+        materialsHtml += `      </tbody>\n    </table>\n    <div class="mt-3 text-right"><span class="font-bold">Coût Total Matériaux: ${Number(batch.total_materials_cost || 0).toFixed(2)} TND</span></div>\n  </div>\n</div>\n`;
+
+        // Append to final content
+        finalReportContent = reportContent + materialsHtml;
+      }
+    } catch (e) {
+      console.error('Error appending materials to print report:', e);
+      finalReportContent = reportContent;
+    }
+
     return `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -2321,11 +2395,11 @@ const BatchDetails = () => {
         <Card className="p-8 text-center">
           <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-lg text-muted-foreground">Aucune donnée disponible pour ce batch</p>
-        </Card>
       </div>
     );
   }
 
+        </head>
   const duration = calculateDuration(batch.started_at, batch.completed_at);
   const priority = getPriorityLevel(batch.status, duration);
 
