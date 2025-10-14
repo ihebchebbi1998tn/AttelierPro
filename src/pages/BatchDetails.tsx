@@ -2590,6 +2590,45 @@ const BatchDetails = () => {
         </Card>
       )}
 
+      {/* Production Specifications - Prominent Display */}
+      {batch.production_specifications && 
+       batch.production_specifications !== 'null' && 
+       batch.production_specifications !== '{}' && (() => {
+         try {
+           const specs = typeof batch.production_specifications === 'string' 
+             ? JSON.parse(batch.production_specifications) 
+             : batch.production_specifications;
+           
+           if (specs && Object.keys(specs).length > 0) {
+             return (
+               <Card className="border-primary/30 shadow-lg bg-primary/5">
+                 <CardHeader className="pb-3">
+                   <CardTitle className="flex items-center gap-2 text-lg">
+                     <AlertTriangle className="h-5 w-5 text-primary" />
+                     Spécifications de Production - Note Important
+                   </CardTitle>
+                 </CardHeader>
+                 <CardContent>
+                   <div className="bg-background p-4 rounded-lg border border-primary/20">
+                     <div className="space-y-3">
+                       {Object.entries(specs).map(([key, value], index) => (
+                         <div key={index} className="flex justify-between items-start gap-4 py-2 border-b last:border-b-0">
+                           <span className="font-semibold text-sm">{key}:</span>
+                           <span className="text-sm text-right font-medium">{value as string}</span>
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 </CardContent>
+               </Card>
+             );
+           }
+         } catch (e) {
+           console.error('Error parsing production specifications:', e);
+         }
+         return null;
+       })()}
+
       {/* Progress Timeline */}
       <Card>
         <CardHeader>
@@ -2914,36 +2953,6 @@ const BatchDetails = () => {
                   </div>
                 )}
 
-                {batch.production_specifications && 
-                 batch.production_specifications !== 'null' && 
-                 batch.production_specifications !== '{}' && (() => {
-                   try {
-                     const specs = typeof batch.production_specifications === 'string' 
-                       ? JSON.parse(batch.production_specifications) 
-                       : batch.production_specifications;
-                     
-                     if (specs && Object.keys(specs).length > 0) {
-                       return (
-                         <div className="pt-4 border-t">
-                           <p className="text-sm text-muted-foreground mb-2">Spécifications de production</p>
-                           <div className="bg-muted p-3 rounded-md">
-                             <div className="space-y-2">
-                               {Object.entries(specs).map(([key, value], index) => (
-                                 <div key={index} className="flex justify-between items-start text-sm">
-                                   <span className="font-medium">{key}:</span>
-                                   <span className="text-right ml-2">{value as string}</span>
-                                 </div>
-                               ))}
-                             </div>
-                           </div>
-                         </div>
-                       );
-                     }
-                   } catch (e) {
-                     console.error('Error parsing production specifications:', e);
-                   }
-                   return null;
-                 })()}
               </CardContent>
             </Card>
 
