@@ -156,68 +156,9 @@ const ProductionPlanning = () => {
       });
       return;
     }
-    setValidating(true);
-    try {
-      // Prepare the planned quantities based on product configuration
-      let quantities = plannedQuantities;
-
-      // For products with no sizes, convert 'none' key to match material configuration
-      if (hasNoSizes && plannedQuantities['none']) {
-        // For no-sizes products, we need to match the actual size_specific from the material configuration
-        // Instead of hardcoding 's', we should use 'none' or check what the material config expects
-        quantities = {
-          'none': plannedQuantities['none']
-        };
-      }
-      console.log('Sending planned quantities:', quantities);
-      const response = await fetch('https://luccibyey.com.tn/production/api/production_planning.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          product_id: parseInt(id),
-          planned_quantities: quantities
-        })
-      });
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
-      // Check if response is OK
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status} ${response.statusText}`);
-      }
-
-      // Get response text first to debug
-      const responseText = await response.text();
-      console.log('Raw response:', responseText);
-
-      // Try to parse JSON
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('JSON Parse Error:', parseError);
-        console.error('Response text that failed to parse:', responseText);
-        throw new Error('Server returned invalid JSON response');
-      }
-      console.log('Parsed response:', data);
-      if (data.success) {
-        setValidationResult(data.data);
-        setShowConfirmationModal(true);
-      } else {
-        throw new Error(data.message || 'Erreur lors de la validation');
-      }
-    } catch (error) {
-      console.error('Validation error:', error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de valider la production",
-        variant: "destructive"
-      });
-    } finally {
-      setValidating(false);
-    }
+    
+    // Skip stock validation and go directly to confirmation
+    setShowConfirmationModal(true);
   };
   const handleQuantityChange = (size: string, value: string) => {
     const numValue = parseInt(value) || 0;
@@ -240,8 +181,17 @@ const ProductionPlanning = () => {
     try {
       setValidating(true);
 
+      // Filter out sizes with quantity = 0
+      const filteredQuantities = Object.entries(plannedQuantities).reduce((acc, [size, qty]) => {
+        const quantity = typeof qty === 'string' ? parseInt(qty) || 0 : Number(qty) || 0;
+        if (quantity > 0) {
+          acc[size] = quantity;
+        }
+        return acc;
+      }, {} as { [size: string]: number });
+
       // Calculate total quantity to produce
-      const totalQuantity = Object.values(plannedQuantities).reduce((sum, qty) => sum + (typeof qty === 'string' ? parseInt(qty) || 0 : Number(qty) || 0), 0);
+      const totalQuantity = Object.values(filteredQuantities).reduce((sum, qty) => sum + qty, 0);
       if (totalQuantity === 0) {
         toast({
           title: "Erreur",
@@ -255,7 +205,7 @@ const ProductionPlanning = () => {
       const deductionData = {
         action: 'deduct_stock_production',
         product_id: typeof product?.id === 'string' ? parseInt(product.id) : Number(product?.id),
-        planned_quantities: plannedQuantities,
+        planned_quantities: filteredQuantities,
         user_id: 1 // Default user ID - should be from auth context
       };
       console.log('Deducting materials:', deductionData);
@@ -277,7 +227,7 @@ const ProductionPlanning = () => {
       }
 
       // Now create the production batch
-      const sizesBreakdown = JSON.stringify(plannedQuantities);
+      const sizesBreakdown = JSON.stringify(filteredQuantities);
       const requestData = {
         action: 'start_production',
         product_id: typeof product?.id === 'string' ? parseInt(product.id) : Number(product?.id),
@@ -467,45 +417,6 @@ const ProductionPlanning = () => {
               </p>
             </CardHeader>
             <CardContent className="p-6">
-              {hasNoSizes ? <div className="bg-accent/10 border border-accent/20 rounded-xl p-6">
-                  <div className="text-center mb-6">
-                    <div className="p-3 bg-accent/20 rounded-full inline-block mb-3">
-                      <Package className="h-6 w-6 text-accent-foreground" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
-                      Production Sans Tailles
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Ce produit ne nécessite pas de configuration par taille
-                    </p>
-                  </div>
-                  <div className="max-w-md mx-auto">
-                    <Label htmlFor="total" className="text-sm font-semibold text-foreground block mb-2">
-                      Quantité Totale à Produire
-                    </Label>
-                    <Input id="total" type="number" min="0" value={plannedQuantities['none'] || ''} onChange={e => handleQuantityChange('none', e.target.value)} placeholder="Entrez le nombre de pièces" className="text-center text-lg font-medium h-12" />
-                  </div>
-                </div> : <div className="space-y-8">
-                  {Object.entries(configuredSizes).map(([sizeType, sizes]) => <div key={sizeType} className="bg-card border border-border/50 rounded-xl p-6">
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <Package className="h-5 w-5 text-primary" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-foreground">
-                          {sizeType === 'clothing' ? 'Tailles Vêtements' : sizeType === 'numeric_pants' ? 'Tailles Numériques' : sizeType === 'shoes' ? 'Pointures Chaussures' : sizeType === 'belts' ? 'Tailles Ceintures' : sizeType.charAt(0).toUpperCase() + sizeType.slice(1)}
-                        </h3>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {sizes.map(size => <div key={size} className="space-y-2">
-                            <Label htmlFor={`size_${size}`} className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
-                               {size ? size.toUpperCase() : 'Sans taille'}
-                             </Label>
-                            <Input id={`size_${size}`} type="number" min="0" value={plannedQuantities[size] || ''} onChange={e => handleQuantityChange(size, e.target.value)} placeholder="0" className="text-center font-medium h-10 focus:ring-2 focus:ring-primary/20" />
-                          </div>)}
-                      </div>
-                    </div>)}
-                </div>}
-
               {totalPlanned > 0 && <div className="mt-8 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20 rounded-xl p-6">
                   <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                     <div className="space-y-2">
@@ -772,63 +683,21 @@ const ProductionPlanning = () => {
             </DialogTitle>
           </DialogHeader>
 
-          {validationResult && <div className="space-y-4">
-              {/* Material List */}
-              <div className="border rounded-lg divide-y">
-                {Object.entries(validationResult.material_requirements).map(([materialId, requirement]) => <div key={materialId} className="p-4 hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <Package className="h-4 w-4 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-foreground">{requirement.material_name}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {requirement.material_color || 'Couleur non définie'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg text-foreground">
-                          {formatNumber(requirement.total_needed)} {requirement.quantity_unit}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Stock actuel: {formatNumber(requirement.current_stock)} {requirement.quantity_unit}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Size Breakdown */}
-                    {requirement.size_breakdown && requirement.size_breakdown.length > 0 && <div className="mt-3 pt-3 border-t">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                          Détail par taille
-                        </p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {requirement.size_breakdown.map((sizeData, idx) => <div key={idx} className="text-xs bg-muted/50 rounded px-2 py-1">
-                              <span className="font-medium">{sizeData.size}:</span>{' '}
-                              <span className="text-muted-foreground">
-                                {sizeData.planned_pieces} pcs × {formatNumber(sizeData.material_per_piece)} = {formatNumber(sizeData.total_material_needed)} {requirement.quantity_unit}
-                              </span>
-                            </div>)}
-                        </div>
-                      </div>}
-                  </div>)}
-              </div>
-
+      <div className="space-y-4">
               {/* Warning Message */}
               <div className="bg-warning/10 border border-warning/30 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <Info className="h-5 w-5 text-warning shrink-0 mt-0.5" />
                   <div className="text-sm text-foreground">
-                    <p className="font-medium mb-1">Cette action est irréversible</p>
+                    <p className="font-medium mb-1">Confirmer le démarrage de la production</p>
                     <p className="text-muted-foreground">
-                      Les quantités de matériaux ci-dessus seront automatiquement déduites du stock. 
+                      Vous êtes sur le point de démarrer la production de {totalPlanned} pièces.
                       Assurez-vous que les quantités sont correctes avant de confirmer.
                     </p>
                   </div>
                 </div>
               </div>
-            </div>}
+            </div>
 
           <DialogFooter className="gap-3 pt-4 border-t">
             <Button variant="outline" onClick={() => {
