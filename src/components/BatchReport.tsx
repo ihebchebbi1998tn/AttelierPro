@@ -129,77 +129,104 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
     };
 
     return (
-      <div ref={ref} className="bg-white text-black p-8 font-mono text-sm leading-tight">
+      <div ref={ref} className="bg-white text-black p-8 font-mono leading-tight print:p-6 print:font-mono print-exact print-a4">
         {/* Header */}
-        <div className="border-b-2 border-black pb-4 mb-6">
-          <h1 className="text-2xl font-bold text-center mb-2">RAPPORT DE PRODUCTION</h1>
-          <div className="text-center text-sm font-medium mb-4">
-            <span className="font-bold">Batch:</span> {batch.batch_reference} | <span className="font-bold">Date:</span> {new Date().toLocaleDateString('fr-FR')}
+        <div className="border-b-4 border-black pb-4 mb-8 print:border-b-4 print:pb-3 print:mb-6 print-no-break">
+          <h1 className="text-4xl font-bold text-center mb-2 tracking-tight print:text-3xl print:font-bold print:mb-2">RAPPORT DE PRODUCTION</h1>
+          <div className="text-center text-sm font-bold print:text-xs print:font-bold">
+            <span>BATCH: {batch.batch_reference}</span>
+            <span className="mx-4">|</span>
+            <span>DATE: {new Date().toLocaleDateString('fr-FR')}</span>
           </div>
         </div>
 
-        {/* Product Image and Information Section */}
-        <div className="mb-6 border-2 border-black">
-          <div className="grid grid-cols-3 gap-4 p-4">
-            {/* Left: First Product Image */}
-            <div className="col-span-1">
+        {/* Product Image and Information Section - Side by Side */}
+        <div className="mb-8 border-2 border-black print:mb-6 print:border-2 print:border-black print:break-inside-avoid print-no-break">
+          <div className="flex items-stretch gap-0 print:flex print:items-stretch print:gap-0">
+            {/* Left: Product Image - Fixed Width */}
+            <div className="w-1/3 border-r-2 border-black print:w-1/3 print:border-r-2 print:border-black">
               {productImages.length > 0 ? (
-                <div className="border border-black p-2 bg-gray-50">
-                  <div className="text-center mb-2 text-xs font-bold">PRODUIT</div>
+                <div className="h-[400px] flex flex-col print:h-[400px] print:flex print:flex-col">
+                  <div className="text-center py-2 text-xs font-bold border-b-2 border-black bg-black text-white print:text-center print:py-2 print:text-xs print:font-bold print:border-b-2 print:border-black print:bg-black print:text-white">PRODUIT</div>
                   <img
                     src={productImages[0]}
                     alt={batch.nom_product}
-                    className="w-full h-64 object-cover rounded"
+                    className="w-full flex-1 object-cover print:w-full print:flex-1 print:object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
                       const parent = target.parentElement;
                       if (parent) {
-                        parent.innerHTML = '<div class="h-64 flex items-center justify-center text-xs text-gray-500">Image non disponible</div>';
+                        parent.innerHTML = '<div class="flex-1 flex items-center justify-center text-xs">Image non disponible</div>';
                       }
                     }}
                   />
                 </div>
               ) : (
-                <div className="border border-gray-300 border-dashed p-2 bg-gray-50 h-full flex items-center justify-center">
-                  <div className="text-xs text-gray-500 text-center">Aucune image disponible</div>
+                <div className="h-[400px] flex flex-col print:h-[400px] print:flex print:flex-col">
+                  <div className="text-center py-2 text-xs font-bold border-b-2 border-black bg-black text-white print:text-center print:py-2 print:text-xs print:font-bold print:border-b-2 print:border-black print:bg-black print:text-white">PRODUIT</div>
+                  <div className="flex-1 flex items-center justify-center text-xs print:text-xs">
+                    Aucune image
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Right: Product Information, Boutique, and Notes */}
-            <div className="col-span-2 space-y-3">
-              {/* Product Info */}
-              <div>
-                <h2 className="text-base font-bold border-b border-black pb-1 mb-2">INFORMATIONS PRODUIT</h2>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                  <div><strong>Nom:</strong> {batch.nom_product}</div>
-                  <div><strong>Référence:</strong> {batch.reference_product}</div>
-                  <div><strong>Boutique:</strong> {companyName}</div>
-                  <div><strong>Statut:</strong> {getStatusLabel(batch.status)}</div>
-                  <div><strong>Quantité:</strong> {batch.quantity_to_produce} unités</div>
-                  <div><strong>Coût matériaux:</strong> {Number(batch.total_materials_cost || 0).toFixed(2)} TND</div>
+            {/* Right: Product Information - Takes remaining space */}
+            <div className="w-2/3 flex flex-col print:w-2/3 print:flex print:flex-col h-[400px] print-fixed-400 overflow-hidden">
+              {/* Product Info Section */}
+              <div className="border-b-2 border-black p-4 print:border-b-2 print:border-black print:p-3">
+                <h2 className="text-sm font-bold mb-3 pb-1 border-b border-black print:text-xs print:font-bold print:mb-2 print:pb-1 print:border-b print:border-black">INFORMATIONS PRODUIT</h2>
+                <div className="space-y-1.5 text-xs print:space-y-1 print:text-[10px]">
+                  <div className="flex">
+                    <span className="w-32 font-bold">Nom:</span>
+                    <span className="flex-1 font-bold">{batch.nom_product}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 font-bold">Référence:</span>
+                    <span className="flex-1">{batch.reference_product}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 font-bold">Boutique:</span>
+                    <span className="flex-1">{companyName}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 font-bold">Statut:</span>
+                    <span className="flex-1">{getStatusLabel(batch.status)}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 font-bold">Quantité:</span>
+                    <span className="flex-1 font-bold">{batch.quantity_to_produce} unités</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 font-bold">Coût matériaux:</span>
+                    <span className="flex-1 font-bold">{Number(batch.total_materials_cost || 0).toFixed(2)} TND</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Production Dates */}
-              <div>
-                <h2 className="text-base font-bold border-b border-black pb-1 mb-2">DATES</h2>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                  <div><strong>Création:</strong> {formatDate(batch.created_at)}</div>
-                  <div><strong>Démarrage:</strong> {formatDate(batch.started_at)}</div>
-                  <div><strong>Fin:</strong> {formatDate(batch.completed_at)}</div>
-                  <div><strong>Démarré par:</strong> {batch.started_by_name || 'N/A'}</div>
+              {/* Production Dates Section */}
+              <div className="border-b-2 border-black p-4 print:border-b-2 print:border-black print:p-3">
+                <h2 className="text-sm font-bold mb-3 pb-1 border-b border-black print:text-xs print:font-bold print:mb-2 print:pb-1 print:border-b print:border-black">DATES DE PRODUCTION</h2>
+                <div className="space-y-1.5 text-xs print:space-y-1 print:text-[10px]">
+                  <div className="flex">
+                    <span className="w-32 font-bold">Création:</span>
+                    <span className="flex-1">{formatDate(batch.created_at)}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 font-bold">Démarrage:</span>
+                    <span className="flex-1">{formatDate(batch.started_at)}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 font-bold">Fin:</span>
+                    <span className="flex-1">{formatDate(batch.completed_at) !== 'Non spécifiée' ? formatDate(batch.completed_at) : '-'}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 font-bold">Démarré par:</span>
+                    <span className="flex-1">{batch.started_by_name || 'Admin Production'}</span>
+                  </div>
                 </div>
               </div>
-
-              {/* Production Notes - Highlighted if exist */}
-              {batch.notes && (
-                <div className="bg-yellow-50 border-2 border-yellow-400 p-3">
-                  <h2 className="text-sm font-bold mb-2 text-yellow-900">⚠️ NOTES DE PRODUCTION</h2>
-                  <div className="text-xs font-medium text-yellow-900">{batch.notes}</div>
-                </div>
-              )}
 
               {/* Production Specifications */}
               {batch.production_specifications && 
@@ -212,13 +239,13 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                    
                    if (specs && Object.keys(specs).length > 0) {
                      return (
-                       <div>
-                         <h2 className="text-base font-bold border-b border-black pb-1 mb-2">SPÉCIFICATIONS</h2>
-                         <div className="text-xs space-y-1">
+                       <div className="flex-1 p-4 print:flex-1 print:p-3">
+                         <h2 className="text-sm font-bold mb-3 pb-1 border-b border-black print:text-xs print:font-bold print:mb-2 print:pb-1 print:border-b print:border-black">SPÉCIFICATIONS</h2>
+                         <div className="space-y-1.5 text-xs print:space-y-1 print:text-[10px]">
                            {Object.entries(specs).map(([key, value], index) => (
-                             <div key={index} className="grid grid-cols-2 gap-2">
-                               <span className="font-medium">{key}:</span>
-                               <span>{String(value)}</span>
+                             <div key={index} className="flex">
+                               <span className="w-32 font-bold">{key}:</span>
+                               <span className="flex-1">{String(value)}</span>
                              </div>
                            ))}
                          </div>
@@ -236,26 +263,26 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
 
         {/* Size Breakdown */}
         {parsedSizes.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold border-b-2 border-black pb-1 mb-3">CONFIGURATION DES TAILLES</h2>
+          <div className="mb-6 print:mb-4">
+            <h2 className="text-xl font-bold border-b-2 border-black pb-2 mb-3 print:text-lg print:pb-1.5 print:mb-2">CONFIGURATION DES TAILLES</h2>
             <div className="border-2 border-black">
-              <table className="w-full">
+              <table className="w-full text-sm print:text-xs">
                 <thead>
                   <tr className="border-b-2 border-black bg-gray-100">
-                    <th className="text-left p-3 border-r border-black font-bold">TAILLE</th>
-                    <th className="text-left p-3 font-bold">QUANTITÉ</th>
+                    <th className="text-left p-3 border-r border-black font-bold print:p-2">TAILLE</th>
+                    <th className="text-left p-3 font-bold print:p-2">QUANTITÉ</th>
                   </tr>
                 </thead>
                 <tbody>
                   {parsedSizes.map((size, index) => (
                     <tr key={index} className={index !== parsedSizes.length - 1 ? "border-b border-black" : ""}>
-                      <td className="p-3 border-r border-black font-medium">{size.size_name}</td>
-                      <td className="p-3">{size.quantity} unités</td>
+                      <td className="p-3 border-r border-black font-semibold print:p-2">{size.size_name}</td>
+                      <td className="p-3 font-medium print:p-2">{size.quantity} unités</td>
                     </tr>
                   ))}
                   <tr className="bg-gray-50 border-t-2 border-black">
-                    <td className="p-3 border-r border-black font-bold">TOTAL</td>
-                    <td className="p-3 font-bold">{parsedSizes.reduce((sum, size) => sum + size.quantity, 0)} unités</td>
+                    <td className="p-3 border-r border-black font-bold print:p-2">TOTAL</td>
+                    <td className="p-3 font-bold text-blue-600 print:p-2">{parsedSizes.reduce((sum, size) => sum + size.quantity, 0)} unités</td>
                   </tr>
                 </tbody>
               </table>
@@ -265,18 +292,18 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
 
         {/* Materials Used */}
         {batch.materials_used && batch.materials_used.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold border-b-2 border-black pb-1 mb-3">MATÉRIAUX UTILISÉS</h2>
+          <div className="mb-6 print:mb-4">
+            <h2 className="text-xl font-bold border-b-2 border-black pb-2 mb-3 print:text-lg print:pb-1.5 print:mb-2">MATÉRIAUX UTILISÉS</h2>
             <div className="border-2 border-black">
-              <table className="w-full text-xs">
+              <table className="w-full text-sm print:text-xs">
                 <thead>
                   <tr className="border-b-2 border-black bg-gray-100">
-                    <th className="text-left p-2 border-r border-black">MATÉRIAU</th>
-                    <th className="text-left p-2 border-r border-black">COULEUR</th>
-                    <th className="text-left p-2 border-r border-black">RÉPARTITION PAR TAILLE</th>
-                    <th className="text-left p-2 border-r border-black">TOTAL</th>
-                    <th className="text-left p-2 border-r border-black">UNITÉ</th>
-                    <th className="text-left p-2">COMMENTAIRE</th>
+                    <th className="text-left p-3 border-r border-black font-bold print:p-2">MATÉRIAU</th>
+                    <th className="text-left p-3 border-r border-black font-bold print:p-2">COULEUR</th>
+                    <th className="text-left p-3 border-r border-black font-bold print:p-2">RÉPARTITION</th>
+                    <th className="text-left p-3 border-r border-black font-bold print:p-2">TOTAL</th>
+                    <th className="text-left p-3 border-r border-black font-bold print:p-2">UNITÉ</th>
+                    <th className="text-left p-3 font-bold print:p-2">COMMENTAIRE</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -319,33 +346,33 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
 
                       return (
                         <tr key={index} className={index !== Object.values(groupedMaterials || {}).length - 1 ? "border-b border-black" : ""}>
-                          <td className="p-2 border-r border-black font-medium">{material.nom_matiere}</td>
-                          <td className="p-2 border-r border-black">{material.couleur || 'N/A'}</td>
-                          <td className="p-2 border-r border-black">
+                          <td className="p-3 border-r border-black font-semibold print:p-2">{material.nom_matiere}</td>
+                          <td className="p-3 border-r border-black font-medium print:p-2">{material.couleur || 'N/A'}</td>
+                          <td className="p-3 border-r border-black print:p-2">
                             {Object.keys(sizeBreakdown).length > 0 ? (
-                              <div className="flex flex-wrap gap-2">
+                              <div className="flex flex-wrap gap-1.5">
                                 {Object.entries(sizeBreakdown).map(([size, quantity]) => (
-                                  <div key={size} className="bg-gray-100 px-2 py-1 rounded">
-                                    <span className="font-medium">
-                                      {size === 'none' ? 'Standard' : size.toUpperCase()}:
+                                  <div key={size} className="bg-gray-100 px-2 py-1 rounded text-xs">
+                                    <span className="font-semibold">
+                                      {size === 'none' ? 'STD' : size.toUpperCase()}:
                                     </span>
-                                    <span className="ml-1">
+                                    <span className="ml-1 font-medium">
                                       {quantity} {material.quantity_unit}
                                     </span>
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <span className="text-gray-600 italic">Toutes tailles</span>
+                              <span className="text-gray-600 italic text-xs">Toutes tailles</span>
                             )}
                           </td>
-                          <td className="p-2 border-r border-black font-bold">
+                          <td className="p-3 border-r border-black font-bold text-blue-600 print:p-2">
                             {material.quantity_used} {material.quantity_unit}
                           </td>
-                          <td className="p-2 border-r border-black text-center">
+                          <td className="p-3 border-r border-black text-center font-medium print:p-2">
                             {material.quantity_type_name}
                           </td>
-                          <td className="p-2">
+                          <td className="p-3 text-xs print:p-2">
                             {material.commentaire || '-'}
                           </td>
                         </tr>
@@ -355,8 +382,8 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                 </tbody>
               </table>
             </div>
-            <div className="mt-3 text-right">
-              <span className="font-bold">Coût Total Matériaux: {Number(batch.total_materials_cost || 0).toFixed(2)} TND</span>
+            <div className="mt-3 text-right print:mt-2">
+              <span className="text-base font-bold print:text-sm">Coût Total Matériaux: <span className="text-red-600">{Number(batch.total_materials_cost || 0).toFixed(2)} TND</span></span>
             </div>
           </div>
         )}

@@ -59,7 +59,8 @@ switch($method) {
                 // Parse measurements, tolerance, and coupe JSON
                 $measurements = [];
                 $tolerance = [];
-                $coupe = [];
+                $couple = [];
+                $selected_coupe_options = [];
                 
                 if (!empty($order['measurements'])) {
                     $measurements = json_decode($order['measurements'], true) ?: [];
@@ -69,14 +70,28 @@ switch($method) {
                     $tolerance = json_decode($order['tolerance'], true) ?: [];
                 }
                 
+                // Parse couple field (coupe details) - note: field is named 'couple' in database
                 if (!empty($order['couple'])) {
-                    $coupe = json_decode($order['couple'], true) ?: [];
+                    $coupleData = json_decode($order['couple'], true) ?: [];
+                    // Transform object to array format expected by frontend
+                    foreach ($coupleData as $key => $value) {
+                        $couple[] = [
+                            'donne' => $key,
+                            'valeur' => $value
+                        ];
+                    }
+                }
+                
+                // Parse selected_coupe_options (the field with empty string key or specific field name)
+                if (!empty($order['selected_coupe_options'])) {
+                    $selected_coupe_options = json_decode($order['selected_coupe_options'], true) ?: [];
                 }
                 
                 // Add processed data to order
                 $orders[$key]['measurements'] = $measurements;
                 $orders[$key]['tolerance'] = $tolerance;
-                $orders[$key]['couple'] = $coupe;
+                $orders[$key]['couple'] = $couple;
+                $orders[$key]['selected_coupe_options'] = $selected_coupe_options;
                 $orders[$key]['images'] = $images;
                 $orders[$key]['videos'] = $videos;
                 $orders[$key]['commentaires'] = $comments;

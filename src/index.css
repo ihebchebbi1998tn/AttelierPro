@@ -270,11 +270,32 @@ Inspired by professional business dashboards
 }
 
 /* Print styles for proper table formatting */
+@page { size: A4 portrait; margin: 12mm; }
 @media print {
   body { 
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     color: #000 !important;
     background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Utilities to force modal-exact print rendering */
+  .print-exact {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .print-a4 {
+    width: 100% !important;
+    max-width: 190mm;
+    margin: 0 auto !important;
+  }
+  .print-no-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .print-fixed-400 {
+    height: 400px !important;
   }
   
   /* Ensure tables are preserved */

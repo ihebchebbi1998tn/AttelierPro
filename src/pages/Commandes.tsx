@@ -32,6 +32,9 @@ export interface SurMesureOrder {
   status: 'new' | 'in_progress' | 'ready_for_pickup' | 'ready_for_try' | 'first_try' | 'needs_revision' | 'ready_for_second_try' | 'completed';
   measurements: Record<string, number>;
   tolerance: Record<string, number>;
+  couple?: Array<{ donne: string; valeur: string }>;
+  coupe?: Record<string, any>;
+  selected_coupe_options?: Array<{ id: string; title: string; imageUrl: string }>;
   images: Array<{ id: number; path: string; commentaire?: string }>;
   videos?: Array<{ id: number; path: string; commentaire?: string }>;
   commentaires: Array<{ id: number; commentaire: string; created_by: string; date_creation: string }>;

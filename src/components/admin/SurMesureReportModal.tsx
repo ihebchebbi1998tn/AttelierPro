@@ -38,16 +38,24 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
   // The details page uses `order.couple` (array of { donne, valeur }). Some API responses may use `order.coupe` as an object or JSON string.
   const parsedCoupe = useMemo(() => {
     try {
-      // If API provides the array used in details page, convert it to a map
-      if (order?.couple && Array.isArray(order.couple) && order.couple.length > 0) {
-        const map: Record<string, any> = {};
-        order.couple.forEach((item: any) => {
-          if (item && (item.donne || item.name)) {
-            const key = item.donne ?? item.name;
-            map[key] = item.valeur ?? item.value ?? '';
-          }
-        });
-        return map;
+      // Handle order.couple (can be array or object)
+      if (order?.couple) {
+        // If it's an array, convert to map
+        if (Array.isArray(order.couple) && order.couple.length > 0) {
+          const map: Record<string, any> = {};
+          order.couple.forEach((item: any) => {
+            if (item && (item.donne || item.name)) {
+              const key = item.donne ?? item.name;
+              map[key] = item.valeur ?? item.value ?? '';
+            }
+          });
+          return map;
+        }
+        
+        // If it's an object, use it directly
+        if (typeof order.couple === 'object' && !Array.isArray(order.couple)) {
+          return order.couple;
+        }
       }
 
       // Otherwise try the `order.coupe` field (could be an object or a JSON string)
@@ -117,7 +125,7 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
     <style>
         @page {
             size: A4;
-            margin: 0.75in 0.5in;
+            margin: 0.45in 0.6in;
         }
         
         * {
@@ -126,12 +134,12 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
         
         body {
             font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
-            font-size: 10pt;
-            line-height: 1.3;
+            font-size: 10.5pt;
+            line-height: 1.2;
             color: black;
             background: white;
             margin: 0;
-            padding: 1rem;
+            padding: 0.75rem;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
@@ -139,12 +147,12 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
         table {
             border-collapse: collapse;
             width: 100%;
-            margin-bottom: 1rem;
+            margin-bottom: 0.45rem;
         }
         
         th, td {
             border: 1px solid black;
-            padding: 4px 6px;
+            padding: 3px 6px;
             font-size: 9pt;
             line-height: 1.2;
         }
@@ -161,7 +169,7 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
         h1 {
             font-size: 18pt;
             font-weight: bold;
-            margin: 0 0 0.5rem 0;
+            margin: 0 0 0.4rem 0;
             text-align: center;
         }
         
@@ -170,24 +178,24 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
             font-weight: bold;
             border-bottom: 1px solid black;
             padding-bottom: 3px;
-            margin: 1rem 0 0.5rem 0;
+            margin: 0.45rem 0 0.3rem 0;
         }
         
         h3 {
-            font-size: 10pt;
+            font-size: 10.5pt;
             font-weight: bold;
-            margin: 0.5rem 0 0.25rem 0;
+            margin: 0.3rem 0 0.22rem 0;
         }
         
         p {
-            margin: 0.25rem 0;
+            margin: 0.22rem 0;
             font-size: 9pt;
         }
         
         .grid-cols-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 2rem;
+            gap: 0.75rem;
         }
         
         .border-b-2 {
@@ -204,34 +212,34 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
         .font-semibold { font-weight: 600; }
         
         .page-break {
-            page-break-before: always;
+            page-break-before: auto;
         }
         
         .no-break {
             page-break-inside: avoid;
         }
         
-        .mb-8 { margin-bottom: 2rem; }
-        .mb-4 { margin-bottom: 1rem; }
-        .mb-3 { margin-bottom: 0.75rem; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .mt-3 { margin-top: 0.75rem; }
-        .mt-2 { margin-top: 0.5rem; }
-        .mt-1 { margin-top: 0.25rem; }
-        .pb-6 { padding-bottom: 1.5rem; }
-        .pb-3 { padding-bottom: 0.75rem; }
-        .pb-2 { padding-bottom: 0.5rem; }
-        .pt-6 { padding-top: 1.5rem; }
-        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
-        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-        .p-4 { padding: 1rem; }
-        .space-y-2 > * + * { margin-top: 0.5rem; }
-        .space-y-4 > * + * { margin-top: 1rem; }
-        .gap-4 { gap: 1rem; }
-        .text-xs { font-size: 8pt; }
+        .mb-8 { margin-bottom: 0.75rem; }
+        .mb-4 { margin-bottom: 0.45rem; }
+        .mb-3 { margin-bottom: 0.38rem; }
+        .mb-2 { margin-bottom: 0.3rem; }
+        .mt-3 { margin-top: 0.38rem; }
+        .mt-2 { margin-top: 0.3rem; }
+        .mt-1 { margin-top: 0.22rem; }
+        .pb-6 { padding-bottom: 0.75rem; }
+        .pb-3 { padding-bottom: 0.38rem; }
+        .pb-2 { padding-bottom: 0.3rem; }
+        .pt-6 { padding-top: 0.75rem; }
+        .px-3 { padding-left: 0.45rem; padding-right: 0.45rem; }
+        .py-2 { padding-top: 0.3rem; padding-bottom: 0.3rem; }
+        .py-1 { padding-top: 0.22rem; padding-bottom: 0.22rem; }
+        .p-4 { padding: 0.45rem; }
+        .space-y-2 > * + * { margin-top: 0.3rem; }
+        .space-y-4 > * + * { margin-top: 0.45rem; }
+        .gap-4 { gap: 0.45rem; }
+        .text-xs { font-size: 7.5pt; }
         .text-sm { font-size: 9pt; }
-        .text-base { font-size: 10pt; }
+        .text-base { font-size: 10.5pt; }
         .text-lg { font-size: 12pt; }
         .text-3xl { font-size: 18pt; }
         .tracking-wider { letter-spacing: 0.05em; }
@@ -394,9 +402,27 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
     </div>
     ` : ''}
 
+    ${(order.selected_coupe_options && order.selected_coupe_options.length > 0) || Object.entries(coupeObj).length > 0 ? `
     <!-- Coupe Table -->
     <div class="mb-8 no-break">
         <h2 class="text-lg font-bold border-b pb-2 mb-4">COUPE</h2>
+        
+        ${order.selected_coupe_options && order.selected_coupe_options.length > 0 ? `
+        <!-- Selected Coupe Options with Images -->
+        <div class="mb-4">
+            <h3 class="text-base font-bold mb-2">COUPE SÉLECTIONNÉES</h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px;">
+                ${order.selected_coupe_options.map(option => `
+                <div style="border: 1px solid #d1d5db; padding: 6px; text-align: center; background-color: #f9fafb;">
+                    <img src="${option.imageUrl}" alt="${option.title}" style="width: 75px; height: 75px; object-fit: contain; margin: 0 auto 3px auto; border-radius: 4px;" />
+                    <div style="font-size: 7.5pt; font-weight: 600;">${option.title}</div>
+                </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+        
+        ${Object.entries(coupeObj).length > 0 ? `
         <table class="border-2 text-sm">
             <thead>
                 <tr class="bg-gray-200">
@@ -406,16 +432,17 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
             </thead>
             <tbody>
         ${Object.entries(coupeObj)
-                  .filter(([_, value]) => value && value !== '' && value !== '-')
                   .map(([name, value], index) => `
                 <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
                     <td class="px-3 py-2 font-semibold">${name}</td>
-                    <td class="px-3 py-2">${value || 'Non renseigné'}</td>
+                    <td class="px-3 py-2">${value && value !== '' && value !== 0 && value !== '0' ? value : '-'}</td>
                 </tr>
                 `).join('')}
             </tbody>
         </table>
+        ` : ''}
     </div>
+    ` : ''}
 
     ${optionsFinitions && optionsFinitions.length > 0 ? `
     <!-- Options & Finitions Table -->
@@ -541,41 +568,6 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
         ` : ''}
     </div>
 
-     ${order.images && order.images.length > 0 ? (() => {
-       // Group images into chunks of 4
-       const imageChunks = [];
-       for (let i = 0; i < order.images.length; i += 4) {
-         imageChunks.push(order.images.slice(i, i + 4));
-       }
-       
-       return imageChunks.map((chunk, chunkIndex) => `
-       <div class="mb-8 ${chunkIndex > 0 ? 'images-page-break' : ''}">
-           <h2 class="text-lg font-bold border-b pb-2 mb-4">MÉDIAS ASSOCIÉS ${chunkIndex > 0 ? `(Page ${chunkIndex + 1})` : ''}</h2>
-           <div class="border-2 p-4">
-               <h3 class="font-bold mb-4 text-center">IMAGES (${order.images.length} au total)</h3>
-               <div class="images-grid">
-                   ${chunk.map((image, index) => {
-                     const imageNumber = chunkIndex * 4 + index + 1;
-                     const imageUrl = getSurMesureMediaUrl(image.path);
-                     return `
-                   <div class="image-item">
-                       <div class="image-container">
-                           <div class="font-semibold mb-2">Image ${imageNumber}</div>
-                           <img src="${imageUrl}" 
-                                alt="Image ${imageNumber}" 
-                                style="max-width: 300px; max-height: 250px; width: auto; height: auto; display: block; margin: 0 auto; border: 1px solid #ccc; object-fit: contain;"
-                                onload="console.log('Print image loaded:', this.src)"
-                                onerror="console.error('Print image failed to load:', this.src); this.style.display='none';" />
-                       </div>
-                       <div class="image-comment">${image.commentaire || 'Sans commentaire'}</div>
-                   </div>
-                   `;
-                   }).join('')}
-               </div>
-           </div>
-       </div>
-       `).join('');
-     })() : ''}
 
     <!-- Footer -->
     <div class="border-t-2 pt-6 mt-8 no-break">
@@ -756,27 +748,51 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
             )}
 
             {/* Coupe Table */}
-            {parsedCoupe && Object.keys(parsedCoupe).length > 0 && (
+            {((parsedCoupe && Object.keys(parsedCoupe).length > 0) || (order.selected_coupe_options && order.selected_coupe_options.length > 0)) && (
               <div className="mb-8 no-break">
                 <h2 className="text-lg font-bold border-b border-black pb-2 mb-4">COUPE</h2>
-                <table className="w-full border-2 border-black text-sm">
-                  <thead>
-                    <tr className="bg-gray-200">
-                      <th className="border border-black px-3 py-2 text-left font-bold">ÉLÉMENT</th>
-                      <th className="border border-black px-3 py-2 text-left font-bold">VALEUR</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(parsedCoupe)
-                      .filter(([_, value]) => value && value !== '' && value !== '-')
-                      .map(([name, value], index) => (
-                      <tr key={name} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                        <td className="border border-black px-3 py-2 font-semibold">{name}</td>
-                        <td className="border border-black px-3 py-2">{String(value) || 'Non renseigné'}</td>
+                
+                {/* Selected Coupe Options with Images */}
+                {order.selected_coupe_options && order.selected_coupe_options.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-base font-bold mb-2">COUPE SÉLECTIONNÉES</h3>
+                    <div className="grid grid-cols-3 gap-2 mb-4 print:gap-1">
+                      {order.selected_coupe_options.map((option, idx) => (
+                        <div key={idx} className="border border-gray-300 p-2 text-center bg-gray-50 print:p-1">
+                          <img 
+                            src={option.imageUrl} 
+                            alt={option.title}
+                            className="w-20 h-20 object-contain mx-auto mb-1 rounded print:w-16 print:h-16"
+                          />
+                          <div className="text-xs font-semibold print:text-[7pt]">{option.title}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Coupe details table */}
+                {parsedCoupe && Object.keys(parsedCoupe).length > 0 && (
+                  <table className="w-full border-2 border-black text-sm">
+                    <thead>
+                      <tr className="bg-gray-200">
+                        <th className="border border-black px-3 py-2 text-left font-bold">ÉLÉMENT</th>
+                        <th className="border border-black px-3 py-2 text-left font-bold">VALEUR</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {Object.entries(parsedCoupe)
+                        .map(([name, value], index) => (
+                        <tr key={name} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                          <td className="border border-black px-3 py-2 font-semibold">{name}</td>
+                          <td className="border border-black px-3 py-2">
+                            {value && value !== '' && value !== 0 && value !== '0' ? String(value) : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             )}
 
@@ -944,9 +960,9 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
               )}
             </div>
 
-            {/* Images Display - Print Friendly */}
+            {/* Images Display - HIDDEN FROM PRINT */}
             {order.images && order.images.length > 0 && (
-              <>
+              <div className="print:hidden">
                 {/* Add print-specific CSS styles */}
                 <style>{`
                   @media print {
@@ -985,83 +1001,12 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
                     }
                   }
                 `}</style>
-                <div className="mb-6">
-                  <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">IMAGES ASSOCIÉES</h2>
-                  {(() => {
-                    const imageChunks = [];
-                    for (let i = 0; i < order.images.length; i += 4) {
-                      imageChunks.push(order.images.slice(i, i + 4));
-                    }
-                    
-                    return imageChunks.map((chunk, chunkIndex) => (
-                      <div key={chunkIndex} className={chunkIndex > 0 ? "print:break-before-page image-grid" : "image-grid"}>
-                        <div className="grid grid-cols-2 gap-2 mb-4 image-grid-page">
-                          {chunk.map((image, index) => {
-                            const imageNumber = chunkIndex * 4 + index + 1;
-                            const imageUrl = getSurMesureMediaUrl(image.path);
-                            console.log('Rendering image:', imageNumber, 'URL:', imageUrl);
-                            return (
-                              <div key={index} className="border border-black p-1">
-                                <div className="text-center mb-1 text-xs font-bold">
-                                  Image {imageNumber}
-                                </div>
-                                <div className="image-card">
-                                  <img
-                                    src={imageUrl}
-                                    alt={`Image ${imageNumber}`}
-                                    className="w-full h-full object-cover rounded-sm"
-                                    style={{ 
-                                      minHeight: '90%', 
-                                      minWidth: '90%', 
-                                      maxHeight: '95%', 
-                                      maxWidth: '95%',
-                                      printColorAdjust: 'exact',
-                                      WebkitPrintColorAdjust: 'exact'
-                                    }}
-                                    onLoad={() => {
-                                      console.log('✅ Image loaded successfully:', imageUrl);
-                                    }}
-                                    onError={(e) => {
-                                      console.error('❌ Image failed to load:', imageUrl);
-                                      const target = e.target as HTMLImageElement;
-                                      target.style.display = 'none';
-                                      const parent = target.parentElement;
-                                      if (parent) {
-                                        parent.innerHTML = '<div class="text-xs text-gray-500 text-center">Image non disponible</div>';
-                                      }
-                                    }}
-                                  />
-                                </div>
-                                {image.commentaire && (
-                                  <div className="text-xs text-center mt-1 text-gray-600">
-                                    {image.commentaire}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                          {/* Fill empty slots if less than 4 images in chunk */}
-                          {chunk.length < 4 && Array.from({ length: 4 - chunk.length }).map((_, emptyIndex) => (
-                            <div key={`empty-${emptyIndex}`} className="border border-gray-300 border-dashed p-1">
-                              <div className="text-center mb-1 text-xs text-gray-400">
-                                Emplacement libre
-                              </div>
-                              <div className="image-card bg-gray-50 flex items-center justify-center">
-                                <span className="text-gray-400 text-xs">Pas d'image</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ));
-                  })()}
-                </div>
-              </>
+              </div>
             )}
 
-            {/* Videos Summary (if any) */}
+            {/* Videos Summary (if any) - HIDDEN FROM PRINT */}
             {order.videos && order.videos.length > 0 && (
-              <div className="mb-8 page-break">
+              <div className="mb-8 page-break print:hidden">
                 <h2 className="text-lg font-bold border-b border-black pb-2 mb-4">VIDÉOS ASSOCIÉES</h2>
                 <div className="border-2 border-black p-4 text-sm">
                   <div className="grid grid-cols-1 gap-2">

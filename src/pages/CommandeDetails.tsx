@@ -1196,37 +1196,93 @@ const CommandeDetails = () => {
 
           {/* Coupe Tab */}
           <TabsContent value="coupe" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <FileText className="w-5 h-5 mr-2" />
-                  Informations de Coupe
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {order?.couple && order.couple.length > 0 ? (
-                  <div className="space-y-2">
-                    {order.couple.map((item, index) => (
-                      <div
-                        key={index}
-                        className="flex justify-between items-center py-3 border-b last:border-b-0"
-                      >
-                        <span className="font-medium text-muted-foreground">
-                          {item.donne}
-                        </span>
-                        <span className="text-foreground font-semibold">
-                          {item.valeur || <span className="text-muted-foreground italic">Non renseigné</span>}
-                        </span>
+            <div className="space-y-4">
+              {/* Selected Coupe Options (Images) */}
+              {order?.selected_coupe_options && order.selected_coupe_options.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-lg">
+                      <ImageIcon className="w-5 h-5 mr-2" />
+                      Coupe sélectionnées
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {order.selected_coupe_options.map((option, idx) => (
+                        <div key={idx} className="border rounded-lg p-3 text-center bg-muted/20">
+                          <img 
+                            src={option.imageUrl} 
+                            alt={option.title}
+                            className="w-full h-40 object-contain rounded mb-2"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                          <p className="text-sm font-medium">{option.title}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Coupe Details (Text) */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg">
+                    <FileText className="w-5 h-5 mr-2" />
+                    Détails de Coupe
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    // Handle both object and array formats
+                    const coupleData = order?.couple;
+                    if (!coupleData) return (
+                      <p className="text-muted-foreground text-center py-8">
+                        Aucune information de coupe disponible
+                      </p>
+                    );
+
+                    // Convert to array if it's an object
+                    const coupleArray = Array.isArray(coupleData) 
+                      ? coupleData 
+                      : Object.entries(coupleData).map(([key, value]) => ({
+                          donne: key,
+                          valeur: value
+                        }));
+
+                    if (coupleArray.length === 0) return (
+                      <p className="text-muted-foreground text-center py-8">
+                        Aucune information de coupe disponible
+                      </p>
+                    );
+
+                    return (
+                      <div className="space-y-2">
+                        {coupleArray.map((item, index) => (
+                          <div
+                            key={index}
+                            className="flex justify-between items-center py-3 border-b last:border-b-0"
+                          >
+                            <span className="font-medium text-muted-foreground">
+                              {item.donne}
+                            </span>
+                            <span className="text-foreground font-semibold">
+                              {item.valeur !== undefined && item.valeur !== null && item.valeur !== '' && item.valeur !== 0 && item.valeur !== '0'
+                                ? String(item.valeur)
+                                : '-'
+                              }
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-8">
-                    Aucune information de coupe disponible
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
 

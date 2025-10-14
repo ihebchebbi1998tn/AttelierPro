@@ -467,7 +467,7 @@ const BatchDetails = () => {
           try {
             const parsedSizes: any = sizesObj || {};
             const totalQuantity = Number(material.quantity_used) || 0;
-            const totalPieces = Object.values(parsedSizes).reduce((s: number, v: any) => s + Number(v || 0), 0);
+            const totalPieces = Object.values(parsedSizes).reduce((s: number, v: any) => s + Number(v || 0), 0) as number;
             if (totalPieces > 0) {
               Object.entries(parsedSizes).forEach(([size, pieces]) => {
                 const numPieces = Number(pieces) || 0;
@@ -529,8 +529,8 @@ const BatchDetails = () => {
     
     body {
       font-family: "Segoe UI", "Arial", "Helvetica", sans-serif;
-      font-size: 12px;
-      line-height: 1.3;
+      font-size: 13px;
+      line-height: 1.4;
       color: #000;
       background: white;
       padding: 18px;
@@ -552,21 +552,21 @@ const BatchDetails = () => {
     
     /* Typography */
     h1 {
-      font-size: 20px;
-      font-weight: 600;
+      font-size: 22px;
+      font-weight: 700;
       text-align: center;
-      margin-bottom: 6px;
-      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
     }
     
     h2 {
-      font-size: 14px;
-      font-weight: 600;
-      border-bottom: 1.5px solid #000;
-      padding-bottom: 3px;
-      margin-bottom: 8px;
-      margin-top: 16px;
-      letter-spacing: 0.3px;
+      font-size: 16px;
+      font-weight: 700;
+      border-bottom: 2px solid #000;
+      padding-bottom: 4px;
+      margin-bottom: 10px;
+      margin-top: 18px;
+      letter-spacing: 0.5px;
     }
     
     /* Header section */
@@ -691,19 +691,31 @@ const BatchDetails = () => {
     
     /* Text styles */
     .text-xs {
-      font-size: 9px;
+      font-size: 10px;
     }
     
     .text-sm {
-      font-size: 11px;
+      font-size: 12px;
+    }
+    
+    .text-base {
+      font-size: 13px;
     }
     
     .text-lg {
-      font-size: 14px;
+      font-size: 16px;
+    }
+    
+    .text-xl {
+      font-size: 18px;
     }
     
     .text-2xl {
-      font-size: 20px;
+      font-size: 22px;
+    }
+    
+    .text-3xl {
+      font-size: 24px;
     }
     
     .font-bold {
@@ -947,6 +959,208 @@ const BatchDetails = () => {
     /* Subtle improvements for readability */
     table {
       font-variant-numeric: tabular-nums;
+    }
+    
+    /* Color classes for highlighting important info */
+    .text-blue-600 {
+      color: #2563eb !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    
+    .text-purple-600 {
+      color: #9333ea !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    
+    .text-green-600 {
+      color: #16a34a !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    
+    .text-red-600 {
+      color: #dc2626 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    
+    .text-gray-700 {
+      color: #374151 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    
+    /* Font weight utilities */
+    .font-semibold {
+      font-weight: 600;
+    }
+    
+    .font-bold {
+      font-weight: 700;
+    }
+    
+    /* Blue specification box styling */
+    .border-blue-600 {
+      border: 2px solid #2563eb !important;
+    }
+    
+    .bg-blue-600 {
+      background-color: #2563eb !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    
+    .text-white {
+      color: #ffffff !important;
+    }
+    
+    .px-3 {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+    
+    .py-2 {
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
+    
+    .p-3 {
+      padding: 8px;
+    }
+    
+    .space-y-1 > * + * {
+      margin-top: 3px;
+    }
+    
+    /* Print-specific improvements for image and text layout */
+    @media print {
+      /* Force grid to stay 3 columns in print */
+      .print\\:grid-cols-3 {
+        grid-template-columns: 1fr 2fr !important;
+      }
+      
+      .print\\:col-span-1 {
+        grid-column: span 1 !important;
+      }
+      
+      .print\\:col-span-2 {
+        grid-column: span 1 !important;
+      }
+      
+      /* Make image smaller in print */
+      .print\\:h-32 {
+        height: 128px !important;
+        max-height: 128px !important;
+      }
+      
+      .print\\:object-contain {
+        object-fit: contain !important;
+      }
+      
+      /* Adjust text sizes for print */
+      .print\\:text-2xl {
+        font-size: 22px !important;
+      }
+      
+      .print\\:text-lg {
+        font-size: 16px !important;
+      }
+      
+      .print\\:text-base {
+        font-size: 13px !important;
+      }
+      
+      .print\\:text-sm {
+        font-size: 12px !important;
+      }
+      
+      .print\\:text-xs {
+        font-size: 10px !important;
+      }
+      
+      /* Adjust spacing for print */
+      .print\\:gap-3 {
+        gap: 8px !important;
+      }
+      
+      .print\\:p-3 {
+        padding: 8px !important;
+      }
+      
+      .print\\:p-2 {
+        padding: 6px !important;
+      }
+      
+      .print\\:px-2 {
+        padding-left: 6px !important;
+        padding-right: 6px !important;
+      }
+      
+      .print\\:py-1 {
+        padding-top: 3px !important;
+        padding-bottom: 3px !important;
+      }
+      
+      .print\\:py-1\\.5 {
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+      }
+      
+      .print\\:pb-1\\.5 {
+        padding-bottom: 4px !important;
+      }
+      
+      .print\\:mb-1 {
+        margin-bottom: 3px !important;
+      }
+      
+      .print\\:mb-1\\.5 {
+        margin-bottom: 4px !important;
+      }
+      
+      .print\\:mb-2 {
+        margin-bottom: 6px !important;
+      }
+      
+      .print\\:mb-4 {
+        margin-bottom: 12px !important;
+      }
+      
+      .print\\:mt-2 {
+        margin-top: 6px !important;
+      }
+      
+      .print\\:space-y-2 > * + * {
+        margin-top: 6px !important;
+      }
+      
+      .print\\:space-y-0\\.5 > * + * {
+        margin-top: 2px !important;
+      }
+      
+      .print\\:gap-y-1 {
+        row-gap: 3px !important;
+      }
+      
+      /* Ensure font sans is used */
+      .font-sans {
+        font-family: "Segoe UI", "Arial", "Helvetica", sans-serif !important;
+      }
+      
+      /* Ensure proper line height */
+      .leading-normal {
+        line-height: 1.4 !important;
+      }
+      
+      .print\\:p-6 {
+        padding: 18px !important;
+      }
+      
+      .print\\:pb-3 {
+        padding-bottom: 8px !important;
+      }
     }
   </style>
   <script>
