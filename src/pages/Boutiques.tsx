@@ -1,10 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Import images from assets
-import lucciLogo from '@/assets/lucci-by-ey-logo.png';
-import spadaLogo from '@/assets/spada-di-battaglia-logo.png';
-
 const Boutiques = () => {
   const navigate = useNavigate();
 
@@ -13,13 +9,13 @@ const Boutiques = () => {
       id: 'lucci-by-ey',
       name: 'Lucci By Ey',
       route: '/lucci-by-ey',
-      image: lucciLogo
+      image: '/lucci-by-ey-logo.png'
     },
     {
       id: 'spadadibattaglia',
       name: 'Spada di Battaglia',
       route: '/spadadibattaglia',
-      image: spadaLogo
+      image: '/spada-di-battaglia-logo.png'
     }
   ];
 

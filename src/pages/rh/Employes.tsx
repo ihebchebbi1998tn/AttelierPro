@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,7 +96,12 @@ const Employes = () => {
     includeLeaves: false
   });
   const [exporting, setExporting] = useState(false);
-  const [employeeStatus, setEmployeeStatus] = useState<Record<number, { hasPlanning: boolean; hasSalary: boolean }>>({});
+  const [employeeStatus, setEmployeeStatus] = useState<Record<number, { 
+    hasPlanning: boolean; 
+    hasSalary: boolean;
+    workedDays: number;
+    absences: number;
+  }>>({});
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [selectedEmployeeForLeave, setSelectedEmployeeForLeave] = useState<Employee | null>(null);
   const [leaveData, setLeaveData] = useState({
@@ -178,27 +184,50 @@ const Employes = () => {
   };
 
   const loadEmployeeStatus = async (employees: Employee[]) => {
-    const statusMap: Record<number, { hasPlanning: boolean; hasSalary: boolean }> = {};
+    const statusMap: Record<number, { 
+      hasPlanning: boolean; 
+      hasSalary: boolean;
+      workedDays: number;
+      absences: number;
+    }> = {};
     
     await Promise.all(
       employees.map(async (employee) => {
         try {
           // Check for planning (shift templates or schedules)
-          const [templates, schedules, salaries] = await Promise.all([
+          const [templates, schedules, salaries, timeEntries, holidays] = await Promise.all([
             shiftTemplateService.getAll(employee.id),
             scheduleService.getAll({ employee_id: employee.id }),
-            salaryService.getAll({ employee_id: employee.id })
+            salaryService.getAll({ employee_id: employee.id }),
+            timeEntryService.getAll({ employee_id: employee.id }),
+            holidayService.getAll({ employee_id: employee.id, status: 'approved' })
           ]);
+          
+          // Count worked days
+          const workedDays = timeEntries.filter(entry => 
+            entry.total_hours && entry.total_hours > 0
+          ).length;
+          
+          // Count absences (approved holidays)
+          const absences = holidays.reduce((sum, holiday) => {
+            if (holiday.half_day === 'FULL') return sum + 1;
+            if (holiday.half_day === 'AM' || holiday.half_day === 'PM') return sum + 0.5;
+            return sum;
+          }, 0);
           
           statusMap[employee.id] = {
             hasPlanning: templates.length > 0 || schedules.length > 0,
-            hasSalary: salaries.length > 0
+            hasSalary: salaries.length > 0,
+            workedDays,
+            absences
           };
         } catch (error) {
           // If error, mark as not filled
           statusMap[employee.id] = {
             hasPlanning: false,
-            hasSalary: false
+            hasSalary: false,
+            workedDays: 0,
+            absences: 0
           };
         }
       })
@@ -589,7 +618,7 @@ const Employes = () => {
           ) : isMobile ? (
             <div className="space-y-2">
               {filteredEmployees.map((employee) => {
-                const status = employeeStatus[employee.id] || { hasPlanning: false, hasSalary: false };
+                const status = employeeStatus[employee.id] || { hasPlanning: false, hasSalary: false, workedDays: 0, absences: 0 };
                 return (
                 <Card 
                   key={employee.id} 
@@ -757,6 +786,8 @@ const Employes = () => {
                   <TableHead>Contact</TableHead>
                   <TableHead>Statut Civil</TableHead>
                   <TableHead className="text-center">Planning/Salaire</TableHead>
+                  <TableHead className="text-center">Jours Travaillés</TableHead>
+                  <TableHead className="text-center">Absences</TableHead>
                   <TableHead>Date d'embauche</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -817,7 +848,7 @@ const Employes = () => {
                     <TableCell>
                       <div className="flex items-center justify-center gap-2">
                         {(() => {
-                          const status = employeeStatus[employee.id] || { hasPlanning: false, hasSalary: false };
+                          const status = employeeStatus[employee.id] || { hasPlanning: false, hasSalary: false, workedDays: 0, absences: 0 };
                           return (
                             <>
                               <div title={status.hasPlanning ? "Planning rempli" : "Planning manquant"}>
@@ -830,6 +861,16 @@ const Employes = () => {
                           );
                         })()}
                       </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline">
+                        {employeeStatus[employee.id]?.workedDays || 0}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={employeeStatus[employee.id]?.absences > 0 ? "destructive" : "outline"}>
+                        {employeeStatus[employee.id]?.absences || 0}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center">

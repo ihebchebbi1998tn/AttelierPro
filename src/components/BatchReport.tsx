@@ -142,16 +142,6 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
           </div>
         </div>
 
-        {/* Notes - Highlighted at Top */}
-        {batch.notes && (
-          <div className="mb-6 bg-yellow-50 border-2 border-yellow-400">
-            <h2 className="text-lg font-bold bg-yellow-400 px-3 py-2 mb-0">⚠️ NOTES DE PRODUCTION</h2>
-            <div className="p-3 font-medium">
-              <div>{batch.notes}</div>
-            </div>
-          </div>
-        )}
-
         {/* Batch Information */}
         <div className="mb-6">
           <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">INFORMATIONS BATCH</h2>
@@ -171,57 +161,19 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
           </div>
         </div>
 
-        {/* Product Information with Specifications */}
+        {/* Product Information */}
         <div className="mb-6">
           <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">INFORMATIONS PRODUIT</h2>
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <div className="mb-2"><strong>Nom du produit:</strong> {batch.nom_product}</div>
               <div className="mb-2"><strong>Référence:</strong> {batch.reference_product}</div>
             </div>
             <div>
               <div className="mb-2"><strong>ID Produit:</strong> {batch.product_id}</div>
+              <div className="mb-2"><strong>Coût/unité:</strong> {(Number(batch.total_materials_cost || 0) / batch.quantity_to_produce).toFixed(2)} TND</div>
             </div>
           </div>
-          
-          {/* Production Specifications */}
-          {batch.production_specifications && 
-           batch.production_specifications !== 'null' && 
-           batch.production_specifications !== '{}' && (() => {
-             try {
-               const specs = typeof batch.production_specifications === 'string' 
-                 ? JSON.parse(batch.production_specifications) 
-                 : batch.production_specifications;
-               
-               if (specs && Object.keys(specs).length > 0) {
-                 return (
-                   <div className="mt-4">
-                     <div className="border border-black">
-                       <table className="w-full">
-                         <thead>
-                           <tr className="border-b border-black bg-gray-100">
-                             <th className="text-left p-2 border-r border-black">SPÉCIFICATION</th>
-                             <th className="text-left p-2">VALEUR</th>
-                           </tr>
-                         </thead>
-                         <tbody>
-                           {Object.entries(specs).map(([key, value], index) => (
-                             <tr key={index} className="border-b border-black">
-                               <td className="p-2 border-r border-black font-medium">{key}</td>
-                               <td className="p-2">{String(value)}</td>
-                             </tr>
-                           ))}
-                         </tbody>
-                       </table>
-                     </div>
-                   </div>
-                 );
-               }
-             } catch (error) {
-               console.error('Error parsing production specifications:', error);
-             }
-             return null;
-           })()}
         </div>
 
         {/* Size Breakdown */}
@@ -241,6 +193,100 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                     <tr key={index} className="border-b border-black">
                       <td className="p-2 border-r border-black">{size.size_name}</td>
                       <td className="p-2">{size.quantity} unités</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Measurement Scale Table */}
+            <div className="border border-black">
+              <div className="bg-gray-100 p-2 border-b border-black">
+                <strong>BARÈME DE MESURE</strong>
+              </div>
+              {measurementScale && measurementScale.measurement_types.length > 0 ? (
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-black bg-gray-50">
+                      <th className="text-left p-2 border-r border-black text-xs">TYPE DE MESURE</th>
+                      <th className="text-center p-2 border-r border-black text-xs">+/-</th>
+                      {parsedSizes.map(size => (
+                        <th key={size.size_name} className="text-center p-2 border-r border-black text-xs">
+                          {size.size_name}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {measurementScale.measurement_types.map((measurementType, index) => (
+                      <tr key={index} className="border-b border-black">
+                        <td className="p-2 border-r border-black text-xs font-medium">{measurementType}</td>
+                        <td className="p-2 border-r border-black text-center text-xs">
+                          ±{measurementScale.tolerance_data?.[measurementType] || '0.5'}
+                        </td>
+                        {parsedSizes.map(size => (
+                          <td key={size.size_name} className="p-2 border-r border-black text-center text-xs">
+                            {(() => {
+                              const measurementData = measurementScale.measurements_data?.[measurementType];
+                              if (!measurementData) return '- cm';
+                              
+                              const availableSizes = Object.keys(measurementData);
+                              const matchedSize = findBestSizeMatch(size.size_name, availableSizes);
+                              
+                              if (matchedSize && measurementData[matchedSize] !== undefined) {
+                                return `${measurementData[matchedSize]} cm`;
+                              }
+                              
+                              return '- cm';
+                            })()}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-4 text-center text-gray-500 italic">
+                  Pas configuré
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Show measurements section even without size breakdown */}
+        {!parsedSizes.length && measurementScale && measurementScale.measurement_types.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">BARÈME DE MESURE</h2>
+            <div className="border border-black">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-black bg-gray-100">
+                    <th className="text-left p-2 border-r border-black text-xs">TYPE DE MESURE</th>
+                    <th className="text-center p-2 border-r border-black text-xs">TOLÉRANCE (+/-)</th>
+                    <th className="text-center p-2 text-xs">VALEURS PAR TAILLE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {measurementScale.measurement_types.map((measurementType, index) => (
+                    <tr key={index} className="border-b border-black">
+                      <td className="p-2 border-r border-black text-xs font-medium">{measurementType}</td>
+                      <td className="p-2 border-r border-black text-center text-xs">
+                        ±{measurementScale.tolerance_data?.[measurementType] || '0.5'} cm
+                      </td>
+                      <td className="p-2 text-xs">
+                        {measurementScale.measurements_data?.[measurementType] ? (
+                          <div className="flex flex-wrap gap-2">
+                            {Object.entries(measurementScale.measurements_data[measurementType]).map(([size, value]) => (
+                              <span key={size} className="inline-block bg-gray-100 px-2 py-1 rounded text-xs">
+                                {size}: {value} cm
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-500">-</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -348,9 +394,79 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                 </tbody>
               </table>
             </div>
+            
+            {/* Size-based material summary */}
+            {(() => {
+              let hasSizeBreakdown = false;
+              try {
+                if (batch.sizes_breakdown) {
+                  const parsedSizes: { [key: string]: number } = JSON.parse(batch.sizes_breakdown);
+                  hasSizeBreakdown = Object.keys(parsedSizes).length > 0;
+                }
+              } catch (e) {
+                hasSizeBreakdown = false;
+              }
+              
+              if (hasSizeBreakdown) {
+                return (
+                  <div className="mt-4 p-3 bg-gray-50 border border-gray-300 rounded">
+                    <h3 className="text-sm font-bold mb-2">RÉSUMÉ MATÉRIAUX PAR TAILLE</h3>
+                    <div className="text-xs text-gray-700">
+                      <p className="mb-1">
+                        <strong>Note:</strong> La répartition des matériaux est calculée proportionnellement 
+                        à la quantité de pièces produites par taille.
+                      </p>
+                      <p>
+                        Les quantités peuvent varier selon les spécifications techniques de chaque taille.
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
         )}
 
+        {/* Production Specifications */}
+        {batch.production_specifications && 
+         batch.production_specifications !== 'null' && 
+         batch.production_specifications !== '{}' && (() => {
+           try {
+             const specs = typeof batch.production_specifications === 'string' 
+               ? JSON.parse(batch.production_specifications) 
+               : batch.production_specifications;
+             
+             if (specs && Object.keys(specs).length > 0) {
+               return (
+                 <div className="mb-6">
+                   <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">SPÉCIFICATIONS DE PRODUCTION</h2>
+                   <div className="border border-black">
+                     <table className="w-full">
+                       <thead>
+                         <tr className="border-b border-black bg-gray-100">
+                           <th className="text-left p-2 border-r border-black">SPÉCIFICATION</th>
+                           <th className="text-left p-2">VALEUR</th>
+                         </tr>
+                       </thead>
+                       <tbody>
+                         {Object.entries(specs).map(([key, value], index) => (
+                           <tr key={index} className="border-b border-black">
+                             <td className="p-2 border-r border-black font-medium">{key}</td>
+                             <td className="p-2">{String(value)}</td>
+                           </tr>
+                         ))}
+                       </tbody>
+                     </table>
+                   </div>
+                 </div>
+               );
+             }
+           } catch (error) {
+             console.error('Error parsing production specifications:', error);
+           }
+           return null;
+         })()}
 
         {/* Production Summary */}
         <div className="mb-6">
@@ -367,6 +483,15 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
           </div>
         </div>
 
+        {/* Notes */}
+        {batch.notes && (
+          <div className="mb-6">
+            <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">NOTES DE PRODUCTION</h2>
+            <div className="border border-black p-2 bg-gray-50">
+              <div>{batch.notes}</div>
+            </div>
+          </div>
+        )}
 
         {/* Cancellation Information */}
         {batch.status === 'cancelled' && (

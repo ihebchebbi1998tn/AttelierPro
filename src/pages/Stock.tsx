@@ -907,35 +907,7 @@ const Stock = () => {
                   />
                 </div>
 
-              {/* Category Filter Buttons */}
-              {categories.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant={categoryFilter === "all" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setCategoryFilter("all");
-                      clearCategoryFilter();
-                    }}
-                    className={`rounded-xl text-xs h-9 ${categoryFilter === "all" ? "bg-green-600 hover:bg-green-700" : ""}`}
-                  >
-                    Toutes
-                  </Button>
-                  {categories.map((category) => (
-                    <Button
-                      key={category.id}
-                      variant={categoryFilter === category.id?.toString() ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCategoryFilter(category.id?.toString() || '')}
-                      className={`rounded-xl text-xs h-9 ${categoryFilter === category.id?.toString() ? "bg-green-600 hover:bg-green-700" : ""}`}
-                    >
-                      {category.name}
-                    </Button>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-2">
                   <Select value={materiereTypeFilter} onValueChange={setMateriereTypeFilter}>
                     <SelectTrigger className="w-[110px] md:w-[140px] rounded-xl text-xs md:text-sm h-9 md:h-10">
                       <SelectValue placeholder="Type" />
@@ -946,6 +918,22 @@ const Stock = () => {
                       <SelectItem value="extern">Externe</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {categories.length > 0 && (
+                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                      <SelectTrigger className="w-[120px] md:w-[150px] rounded-xl text-xs md:text-sm h-9 md:h-10">
+                        <SelectValue placeholder="Catégorie" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toutes</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id?.toString() || ''}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
 
                   <Select value={sortBy} onValueChange={setSortBy}>
                     <SelectTrigger className="w-[100px] md:w-[120px] rounded-xl text-xs md:text-sm h-9 md:h-10">
@@ -958,12 +946,14 @@ const Stock = () => {
                     </SelectContent>
                   </Select>
                   
-                  {materiereTypeFilter !== "all" && (
+                  {(categoryFilter !== "all" || materiereTypeFilter !== "all") && (
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => {
+                        setCategoryFilter("all");
                         setMateriereTypeFilter("all");
+                        clearCategoryFilter();
                       }}
                       className="rounded-xl text-xs h-9"
                     >

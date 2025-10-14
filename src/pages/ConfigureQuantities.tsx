@@ -103,19 +103,23 @@ export default function ConfigureQuantities() {
                     {category === 'clothing' ? 'Vêtements' : category === 'numeric_pants' ? 'Tailles Numériques' : category === 'shoes' ? 'Chaussures' : 'Ceintures'}
                   </Label>
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {sizes.map((size) => (
-                      <div key={size} className="flex flex-col space-y-1">
-                        <Label className="text-xs text-center font-medium">{size}</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={quantities[size] ?? ''}
-                          onChange={(e) => handleChange(size, parseInt(e.target.value) || 0)}
-                          className="h-8 text-xs text-center"
-                          placeholder="0"
-                        />
-                      </div>
-                    ))}
+                    {sizes.map((size) => {
+                      const quantity = quantities[size] ?? 0;
+                      
+                      return (
+                        <div key={size} className="flex flex-col space-y-1">
+                          <Label className="text-xs text-center font-medium uppercase">{size}</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={quantity || ''}
+                            onChange={(e) => handleChange(size, parseInt(e.target.value) || 0)}
+                            className="h-8 text-xs text-center"
+                            placeholder="0"
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
