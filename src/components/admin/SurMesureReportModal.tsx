@@ -373,7 +373,6 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
     </div>
     ` : ''}
 
-  ${coupeObj && Object.keys(coupeObj).length > 0 ? `
     <!-- Coupe Table -->
     <div class="mb-8 no-break">
         <h2 class="text-lg font-bold border-b pb-2 mb-4">COUPE</h2>
@@ -396,7 +395,6 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
             </tbody>
         </table>
     </div>
-    ` : ''}
 
     ${optionsFinitions && optionsFinitions.length > 0 ? `
     <!-- Options & Finitions Table -->

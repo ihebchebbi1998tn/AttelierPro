@@ -1760,13 +1760,23 @@ const BatchDetails = () => {
       }
       
       // Step 2: Deduct stock using actual filled quantities (not estimated)
-      console.log('Deducting stock with actual quantities:', {
+      // Prepare totals per material to avoid ambiguity on server side
+      const materialsTotals: Record<string, number> = Object.fromEntries(
+        Object.entries(materialsQuantities).map(([materialId, perPiece]) => {
+          const perPieceNum = Number(perPiece) || 0;
+          const total = perPieceNum * (Number(batch.quantity_to_produce) || 0);
+          return [materialId, total];
+        })
+      );
+
+      console.log('Deducting stock with actual quantities (per-piece + totals):', {
         action: 'deduct_stock_with_actual_quantities',
         batch_id: batch.id,
         materials_quantities: materialsQuantities,
+        materials_quantities_totals: materialsTotals,
         production_number: batch.batch_reference
       });
-      
+
       const deductResponse = await fetch('https://luccibyey.com.tn/production/api/production_stock_deduction.php', {
         method: 'POST',
         headers: { 
@@ -1777,6 +1787,7 @@ const BatchDetails = () => {
           action: 'deduct_stock_with_actual_quantities',
           batch_id: batch.id,
           materials_quantities: materialsQuantities,
+          materials_quantities_totals: materialsTotals,
           production_number: batch.batch_reference,
           user_id: 1
         }),
