@@ -65,9 +65,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $totalCost = 0;
             $processedMaterials = [];
             
+            // If client provided explicit totals for each material, prefer them to avoid ambiguity
+            $materials_totals = $data['materials_quantities_totals'] ?? [];
+
             foreach ($materials_quantities as $material_id => $quantity_per_piece) {
                 $material_id = intval($material_id);
                 $quantity_per_piece = floatval($quantity_per_piece);
+
+                // If explicit total provided for this material, use it directly
+                $explicit_total = null;
+                if (isset($materials_totals[$material_id])) {
+                    $explicit_total = floatval($materials_totals[$material_id]);
+                } elseif (isset($materials_totals[(string)$material_id])) {
+                    $explicit_total = floatval($materials_totals[(string)$material_id]);
+                }
                 
                 // Skip if quantity is 0 or negative
                 if ($quantity_per_piece <= 0) {
@@ -80,7 +91,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 // IMPORTANT: Multiply quantity per piece by total units to produce
-                $quantity_to_deduct = $quantity_per_piece * $quantity_to_produce;
+                // If explicit total was provided by the client, use it directly to avoid double multiplication or rounding issues
+                if ($explicit_total !== null) {
+                    $quantity_to_deduct = $explicit_total;
+                } else {
+                    $quantity_to_deduct = $quantity_per_piece * $quantity_to_produce;
+                }
                 
                 // Get material details
                 $stmt = $db->prepare("
