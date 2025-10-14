@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +33,22 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
 }) => {
   const [optionsFinitions, setOptionsFinitions] = useState<any[]>([]);
   const [materials, setMaterials] = useState<SurMesureMaterial[]>([]);
+
+  // Parse coupe once (API sometimes returns a JSON string). UseMemo avoids re-parsing on every render.
+  const parsedCoupe = useMemo(() => {
+    let c: any = order?.coupe ?? {};
+    try {
+      if (typeof c === 'string' && c.trim() !== '') {
+        c = JSON.parse(c);
+      }
+    } catch (e) {
+      console.warn('Failed to parse order.coupe:', e);
+      c = {};
+    }
+
+    if (!c || typeof c !== 'object') return {};
+    return c;
+  }, [order?.coupe]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,16 +92,7 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
 
   const generateReportHTML = () => {
     const currentDate = format(new Date(), "dd/MM/yyyy 'à' HH:mm", { locale: fr });
-    // Ensure coupe is an object (sometimes API returns JSON string)
-    let coupeObj: any = order.coupe;
-    try {
-      if (typeof coupeObj === 'string' && coupeObj.trim() !== '') {
-        coupeObj = JSON.parse(coupeObj);
-      }
-    } catch (e) {
-      console.warn('Failed to parse order.coupe for print report:', e);
-      coupeObj = {};
-    }
+    const coupeObj: any = parsedCoupe || {};
     
     return `<!DOCTYPE html>
 <html lang="fr">
@@ -735,7 +742,7 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
             )}
 
             {/* Coupe Table */}
-            {order.coupe && Object.keys(order.coupe).length > 0 && (
+            {parsedCoupe && Object.keys(parsedCoupe).length > 0 && (
               <div className="mb-8 no-break">
                 <h2 className="text-lg font-bold border-b border-black pb-2 mb-4">COUPE</h2>
                 <table className="w-full border-2 border-black text-sm">
@@ -746,7 +753,7 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {Object.entries(order.coupe)
+                    {Object.entries(parsedCoupe)
                       .filter(([_, value]) => value && value !== '' && value !== '-')
                       .map(([name, value], index) => (
                       <tr key={name} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
