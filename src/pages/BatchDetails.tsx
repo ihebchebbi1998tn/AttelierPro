@@ -2399,7 +2399,7 @@ const BatchDetails = () => {
     );
   }
 
-        </head>
+
   const duration = calculateDuration(batch.started_at, batch.completed_at);
   const priority = getPriorityLevel(batch.status, duration);
 
