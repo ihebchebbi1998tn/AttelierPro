@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // Import images from assets
 import lucciLogo from '@/assets/lucci-by-ey-logo.png';
 import spadaLogo from '@/assets/spada-di-battaglia-logo.png';
-import placeholder from '@/assets/placeholder.svg';
 
 const Boutiques = () => {
   const navigate = useNavigate();
@@ -56,7 +55,7 @@ const Boutiques = () => {
                     alt={boutique.name}
                     className="max-h-48 w-auto object-contain p-8 transition-transform duration-300 group-hover:scale-110"
                     onError={(e) => {
-                      e.currentTarget.src = placeholder;
+                      e.currentTarget.src = '/placeholder.svg';
                     }}
                   />
                 </div>
