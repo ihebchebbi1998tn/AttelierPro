@@ -2368,8 +2368,8 @@ const BatchDetails = () => {
           <div>
             <div className="h-8 w-48 bg-muted rounded animate-pulse" />
             <div className="h-4 w-32 bg-muted rounded animate-pulse mt-2" />
+            </div>
           </div>
-        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-32 bg-muted rounded animate-pulse" />
@@ -2395,6 +2395,7 @@ const BatchDetails = () => {
         <Card className="p-8 text-center">
           <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-lg text-muted-foreground">Aucune donnée disponible pour ce batch</p>
+        </Card>
       </div>
     );
   }
