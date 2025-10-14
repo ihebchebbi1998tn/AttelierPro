@@ -34,21 +34,35 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
   const [optionsFinitions, setOptionsFinitions] = useState<any[]>([]);
   const [materials, setMaterials] = useState<SurMesureMaterial[]>([]);
 
-  // Parse coupe once (API sometimes returns a JSON string). UseMemo avoids re-parsing on every render.
+  // Normalize coupe/couple into a single object.
+  // The details page uses `order.couple` (array of { donne, valeur }). Some API responses may use `order.coupe` as an object or JSON string.
   const parsedCoupe = useMemo(() => {
-    let c: any = order?.coupe ?? {};
     try {
-      if (typeof c === 'string' && c.trim() !== '') {
-        c = JSON.parse(c);
+      // If API provides the array used in details page, convert it to a map
+      if (order?.couple && Array.isArray(order.couple) && order.couple.length > 0) {
+        const map: Record<string, any> = {};
+        order.couple.forEach((item: any) => {
+          if (item && (item.donne || item.name)) {
+            const key = item.donne ?? item.name;
+            map[key] = item.valeur ?? item.value ?? '';
+          }
+        });
+        return map;
       }
-    } catch (e) {
-      console.warn('Failed to parse order.coupe:', e);
-      c = {};
-    }
 
-    if (!c || typeof c !== 'object') return {};
-    return c;
-  }, [order?.coupe]);
+      // Otherwise try the `order.coupe` field (could be an object or a JSON string)
+      let c: any = order?.coupe ?? {};
+      if (typeof c === 'string') {
+        c = c.trim() === '' ? {} : JSON.parse(c);
+      }
+
+      if (!c || typeof c !== 'object') return {};
+      return c;
+    } catch (e) {
+      console.warn('Failed to normalize coupe/couple for report modal:', e);
+      return {};
+    }
+  }, [order?.couple, order?.coupe]);
 
   useEffect(() => {
     const fetchData = async () => {
