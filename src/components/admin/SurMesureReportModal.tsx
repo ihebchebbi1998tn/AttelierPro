@@ -76,6 +76,16 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
 
   const generateReportHTML = () => {
     const currentDate = format(new Date(), "dd/MM/yyyy 'à' HH:mm", { locale: fr });
+    // Ensure coupe is an object (sometimes API returns JSON string)
+    let coupeObj: any = order.coupe;
+    try {
+      if (typeof coupeObj === 'string' && coupeObj.trim() !== '') {
+        coupeObj = JSON.parse(coupeObj);
+      }
+    } catch (e) {
+      console.warn('Failed to parse order.coupe for print report:', e);
+      coupeObj = {};
+    }
     
     return `<!DOCTYPE html>
 <html lang="fr">
@@ -363,7 +373,7 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
     </div>
     ` : ''}
 
-    ${order.coupe && Object.keys(order.coupe).length > 0 ? `
+  ${coupeObj && Object.keys(coupeObj).length > 0 ? `
     <!-- Coupe Table -->
     <div class="mb-8 no-break">
         <h2 class="text-lg font-bold border-b pb-2 mb-4">COUPE</h2>
@@ -375,7 +385,7 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
                 </tr>
             </thead>
             <tbody>
-                ${Object.entries(order.coupe)
+        ${Object.entries(coupeObj)
                   .filter(([_, value]) => value && value !== '' && value !== '-')
                   .map(([name, value], index) => `
                 <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
