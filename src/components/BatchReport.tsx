@@ -132,118 +132,131 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
       <div ref={ref} className="bg-white text-black p-8 font-mono text-sm leading-tight">
         {/* Header */}
         <div className="border-b-2 border-black pb-4 mb-6">
-          <h1 className="text-2xl font-bold text-center mb-4">RAPPORT DE PRODUCTION</h1>
-          <div className="flex justify-between items-center text-sm font-medium">
-            <div>
-              <span className="font-bold">Batch:</span> {batch.batch_reference}
-            </div>
-            <div>
-              <span className="font-bold">Date:</span> {new Date().toLocaleDateString('fr-FR')}
-            </div>
+          <h1 className="text-2xl font-bold text-center mb-2">RAPPORT DE PRODUCTION</h1>
+          <div className="text-center text-sm font-medium mb-4">
+            <span className="font-bold">Batch:</span> {batch.batch_reference} | <span className="font-bold">Date:</span> {new Date().toLocaleDateString('fr-FR')}
           </div>
         </div>
 
-        {/* Notes - Highlighted at Top */}
-        {batch.notes && (
-          <div className="mb-6 bg-yellow-50 border-2 border-yellow-400">
-            <h2 className="text-lg font-bold bg-yellow-400 px-3 py-2 mb-0">⚠️ NOTES DE PRODUCTION</h2>
-            <div className="p-3 font-medium">
-              <div>{batch.notes}</div>
+        {/* Product Image and Information Section */}
+        <div className="mb-6 border-2 border-black">
+          <div className="grid grid-cols-3 gap-4 p-4">
+            {/* Left: First Product Image */}
+            <div className="col-span-1">
+              {productImages.length > 0 ? (
+                <div className="border border-black p-2 bg-gray-50">
+                  <div className="text-center mb-2 text-xs font-bold">PRODUIT</div>
+                  <img
+                    src={productImages[0]}
+                    alt={batch.nom_product}
+                    className="w-full h-64 object-cover rounded"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const parent = target.parentElement;
+                      if (parent) {
+                        parent.innerHTML = '<div class="h-64 flex items-center justify-center text-xs text-gray-500">Image non disponible</div>';
+                      }
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="border border-gray-300 border-dashed p-2 bg-gray-50 h-full flex items-center justify-center">
+                  <div className="text-xs text-gray-500 text-center">Aucune image disponible</div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
 
-        {/* Batch Information */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">INFORMATIONS BATCH</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="mb-2"><strong>Référence Batch:</strong> {batch.batch_reference}</div>
-              <div className="mb-2"><strong>Statut:</strong> {getStatusLabel(batch.status)}</div>
-              <div className="mb-2"><strong>Boutique:</strong> {companyName}</div>
-              <div className="mb-2"><strong>Quantité à produire:</strong> {batch.quantity_to_produce} unités</div>
-            </div>
-            <div>
-              <div className="mb-2"><strong>Date création:</strong> {formatDate(batch.created_at)}</div>
-              <div className="mb-2"><strong>Date démarrage:</strong> {formatDate(batch.started_at)}</div>
-              <div className="mb-2"><strong>Date fin:</strong> {formatDate(batch.completed_at)}</div>
-              <div className="mb-2"><strong>Coût total matériaux:</strong> {Number(batch.total_materials_cost || 0).toFixed(2)} TND</div>
-            </div>
-          </div>
-        </div>
+            {/* Right: Product Information, Boutique, and Notes */}
+            <div className="col-span-2 space-y-3">
+              {/* Product Info */}
+              <div>
+                <h2 className="text-base font-bold border-b border-black pb-1 mb-2">INFORMATIONS PRODUIT</h2>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <div><strong>Nom:</strong> {batch.nom_product}</div>
+                  <div><strong>Référence:</strong> {batch.reference_product}</div>
+                  <div><strong>Boutique:</strong> {companyName}</div>
+                  <div><strong>Statut:</strong> {getStatusLabel(batch.status)}</div>
+                  <div><strong>Quantité:</strong> {batch.quantity_to_produce} unités</div>
+                  <div><strong>Coût matériaux:</strong> {Number(batch.total_materials_cost || 0).toFixed(2)} TND</div>
+                </div>
+              </div>
 
-        {/* Product Information with Specifications */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">INFORMATIONS PRODUIT</h2>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <div className="mb-2"><strong>Nom du produit:</strong> {batch.nom_product}</div>
-              <div className="mb-2"><strong>Référence:</strong> {batch.reference_product}</div>
-            </div>
-            <div>
-              <div className="mb-2"><strong>ID Produit:</strong> {batch.product_id}</div>
-            </div>
-          </div>
-          
-          {/* Production Specifications */}
-          {batch.production_specifications && 
-           batch.production_specifications !== 'null' && 
-           batch.production_specifications !== '{}' && (() => {
-             try {
-               const specs = typeof batch.production_specifications === 'string' 
-                 ? JSON.parse(batch.production_specifications) 
-                 : batch.production_specifications;
-               
-               if (specs && Object.keys(specs).length > 0) {
-                 return (
-                   <div className="mt-4">
-                     <div className="border border-black">
-                       <table className="w-full">
-                         <thead>
-                           <tr className="border-b border-black bg-gray-100">
-                             <th className="text-left p-2 border-r border-black">SPÉCIFICATION</th>
-                             <th className="text-left p-2">VALEUR</th>
-                           </tr>
-                         </thead>
-                         <tbody>
+              {/* Production Dates */}
+              <div>
+                <h2 className="text-base font-bold border-b border-black pb-1 mb-2">DATES</h2>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <div><strong>Création:</strong> {formatDate(batch.created_at)}</div>
+                  <div><strong>Démarrage:</strong> {formatDate(batch.started_at)}</div>
+                  <div><strong>Fin:</strong> {formatDate(batch.completed_at)}</div>
+                  <div><strong>Démarré par:</strong> {batch.started_by_name || 'N/A'}</div>
+                </div>
+              </div>
+
+              {/* Production Notes - Highlighted if exist */}
+              {batch.notes && (
+                <div className="bg-yellow-50 border-2 border-yellow-400 p-3">
+                  <h2 className="text-sm font-bold mb-2 text-yellow-900">⚠️ NOTES DE PRODUCTION</h2>
+                  <div className="text-xs font-medium text-yellow-900">{batch.notes}</div>
+                </div>
+              )}
+
+              {/* Production Specifications */}
+              {batch.production_specifications && 
+               batch.production_specifications !== 'null' && 
+               batch.production_specifications !== '{}' && (() => {
+                 try {
+                   const specs = typeof batch.production_specifications === 'string' 
+                     ? JSON.parse(batch.production_specifications) 
+                     : batch.production_specifications;
+                   
+                   if (specs && Object.keys(specs).length > 0) {
+                     return (
+                       <div>
+                         <h2 className="text-base font-bold border-b border-black pb-1 mb-2">SPÉCIFICATIONS</h2>
+                         <div className="text-xs space-y-1">
                            {Object.entries(specs).map(([key, value], index) => (
-                             <tr key={index} className="border-b border-black">
-                               <td className="p-2 border-r border-black font-medium">{key}</td>
-                               <td className="p-2">{String(value)}</td>
-                             </tr>
+                             <div key={index} className="grid grid-cols-2 gap-2">
+                               <span className="font-medium">{key}:</span>
+                               <span>{String(value)}</span>
+                             </div>
                            ))}
-                         </tbody>
-                       </table>
-                     </div>
-                   </div>
-                 );
-               }
-             } catch (error) {
-               console.error('Error parsing production specifications:', error);
-             }
-             return null;
-           })()}
+                         </div>
+                       </div>
+                     );
+                   }
+                 } catch (error) {
+                   console.error('Error parsing production specifications:', error);
+                 }
+                 return null;
+               })()}
+            </div>
+          </div>
         </div>
 
         {/* Size Breakdown */}
         {parsedSizes.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">RÉPARTITION DES TAILLES</h2>
-            <div className="border border-black mb-4">
+            <h2 className="text-lg font-bold border-b-2 border-black pb-1 mb-3">CONFIGURATION DES TAILLES</h2>
+            <div className="border-2 border-black">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-black bg-gray-100">
-                    <th className="text-left p-2 border-r border-black">TAILLE</th>
-                    <th className="text-left p-2">QUANTITÉ</th>
+                  <tr className="border-b-2 border-black bg-gray-100">
+                    <th className="text-left p-3 border-r border-black font-bold">TAILLE</th>
+                    <th className="text-left p-3 font-bold">QUANTITÉ</th>
                   </tr>
                 </thead>
                 <tbody>
                   {parsedSizes.map((size, index) => (
-                    <tr key={index} className="border-b border-black">
-                      <td className="p-2 border-r border-black">{size.size_name}</td>
-                      <td className="p-2">{size.quantity} unités</td>
+                    <tr key={index} className={index !== parsedSizes.length - 1 ? "border-b border-black" : ""}>
+                      <td className="p-3 border-r border-black font-medium">{size.size_name}</td>
+                      <td className="p-3">{size.quantity} unités</td>
                     </tr>
                   ))}
+                  <tr className="bg-gray-50 border-t-2 border-black">
+                    <td className="p-3 border-r border-black font-bold">TOTAL</td>
+                    <td className="p-3 font-bold">{parsedSizes.reduce((sum, size) => sum + size.quantity, 0)} unités</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -253,11 +266,11 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
         {/* Materials Used */}
         {batch.materials_used && batch.materials_used.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">MATÉRIAUX UTILISÉS</h2>
-            <div className="border border-black">
-              <table className="w-full">
+            <h2 className="text-lg font-bold border-b-2 border-black pb-1 mb-3">MATÉRIAUX UTILISÉS</h2>
+            <div className="border-2 border-black">
+              <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-black bg-gray-100">
+                  <tr className="border-b-2 border-black bg-gray-100">
                     <th className="text-left p-2 border-r border-black">MATÉRIAU</th>
                     <th className="text-left p-2 border-r border-black">COULEUR</th>
                     <th className="text-left p-2 border-r border-black">RÉPARTITION PAR TAILLE</th>
@@ -268,7 +281,6 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                 </thead>
                 <tbody>
                   {(() => {
-                    // Group materials by name and color to avoid duplicates
                     const groupedMaterials = batch.materials_used?.reduce((acc: any, material) => {
                       const key = `${material.nom_matiere}-${material.couleur || 'N/A'}`;
                       if (!acc[key]) {
@@ -277,19 +289,16 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                           quantity_used: Number(material.quantity_used) || 0
                         };
                       } else {
-                        // Aggregate quantities if duplicate materials exist
                         acc[key].quantity_used += Number(material.quantity_used) || 0;
                       }
                       return acc;
                     }, {});
 
                     return Object.values(groupedMaterials || {}).map((material: any, index: number) => {
-                      // Parse size breakdown if available (from batch.sizes_breakdown)
                       let sizeBreakdown: { [size: string]: string } = {};
                       try {
                         if (batch.sizes_breakdown) {
                           const parsedSizes: { [key: string]: number } = JSON.parse(batch.sizes_breakdown);
-                          // Simulate material usage per size based on proportions
                           const totalQuantity = Number(material.quantity_used) || 0;
                           const totalPieces = Object.values(parsedSizes).reduce((sum: number, qty: number) => sum + qty, 0);
                           
@@ -305,41 +314,38 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                           }
                         }
                       } catch (e) {
-                        // If parsing fails, show total quantity without size breakdown
                         sizeBreakdown = {};
                       }
 
                       return (
-                        <tr key={index} className="border-b border-black">
+                        <tr key={index} className={index !== Object.values(groupedMaterials || {}).length - 1 ? "border-b border-black" : ""}>
                           <td className="p-2 border-r border-black font-medium">{material.nom_matiere}</td>
                           <td className="p-2 border-r border-black">{material.couleur || 'N/A'}</td>
                           <td className="p-2 border-r border-black">
                             {Object.keys(sizeBreakdown).length > 0 ? (
-                              <div className="space-y-1">
+                              <div className="flex flex-wrap gap-2">
                                 {Object.entries(sizeBreakdown).map(([size, quantity]) => (
-                                  <div key={size} className="inline-block mr-3 mb-1">
-                                    <span className="font-medium text-xs">
-                                      {size === 'none' ? 'Standard' : size.toUpperCase()}: 
+                                  <div key={size} className="bg-gray-100 px-2 py-1 rounded">
+                                    <span className="font-medium">
+                                      {size === 'none' ? 'Standard' : size.toUpperCase()}:
                                     </span>
-                                    <span className="ml-1 text-xs">
+                                    <span className="ml-1">
                                       {quantity} {material.quantity_unit}
                                     </span>
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <span className="text-xs text-gray-600 italic">
-                                Toutes tailles confondues
-                              </span>
+                              <span className="text-gray-600 italic">Toutes tailles</span>
                             )}
                           </td>
-                          <td className="p-2 border-r border-black font-medium">
+                          <td className="p-2 border-r border-black font-bold">
                             {material.quantity_used} {material.quantity_unit}
                           </td>
                           <td className="p-2 border-r border-black text-center">
                             {material.quantity_type_name}
                           </td>
-                          <td className="p-2 text-xs">
+                          <td className="p-2">
                             {material.commentaire || '-'}
                           </td>
                         </tr>
@@ -349,153 +355,27 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                 </tbody>
               </table>
             </div>
+            <div className="mt-3 text-right">
+              <span className="font-bold">Coût Total Matériaux: {Number(batch.total_materials_cost || 0).toFixed(2)} TND</span>
+            </div>
           </div>
         )}
 
-
-        {/* Production Summary */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">RÉSUMÉ PRODUCTION</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="mb-2"><strong>Matériaux utilisés:</strong> {batch.materials_used?.length || 0} types</div>
-              <div className="mb-2"><strong>Coût total matériaux:</strong> {Number(batch.total_materials_cost || 0).toFixed(2)} TND</div>
-            </div>
-            <div>
-              <div className="mb-2"><strong>Coût moyen/matériau:</strong> {batch.materials_used?.length ? (Number(batch.total_materials_cost || 0) / batch.materials_used.length).toFixed(2) : '0.00'} TND</div>
-              <div className="mb-2"><strong>Démarré par:</strong> {batch.started_by_name || 'N/A'}</div>
-            </div>
-          </div>
-        </div>
-
-
-        {/* Cancellation Information */}
+        {/* Cancellation Information - Only if cancelled */}
         {batch.status === 'cancelled' && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">INFORMATIONS ANNULATION</h2>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="mb-6 bg-red-50 border-2 border-red-500 p-4">
+            <h2 className="text-lg font-bold text-red-900 border-b border-red-500 pb-2 mb-3">⚠️ BATCH ANNULÉ</h2>
+            <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <div className="mb-2"><strong>Date annulation:</strong> {formatDate(batch.cancelled_at)}</div>
                 <div className="mb-2"><strong>Annulé par:</strong> {batch.cancelled_by || 'N/A'}</div>
               </div>
               <div>
                 <div className="mb-2"><strong>Raison:</strong></div>
-                <div className="border border-black p-2 bg-gray-50 text-xs">
+                <div className="border border-red-300 p-2 bg-white text-xs">
                   {batch.cancellation_reason || 'Aucune raison spécifiée'}
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Technical Information */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">INFORMATIONS TECHNIQUES</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="mb-2"><strong>ID Batch:</strong> {batch.id}</div>
-              <div className="mb-2"><strong>Emails notification:</strong> {batch.notification_emails || 'N/A'}</div>
-            </div>
-            <div>
-              <div className="mb-2"><strong>Date création système:</strong> {formatDate(batch.created_at)}</div>
-              <div className="mb-2"><strong>Référence système:</strong> {batch.batch_reference}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Page break before images and attachments */}
-        <div className="print:break-before-page"></div>
-
-        {/* Product Images - Last Pages */}
-        {productImages.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">IMAGES PRODUIT</h2>
-            {(() => {
-              const imageChunks = [];
-              for (let i = 0; i < productImages.length; i += 4) {
-                imageChunks.push(productImages.slice(i, i + 4));
-              }
-              
-              return imageChunks.map((chunk, chunkIndex) => (
-                <div key={chunkIndex} className={chunkIndex > 0 ? "print:break-before-page image-grid" : "image-grid"}>
-                  <div className="grid grid-cols-2 gap-2 mb-4 image-grid-page">
-                    {chunk.map((imageUrl, index) => {
-                      const imageNumber = chunkIndex * 4 + index + 1;
-                      return (
-                        <div key={index} className="border border-black p-1">
-                          <div className="text-center mb-1 text-xs font-bold">
-                            Image {imageNumber}
-                          </div>
-                          <div className="image-card">
-                            <img
-                              src={imageUrl}
-                              alt={`${batch.nom_product} - Image ${imageNumber}`}
-                              className="w-full h-full object-cover rounded-sm"
-                              style={{ minHeight: '90%', minWidth: '90%', maxHeight: '95%', maxWidth: '95%' }}
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                const parent = target.parentElement;
-                                if (parent) {
-                                  parent.innerHTML = '<div class="text-xs text-gray-500 text-center">Image non disponible</div>';
-                                }
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {/* Fill empty slots if less than 4 images in chunk */}
-                    {chunk.length < 4 && Array.from({ length: 4 - chunk.length }).map((_, emptyIndex) => (
-                      <div key={`empty-${emptyIndex}`} className="border border-gray-300 border-dashed p-1">
-                        <div className="text-center mb-1 text-xs text-gray-400">
-                          -
-                        </div>
-                        <div className="image-card border border-gray-200 border-dashed bg-gray-100">
-                          <div className="text-xs text-gray-400">Vide</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ));
-            })()}
-          </div>
-        )}
-
-        {/* Technical Attachments - Last Pages */}
-        {productAttachments.length > 0 && (
-          <div className={productImages.length > 0 ? "print:break-before-page mb-6" : "mb-6"}>
-            <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">PIÈCES JOINTES TECHNIQUES</h2>
-            <div className="border border-black">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-black bg-gray-100">
-                    <th className="text-left p-2 border-r border-black">FICHIER</th>
-                    <th className="text-left p-2 border-r border-black">TYPE</th>
-                    <th className="text-left p-2 border-r border-black">TAILLE</th>
-                    <th className="text-left p-2">DESCRIPTION</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {productAttachments.map((attachment, index) => (
-                    <tr key={index} className="border-b border-black">
-                      <td className="p-2 border-r border-black font-medium text-xs">
-                        {attachment.original_filename || attachment.filename || 'Fichier sans nom'}
-                      </td>
-                      <td className="p-2 border-r border-black text-xs">
-                        {attachment.file_type || 'N/A'}
-                      </td>
-                      <td className="p-2 border-r border-black text-xs">
-                        {attachment.file_size ? `${(parseInt(attachment.file_size) / 1024).toFixed(1)} KB` : 'N/A'}
-                      </td>
-                      <td className="p-2 text-xs">
-                        {attachment.description || '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         )}
