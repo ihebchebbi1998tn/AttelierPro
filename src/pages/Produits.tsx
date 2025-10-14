@@ -29,6 +29,8 @@ const Produits = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [showSizesModal, setShowSizesModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<any>(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedImages, setSelectedImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -47,6 +49,33 @@ const Produits = () => {
     };
   }>({});
   const [hasNoSizes, setHasNoSizes] = useState(false);
+  const handleDeleteProduct = async (productId: number) => {
+    try {
+      const response = await fetch(`https://luccibyey.com.tn/production/api/production_ready_products.php?id=${productId}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        toast({
+          title: "Produit supprimé",
+          description: "Le produit et toutes ses données associées ont été supprimés avec succès"
+        });
+        setShowDeleteModal(false);
+        setProductToDelete(null);
+        await loadProducts();
+      } else {
+        throw new Error(data.message || 'Erreur lors de la suppression');
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Impossible de supprimer le produit",
+        variant: "destructive"
+      });
+    }
+  };
+
   const loadProducts = async () => {
     setLoading(true);
     try {
@@ -383,7 +412,6 @@ const Produits = () => {
                   <TableHead className="text-xs md:text-sm hidden lg:table-cell">Quantités</TableHead>
                   <TableHead className="text-xs md:text-sm hidden lg:table-cell">Matériaux</TableHead>
                   <TableHead className="text-xs md:text-sm">Boutique</TableHead>
-                  <TableHead className="text-xs md:text-sm">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -433,21 +461,10 @@ const Produits = () => {
                           {product.boutique_origin === 'luccibyey' ? 'Lucci By Ey' : 'Spada di Battaglia'}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col sm:flex-row gap-1" onClick={e => e.stopPropagation()}>
-                          {product.materials_configured == 1 || product.materials_configured === "1" ? <Button size="sm" variant="default" onClick={() => handleStartProduction(product)} className="text-xs px-2 py-1">
-                              <Play className="h-3 w-3 mr-1" />
-                              Production
-                            </Button> : <Button size="sm" variant="secondary" onClick={() => handleConfigure(product)} className="text-xs px-2 py-1">
-                              <Settings className="h-3 w-3 mr-1" />
-                              Configurer
-                            </Button>}
-                        </div>
-                      </TableCell>
                     </TableRow>;
               })}
                 {filteredProducts.length === 0 && <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       {loading ? 'Chargement...' : 'Aucun produit en attente de production'}
                     </TableCell>
                   </TableRow>}
@@ -492,7 +509,18 @@ const Produits = () => {
                         </Badge>
                       </div>
                       <div className="flex items-center justify-end">
-                        
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="text-xs h-7 bg-red-600 hover:bg-red-700"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setProductToDelete(product);
+                            setShowDeleteModal(true);
+                          }}
+                        >
+                          Annuler
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -703,6 +731,58 @@ const Produits = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Annuler cette commande de produit ?</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {productToDelete && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <h3 className="font-semibold text-sm mb-2">{productToDelete.nom_product}</h3>
+                <p className="text-sm text-muted-foreground">Réf: {productToDelete.reference_product}</p>
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-destructive">
+                ⚠️ Cette action est irréversible
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Les éléments suivants seront définitivement supprimés :
+              </p>
+              <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 ml-2">
+                <li>Le produit de la liste de production</li>
+                <li>Tous les matériaux configurés pour ce produit</li>
+                <li>Les mesures et spécifications de production</li>
+                <li>L'historique des tailles configurées</li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowDeleteModal(false);
+                setProductToDelete(null);
+              }}
+            >
+              Annuler
+            </Button>
+            <Button 
+              variant="destructive"
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => productToDelete && handleDeleteProduct(productToDelete.id)}
+            >
+              Confirmer la suppression
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
