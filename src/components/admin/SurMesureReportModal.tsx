@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -286,19 +287,6 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
                     <span class="font-semibold">Nom:</span>
                     <p>${order.client_name} ${order.client_vorname}</p>
                 </div>
-                <div>
-                    <span class="font-semibold">Email:</span>
-                    <p>${order.client_email}</p>
-                </div>
-                <div>
-                    <span class="font-semibold">Téléphone:</span>
-                    <p>${order.client_phone}</p>
-                </div>
-                <div>
-                    <span class="font-semibold">Adresse:</span>
-                    <p>${order.client_address}</p>
-                    <p>${order.client_region}</p>
-                </div>
             </div>
         </div>
     </div>
@@ -306,21 +294,93 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
     ${order.measurements && Object.keys(order.measurements).length > 0 ? `
     <!-- Measurements Table -->
     <div class="mb-8 no-break">
-        <h2 class="text-lg font-bold border-b pb-2 mb-4">MESURES ET TOLÉRANCES</h2>
+        <h2 class="text-lg font-bold border-b pb-2 mb-4">MESURES</h2>
+        
+        <!-- GENERAL Section -->
+        <div class="mb-6">
+            <h3 class="text-base font-bold mb-2">GENERAL</h3>
+            <table class="border-2 text-sm mb-4">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="px-3 py-2 text-left font-bold">MESURE</th>
+                        <th class="px-3 py-2 text-right font-bold">VALEUR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${order.measurements['TAILLE EN GENERALE'] ? `
+                    <tr class="bg-gray-50">
+                        <td class="px-3 py-2 font-semibold">TAILLE EN GENERALE</td>
+                        <td class="px-3 py-2 text-right">${order.measurements['TAILLE EN GENERALE']}</td>
+                    </tr>
+                    ` : ''}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- HAUT Section -->
+        <div class="mb-6">
+            <h3 class="text-base font-bold mb-2">HAUT (Upper Garment)</h3>
+            <table class="border-2 text-sm mb-4">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="px-3 py-2 text-left font-bold">MESURE</th>
+                        <th class="px-3 py-2 text-right font-bold">VALEUR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${['TOUR DE POITRINE', 'TOUR DE TAILLE', 'CARRURE DEVANT', 'CARRURE DOS', 'LARGEUR EPAULE', 'LONGUEUR DOS', 'LONGUEUR MANCHE', 'BICEPS']
+                      .map((measure, index) => order.measurements[measure] ? `
+                    <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
+                        <td class="px-3 py-2 font-semibold">${measure}</td>
+                        <td class="px-3 py-2 text-right">${order.measurements[measure]}</td>
+                    </tr>
+                    ` : '').join('')}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- BAS Section -->
+        <div class="mb-6">
+            <h3 class="text-base font-bold mb-2">BAS (Lower Garment)</h3>
+            <table class="border-2 text-sm mb-4">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="px-3 py-2 text-left font-bold">MESURE</th>
+                        <th class="px-3 py-2 text-right font-bold">VALEUR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${['TOUR DE HANCHE', 'TOUR DE CUISSE', 'LONGUEUR JAMBE', 'ENTREJAMBE']
+                      .map((measure, index) => order.measurements[measure] ? `
+                    <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
+                        <td class="px-3 py-2 font-semibold">${measure}</td>
+                        <td class="px-3 py-2 text-right">${order.measurements[measure]}</td>
+                    </tr>
+                    ` : '').join('')}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    ` : ''}
+
+    ${order.coupe && Object.keys(order.coupe).length > 0 ? `
+    <!-- Coupe Table -->
+    <div class="mb-8 no-break">
+        <h2 class="text-lg font-bold border-b pb-2 mb-4">COUPE</h2>
         <table class="border-2 text-sm">
             <thead>
                 <tr class="bg-gray-200">
-                    <th class="px-3 py-2 text-left font-bold">MESURE</th>
-                    <th class="px-3 py-2 text-center font-bold">VALEUR (cm)</th>
-                    <th class="px-3 py-2 text-center font-bold">TOLÉRANCE (cm)</th>
+                    <th class="px-3 py-2 text-left font-bold">ÉLÉMENT</th>
+                    <th class="px-3 py-2 text-left font-bold">VALEUR</th>
                 </tr>
             </thead>
             <tbody>
-                ${Object.entries(order.measurements).map(([name, value], index) => `
+                ${Object.entries(order.coupe)
+                  .filter(([_, value]) => value && value !== '' && value !== '-')
+                  .map(([name, value], index) => `
                 <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
                     <td class="px-3 py-2 font-semibold">${name}</td>
-                    <td class="px-3 py-2 text-center">${value}</td>
-                    <td class="px-3 py-2 text-center">${order.tolerance?.[name] || 0.5}</td>
+                    <td class="px-3 py-2">${value || 'Non renseigné'}</td>
                 </tr>
                 `).join('')}
             </tbody>
@@ -564,19 +624,6 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
                     <span className="font-semibold">Nom:</span>
                     <p>{order.client_name} {order.client_vorname}</p>
                   </div>
-                  <div>
-                    <span className="font-semibold">Email:</span>
-                    <p>{order.client_email}</p>
-                  </div>
-                  <div>
-                    <span className="font-semibold">Téléphone:</span>
-                    <p>{order.client_phone}</p>
-                  </div>
-                  <div>
-                    <span className="font-semibold">Adresse:</span>
-                    <p>{order.client_address}</p>
-                    <p>{order.client_region}</p>
-                  </div>
                 </div>
               </div>
             </div>
@@ -584,23 +631,119 @@ export const SurMesureReportModal: React.FC<SurMesureReportModalProps> = ({
             {/* Measurements Table - On same page as order info */}
             {order.measurements && Object.keys(order.measurements).length > 0 && (
               <div className="mb-8 no-break">
-                <h2 className="text-lg font-bold border-b border-black pb-2 mb-4">MESURES ET TOLÉRANCES</h2>
+                <h2 className="text-lg font-bold border-b border-black pb-2 mb-4">MESURES</h2>
+                
+                {/* GENERAL Section */}
+                {order.measurements['TAILLE EN GENERALE'] && (
+                  <div className="mb-6">
+                    <h3 className="text-base font-bold mb-2">GENERAL</h3>
+                    <table className="w-full border-2 border-black text-sm mb-4">
+                      <thead>
+                        <tr className="bg-gray-200">
+                          <th className="border border-black px-3 py-2 text-left font-bold">MESURE</th>
+                          <th className="border border-black px-3 py-2 text-right font-bold">VALEUR</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="bg-gray-50">
+                          <td className="border border-black px-3 py-2 font-semibold">TAILLE EN GENERALE</td>
+                          <td className="border border-black px-3 py-2 text-right">{order.measurements['TAILLE EN GENERALE']}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* HAUT Section */}
+                {['TOUR DE POITRINE', 'TOUR DE TAILLE', 'CARRURE DEVANT', 'CARRURE DOS', 'LARGEUR EPAULE', 'LONGUEUR DOS', 'LONGUEUR MANCHE', 'BICEPS']
+                  .some(m => order.measurements[m]) && (
+                  <div className="mb-6">
+                    <h3 className="text-base font-bold mb-2">HAUT (Upper Garment)</h3>
+                    <table className="w-full border-2 border-black text-sm mb-4">
+                      <thead>
+                        <tr className="bg-gray-200">
+                          <th className="border border-black px-3 py-2 text-left font-bold">MESURE</th>
+                          <th className="border border-black px-3 py-2 text-right font-bold">VALEUR</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {['TOUR DE POITRINE', 'TOUR DE TAILLE', 'CARRURE DEVANT', 'CARRURE DOS', 'LARGEUR EPAULE', 'LONGUEUR DOS', 'LONGUEUR MANCHE', 'BICEPS']
+                          .map((measure, index) => order.measurements[measure] ? (
+                          <tr key={measure} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                            <td className="border border-black px-3 py-2 font-semibold">{measure}</td>
+                            <td className="border border-black px-3 py-2 text-right">{order.measurements[measure]}</td>
+                          </tr>
+                        ) : null)}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* PANTALON Section */}
+                {(order.measurements['TAILLE EN GENERALE PANTALON'] || 
+                  ['TAILLE CEINTURE', 'TAILLE BASSIN', 'FOURCHE DOS', 'CUISSE', 'BAS', 'LONGUEUR'].some(m => order.measurements[m])) && (
+                  <div className="mb-6">
+                    <h3 className="text-base font-bold mb-2">PANTALON (Pants)</h3>
+                    
+                    {order.measurements['TAILLE EN GENERALE PANTALON'] && (
+                      <table className="w-full border-2 border-black text-sm mb-4">
+                        <thead>
+                          <tr className="bg-gray-200">
+                            <th className="border border-black px-3 py-2 text-left font-bold">MESURE</th>
+                            <th className="border border-black px-3 py-2 text-right font-bold">VALEUR</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="bg-gray-50">
+                            <td className="border border-black px-3 py-2 font-semibold">TAILLE EN GENERALE PANTALON</td>
+                            <td className="border border-black px-3 py-2 text-right">{order.measurements['TAILLE EN GENERALE PANTALON']}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    )}
+
+                    {['TAILLE CEINTURE', 'TAILLE BASSIN', 'FOURCHE DOS', 'CUISSE', 'BAS', 'LONGUEUR'].some(m => order.measurements[m]) && (
+                      <table className="w-full border-2 border-black text-sm mb-4">
+                        <thead>
+                          <tr className="bg-gray-200">
+                            <th className="border border-black px-3 py-2 text-left font-bold">MESURE</th>
+                            <th className="border border-black px-3 py-2 text-right font-bold">VALEUR</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {['TAILLE CEINTURE', 'TAILLE BASSIN', 'FOURCHE DOS', 'CUISSE', 'BAS', 'LONGUEUR']
+                            .map((measure, index) => order.measurements[measure] ? (
+                            <tr key={measure} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                              <td className="border border-black px-3 py-2 font-semibold">{measure}</td>
+                              <td className="border border-black px-3 py-2 text-right">{order.measurements[measure]}</td>
+                            </tr>
+                          ) : null)}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Coupe Table */}
+            {order.coupe && Object.keys(order.coupe).length > 0 && (
+              <div className="mb-8 no-break">
+                <h2 className="text-lg font-bold border-b border-black pb-2 mb-4">COUPE</h2>
                 <table className="w-full border-2 border-black text-sm">
                   <thead>
                     <tr className="bg-gray-200">
-                      <th className="border border-black px-3 py-2 text-left font-bold">MESURE</th>
-                      <th className="border border-black px-3 py-2 text-center font-bold">VALEUR (cm)</th>
-                      <th className="border border-black px-3 py-2 text-center font-bold">TOLÉRANCE (cm)</th>
+                      <th className="border border-black px-3 py-2 text-left font-bold">ÉLÉMENT</th>
+                      <th className="border border-black px-3 py-2 text-left font-bold">VALEUR</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {Object.entries(order.measurements).map(([name, value], index) => (
+                    {Object.entries(order.coupe)
+                      .filter(([_, value]) => value && value !== '' && value !== '-')
+                      .map(([name, value], index) => (
                       <tr key={name} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                         <td className="border border-black px-3 py-2 font-semibold">{name}</td>
-                        <td className="border border-black px-3 py-2 text-center">{value}</td>
-                        <td className="border border-black px-3 py-2 text-center">
-                          {order.tolerance?.[name] || 0.5}
-                        </td>
+                        <td className="border border-black px-3 py-2">{String(value) || 'Non renseigné'}</td>
                       </tr>
                     ))}
                   </tbody>
