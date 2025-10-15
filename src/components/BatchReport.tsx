@@ -146,12 +146,12 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
             {/* Left: Product Image - Fixed Width */}
             <div className="w-1/3 border-r-2 border-black print:w-1/3 print:border-r-2 print:border-black">
               {productImages.length > 0 ? (
-                <div className="h-[400px] flex flex-col print:h-[400px] print:flex print:flex-col">
+                <div className="h-[400px] flex flex-col print:!h-auto print:flex print:flex-col" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
                   <div className="text-center py-2 text-xs font-bold border-b-2 border-black bg-black text-white print:text-center print:py-2 print:text-xs print:font-bold print:border-b-2 print:border-black print:bg-black print:text-white">PRODUIT</div>
                   <img
                     src={productImages[0]}
                     alt={batch.nom_product}
-                    className="w-full flex-1 object-cover print:w-full print:flex-1 print:object-cover"
+                    className="w-full flex-1 object-contain print:w-full print:flex-1 print:object-contain"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
@@ -163,7 +163,7 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                   />
                 </div>
               ) : (
-                <div className="h-[400px] flex flex-col print:h-[400px] print:flex print:flex-col">
+                <div className="h-[400px] flex flex-col print:!h-auto print:flex print:flex-col" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
                   <div className="text-center py-2 text-xs font-bold border-b-2 border-black bg-black text-white print:text-center print:py-2 print:text-xs print:font-bold print:border-b-2 print:border-black print:bg-black print:text-white">PRODUIT</div>
                   <div className="flex-1 flex items-center justify-center text-xs print:text-xs">
                     Aucune image
@@ -173,7 +173,7 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
             </div>
 
             {/* Right: Product Information - Takes remaining space */}
-            <div className="w-2/3 flex flex-col print:w-2/3 print:flex print:flex-col h-[400px] print-fixed-400 overflow-hidden">
+            <div className="w-2/3 flex flex-col print:w-2/3 print:flex print:flex-col print:!h-auto" style={{ overflow: 'visible' }}>
               {/* Product Info Section */}
               <div className="border-b-2 border-black p-4 print:border-b-2 print:border-black print:p-3">
                 <h2 className="text-sm font-bold mb-3 pb-1 border-b border-black print:text-xs print:font-bold print:mb-2 print:pb-1 print:border-b print:border-black">INFORMATIONS PRODUIT</h2>
