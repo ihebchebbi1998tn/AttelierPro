@@ -525,17 +525,19 @@ const BatchDetails = () => {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     
     body {
       font-family: "Segoe UI", "Arial", "Helvetica", sans-serif;
       font-size: 13px;
       line-height: 1.4;
-      color: #000;
-      background: white;
+      color: #000 !important;
+      background: white !important;
       padding: 18px;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     
     /* Print-specific styles */
@@ -635,20 +637,26 @@ const BatchDetails = () => {
       background-color: #f8f9fa !important;
       font-weight: 600;
       font-size: 11px;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     
     .bg-gray-100 {
       background-color: #f8f9fa !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     
     .bg-gray-50 {
       background-color: #fbfcfd !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .bg-white {
+      background-color: #ffffff !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     
     /* Borders */
@@ -964,32 +972,38 @@ const BatchDetails = () => {
     /* Color classes for highlighting important info */
     .text-blue-600 {
       color: #2563eb !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     
     .text-purple-600 {
       color: #9333ea !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     
     .text-green-600 {
       color: #16a34a !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     
     .text-red-600 {
       color: #dc2626 !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     
     .text-gray-700 {
       color: #374151 !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .text-gray-600 {
+      color: #4b5563 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     
     /* Font weight utilities */
@@ -1004,16 +1018,26 @@ const BatchDetails = () => {
     /* Blue specification box styling */
     .border-blue-600 {
       border: 2px solid #2563eb !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     
     .bg-blue-600 {
       background-color: #2563eb !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .bg-blue-50 {
+      background-color: #eff6ff !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     
     .text-white {
       color: #ffffff !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     
     .px-3 {
@@ -1036,17 +1060,25 @@ const BatchDetails = () => {
     
     /* Print-specific improvements for image and text layout */
     @media print {
-      /* Force grid to stay 3 columns in print */
-      .print\\:grid-cols-3 {
+      /* Force grid layout for image and info section */
+      .grid-cols-3 {
+        display: grid !important;
         grid-template-columns: 1fr 2fr !important;
       }
       
+      .print\\:grid-cols-3 {
+        display: grid !important;
+        grid-template-columns: 1fr 2fr !important;
+      }
+      
+      .col-span-1,
       .print\\:col-span-1 {
         grid-column: span 1 !important;
       }
       
+      .col-span-2,
       .print\\:col-span-2 {
-        grid-column: span 1 !important;
+        grid-column: span 2 !important;
       }
       
       /* Make image smaller in print */
