@@ -130,16 +130,132 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
 
     return (
       <div ref={ref} className="batch-report-root bg-white text-black p-8 font-mono leading-tight print:p-6 print:font-mono print-exact print-a4">
-        {/* Component-scoped print overrides to avoid toolchain purge of Tailwind print utilities */}
+        {/* Component-scoped print overrides to ensure exact match between screen and print */}
         <style>{`
           @media print {
-            .batch-report-root { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color: #000 !important; background: #fff !important; }
-            .batch-report-root .batch-right-col { overflow: visible !important; height: auto !important; }
-            .batch-report-root .batch-image-container { height: auto !important; min-height: 0 !important; }
-            .batch-report-root img { object-fit: contain !important; max-height: 260mm !important; }
-            .batch-report-root .no-print { display: none !important; }
-            .batch-report-root table { page-break-inside: avoid !important; }
-            .batch-report-root .print-force-border th, .batch-report-root .print-force-border td { border: 1px solid #000 !important; }
+            /* Global print settings */
+            body { 
+              -webkit-print-color-adjust: exact !important; 
+              print-color-adjust: exact !important; 
+            }
+            
+            /* Ensure only the batch report is visible when printing */
+            body > *:not(.batch-report-root) {
+              display: none !important;
+            }
+            
+            /* Root container */
+            .batch-report-root { 
+              -webkit-print-color-adjust: exact !important; 
+              print-color-adjust: exact !important; 
+              color: #000 !important; 
+              background: #fff !important;
+              display: block !important;
+              position: relative !important;
+              padding: 20px !important;
+              margin: 0 !important;
+              width: 100% !important;
+              max-width: 100% !important;
+            }
+            
+            /* Layout fixes */
+            .batch-report-root .batch-right-col { 
+              overflow: visible !important; 
+              height: auto !important; 
+            }
+            .batch-report-root .batch-image-container { 
+              height: auto !important; 
+              min-height: 0 !important; 
+            }
+            
+            /* Images */
+            .batch-report-root img { 
+              object-fit: contain !important; 
+              max-height: 260mm !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            
+            /* Hide elements */
+            .batch-report-root .no-print { 
+              display: none !important; 
+            }
+            
+            /* Tables */
+            .batch-report-root table { 
+              page-break-inside: avoid !important;
+              border-collapse: collapse !important;
+              width: 100% !important;
+            }
+            .batch-report-root .print-force-border th, 
+            .batch-report-root .print-force-border td { 
+              border: 1px solid #000 !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            
+            /* Force exact colors for backgrounds */
+            .batch-report-root .bg-black {
+              background-color: #000 !important;
+              color: #fff !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .batch-report-root .text-white {
+              color: #fff !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .batch-report-root .bg-gray-100 {
+              background-color: #f3f4f6 !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .batch-report-root .bg-gray-50 {
+              background-color: #f9fafb !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            
+            /* Force exact borders */
+            .batch-report-root .border-black,
+            .batch-report-root .border-b-2.border-black,
+            .batch-report-root .border-2.border-black,
+            .batch-report-root .border-b.border-black {
+              border-color: #000 !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            
+            /* Text colors */
+            .batch-report-root .text-blue-600 {
+              color: #2563eb !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            
+            /* Page breaks */
+            .batch-report-root .print-no-break {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            
+            /* Font weights and styles */
+            .batch-report-root .font-bold {
+              font-weight: 700 !important;
+            }
+            .batch-report-root .font-semibold {
+              font-weight: 600 !important;
+            }
+            .batch-report-root .font-medium {
+              font-weight: 500 !important;
+            }
+            
+            /* Ensure proper sizing */
+            @page {
+              size: A4;
+              margin: 1cm;
+            }
           }
         `}</style>
         {/* Header */}
