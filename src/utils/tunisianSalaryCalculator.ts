@@ -39,22 +39,22 @@ export interface SalaryConfigParams {
   tax_brackets: TaxBracketConfig[];
 }
 
-// Default configuration (fallback if API fails) - 2025 Tunisia Tax Brackets
+// Default configuration (fallback if API fails) - 2025 Tunisia Tax Brackets (Loi de Finances 2025)
 const DEFAULT_CONFIG: SalaryConfigParams = {
   cnss_rate: 0.0968, // 9.18% + 0.5% FOPROLOS
-  css_rate: 0.01, // 1%
-  deduction_chef_famille: 150,
+  css_rate: 0.005, // 0.5% (updated from 1% in 2025)
+  deduction_chef_famille: 300, // 300 TND (updated from 150 TND in 2025)
   deduction_per_child: 100,
-  // 2025 Progressive tax brackets (monthly)
+  // 2025 Progressive tax brackets (monthly - derived from annual barème ÷ 12)
   tax_brackets: [
-    { min_amount: 0.000, max_amount: 416.667, tax_rate: 0.0000 },      // 0-416.67 TND: 0%
-    { min_amount: 416.667, max_amount: 833.333, tax_rate: 0.1500 },    // 416.67-833.33: 15%
-    { min_amount: 833.333, max_amount: 1666.667, tax_rate: 0.2500 },   // 833.33-1,666.67: 25%
-    { min_amount: 1666.667, max_amount: 2500.000, tax_rate: 0.3000 },  // 1,666.67-2,500: 30%
-    { min_amount: 2500.000, max_amount: 3333.333, tax_rate: 0.3300 },  // 2,500-3,333.33: 33%
-    { min_amount: 3333.333, max_amount: 4166.667, tax_rate: 0.3600 },  // 3,333.33-4,166.67: 36%
-    { min_amount: 4166.667, max_amount: 5833.333, tax_rate: 0.3800 },  // 4,166.67-5,833.33: 38%
-    { min_amount: 5833.333, max_amount: null, tax_rate: 0.4000 }       // > 5,833.33: 40%
+    { min_amount: 0.000, max_amount: 416.667, tax_rate: 0.0000 },      // 0-416.67 TND: 0% (Annual: 0-5,000)
+    { min_amount: 416.667, max_amount: 833.333, tax_rate: 0.1500 },    // 416.67-833.33: 15% (Annual: 5,000-10,000)
+    { min_amount: 833.333, max_amount: 1666.667, tax_rate: 0.2500 },   // 833.33-1,666.67: 25% (Annual: 10,000-20,000)
+    { min_amount: 1666.667, max_amount: 2500.000, tax_rate: 0.3000 },  // 1,666.67-2,500: 30% (Annual: 20,000-30,000)
+    { min_amount: 2500.000, max_amount: 3333.333, tax_rate: 0.3300 },  // 2,500-3,333.33: 33% (Annual: 30,000-40,000)
+    { min_amount: 3333.333, max_amount: 4166.667, tax_rate: 0.3600 },  // 3,333.33-4,166.67: 36% (Annual: 40,000-50,000)
+    { min_amount: 4166.667, max_amount: 5833.333, tax_rate: 0.3800 },  // 4,166.67-5,833.33: 38% (Annual: 50,000-70,000)
+    { min_amount: 5833.333, max_amount: null, tax_rate: 0.4000 }       // > 5,833.33: 40% (Annual: > 70,000)
   ]
 };
 

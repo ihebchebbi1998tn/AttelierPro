@@ -47,6 +47,33 @@ const DefinirSalaire: React.FC = () => {
     note: ""
   });
 
+  // Manual override state for breakdown values
+  const [manualOverrides, setManualOverrides] = useState({
+    salaire_brut: null as number | null,
+    cnss: null as number | null,
+    salaire_brut_imposable: null as number | null,
+    deductions_fiscales: null as number | null,
+    base_imposable: null as number | null,
+    irpp: null as number | null,
+    css: null as number | null,
+    salaire_net: null as number | null,
+  });
+
+  // Load manual overrides from localStorage
+  useEffect(() => {
+    const savedOverrides = localStorage.getItem(`salary_overrides_${employee?.id}`);
+    if (savedOverrides) {
+      setManualOverrides(JSON.parse(savedOverrides));
+    }
+  }, [employee?.id]);
+
+  // Save manual overrides to localStorage whenever they change
+  useEffect(() => {
+    if (employee?.id) {
+      localStorage.setItem(`salary_overrides_${employee.id}`, JSON.stringify(manualOverrides));
+    }
+  }, [manualOverrides, employee?.id]);
+
   // Load salary configuration from database
   useEffect(() => {
     loadSalaryConfig();
@@ -63,12 +90,48 @@ const DefinirSalaire: React.FC = () => {
   };
 
   // Calculate gross from net salary whenever net input changes
-  const calculatedSalary = calculateGrossFromNet(
+  const baseCalculatedSalary = calculateGrossFromNet(
     netSalaryInput,
     salaryData.chef_de_famille,
     salaryData.nombre_enfants,
     salaryConfig
   );
+
+  // Use manual overrides if available, otherwise use calculated values
+  const calculatedSalary = {
+    salaire_brut: manualOverrides.salaire_brut ?? baseCalculatedSalary.salaire_brut,
+    cnss: manualOverrides.cnss ?? baseCalculatedSalary.cnss,
+    salaire_brut_imposable: manualOverrides.salaire_brut_imposable ?? baseCalculatedSalary.salaire_brut_imposable,
+    deductions_fiscales: manualOverrides.deductions_fiscales ?? baseCalculatedSalary.deductions_fiscales,
+    base_imposable: manualOverrides.base_imposable ?? baseCalculatedSalary.base_imposable,
+    irpp: manualOverrides.irpp ?? baseCalculatedSalary.irpp,
+    css: manualOverrides.css ?? baseCalculatedSalary.css,
+    salaire_net: manualOverrides.salaire_net ?? baseCalculatedSalary.salaire_net,
+    breakdown: baseCalculatedSalary.breakdown, // Keep breakdown from base calculation for display purposes
+  };
+
+  // Update manual override
+  const updateOverride = (field: keyof typeof manualOverrides, value: number | null) => {
+    setManualOverrides(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Reset all overrides to use automatic calculation
+  const resetToAutomatic = () => {
+    setManualOverrides({
+      salaire_brut: null,
+      cnss: null,
+      salaire_brut_imposable: null,
+      deductions_fiscales: null,
+      base_imposable: null,
+      irpp: null,
+      css: null,
+      salaire_net: null,
+    });
+    toast({
+      title: "Réinitialisé",
+      description: "Tous les champs utilisent maintenant le calcul automatique"
+    });
+  };
 
   // Update gross salary in salaryData when calculated
   useEffect(() => {
@@ -366,65 +429,133 @@ const DefinirSalaire: React.FC = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Calculator className="h-5 w-5" />
-                  Détail du calcul (2025)
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  Calcul automatique selon la loi tunisienne
-                  <Link to="/rh/salaires/configuration" className="text-primary hover:underline ml-2 text-xs">
-                    Modifier les taux
-                  </Link>
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Calculator className="h-5 w-5" />
+                      Détail du calcul (2025)
+                    </CardTitle>
+                    <CardDescription className="text-sm">
+                      Calcul automatique selon la loi tunisienne
+                      <Link to="/rh/salaires/configuration" className="text-primary hover:underline ml-2 text-xs">
+                        Modifier les taux
+                      </Link>
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetToAutomatic}
+                    className="text-xs"
+                  >
+                    Réinitialiser
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-0.5">
-                  {/* Gross Salary */}
-                  <div className="flex justify-between items-center py-2.5 border-b">
+                  {/* Gross Salary - Editable */}
+                  <div className="flex justify-between items-center py-2.5 border-b gap-2">
                     <span className="text-sm text-muted-foreground">Salaire Brut:</span>
-                    <span className="text-sm font-semibold">{formatTND(calculatedSalary.salaire_brut)}</span>
+                    <Input
+                      type="number"
+                      step="0.001"
+                      value={manualOverrides.salaire_brut ?? calculatedSalary.salaire_brut}
+                      onChange={(e) => updateOverride('salaire_brut', e.target.value ? parseFloat(e.target.value) : null)}
+                      className="w-32 h-8 text-right text-sm font-semibold"
+                      placeholder={formatTND(baseCalculatedSalary.salaire_brut)}
+                    />
                   </div>
                   
-                  {/* CNSS Deduction */}
-                  <div className="flex justify-between items-center py-2.5 text-red-600 border-b">
+                  {/* CNSS Deduction - Editable */}
+                  <div className="flex justify-between items-center py-2.5 text-red-600 border-b gap-2">
                     <span className="text-sm">- CNSS (9.68%):</span>
-                    <span className="text-sm font-semibold">{formatTND(calculatedSalary.cnss)}</span>
+                    <Input
+                      type="number"
+                      step="0.001"
+                      value={manualOverrides.cnss ?? calculatedSalary.cnss}
+                      onChange={(e) => updateOverride('cnss', e.target.value ? parseFloat(e.target.value) : null)}
+                      className="w-32 h-8 text-right text-sm font-semibold text-red-600"
+                      placeholder={formatTND(baseCalculatedSalary.cnss)}
+                    />
                   </div>
                   
-                  {/* Taxable Gross Salary */}
-                  <div className="flex justify-between items-center py-2.5 bg-muted/30 px-3 rounded border-b">
+                  {/* Taxable Gross Salary - Editable */}
+                  <div className="flex justify-between items-center py-2.5 bg-muted/30 px-3 rounded border-b gap-2">
                     <span className="text-sm font-medium">Salaire Brut Imposable:</span>
-                    <span className="text-sm font-semibold">{formatTND(calculatedSalary.salaire_brut_imposable)}</span>
+                    <Input
+                      type="number"
+                      step="0.001"
+                      value={manualOverrides.salaire_brut_imposable ?? calculatedSalary.salaire_brut_imposable}
+                      onChange={(e) => updateOverride('salaire_brut_imposable', e.target.value ? parseFloat(e.target.value) : null)}
+                      className="w-32 h-8 text-right text-sm font-semibold"
+                      placeholder={formatTND(baseCalculatedSalary.salaire_brut_imposable)}
+                    />
                   </div>
                   
-                  {/* Fiscal Deductions */}
-                  <div className="flex justify-between items-center py-2 text-muted-foreground border-b">
+                  {/* Fiscal Deductions - Editable */}
+                  <div className="flex justify-between items-center py-2 text-muted-foreground border-b gap-2">
                     <span className="text-xs">- Abattement fiscal:</span>
-                    <span className="text-xs font-medium">{formatTND(calculatedSalary.deductions_fiscales)}</span>
+                    <Input
+                      type="number"
+                      step="0.001"
+                      value={manualOverrides.deductions_fiscales ?? calculatedSalary.deductions_fiscales}
+                      onChange={(e) => updateOverride('deductions_fiscales', e.target.value ? parseFloat(e.target.value) : null)}
+                      className="w-32 h-7 text-right text-xs font-medium"
+                      placeholder={formatTND(baseCalculatedSalary.deductions_fiscales)}
+                    />
                   </div>
                   
-                  {/* Taxable Base */}
-                  <div className="flex justify-between items-center py-2 border-b">
+                  {/* Taxable Base - Editable */}
+                  <div className="flex justify-between items-center py-2 border-b gap-2">
                     <span className="text-xs text-muted-foreground">Base Imposable:</span>
-                    <span className="text-xs font-medium">{formatTND(calculatedSalary.base_imposable)}</span>
+                    <Input
+                      type="number"
+                      step="0.001"
+                      value={manualOverrides.base_imposable ?? calculatedSalary.base_imposable}
+                      onChange={(e) => updateOverride('base_imposable', e.target.value ? parseFloat(e.target.value) : null)}
+                      className="w-32 h-7 text-right text-xs font-medium"
+                      placeholder={formatTND(baseCalculatedSalary.base_imposable)}
+                    />
                   </div>
                   
-                  {/* IRPP Tax */}
-                  <div className="flex justify-between items-center py-2.5 text-red-600 border-b">
+                  {/* IRPP Tax - Editable */}
+                  <div className="flex justify-between items-center py-2.5 text-red-600 border-b gap-2">
                     <span className="text-sm">- IRPP (impôt):</span>
-                    <span className="text-sm font-semibold">{formatTND(calculatedSalary.irpp)}</span>
+                    <Input
+                      type="number"
+                      step="0.001"
+                      value={manualOverrides.irpp ?? calculatedSalary.irpp}
+                      onChange={(e) => updateOverride('irpp', e.target.value ? parseFloat(e.target.value) : null)}
+                      className="w-32 h-8 text-right text-sm font-semibold text-red-600"
+                      placeholder={formatTND(baseCalculatedSalary.irpp)}
+                    />
                   </div>
                   
-                  {/* CSS Contribution */}
-                  <div className="flex justify-between items-center py-2.5 text-red-600 border-b">
+                  {/* CSS Contribution - Editable */}
+                  <div className="flex justify-between items-center py-2.5 text-red-600 border-b gap-2">
                     <span className="text-sm">- CSS (1%):</span>
-                    <span className="text-sm font-semibold">{formatTND(calculatedSalary.css)}</span>
+                    <Input
+                      type="number"
+                      step="0.001"
+                      value={manualOverrides.css ?? calculatedSalary.css}
+                      onChange={(e) => updateOverride('css', e.target.value ? parseFloat(e.target.value) : null)}
+                      className="w-32 h-8 text-right text-sm font-semibold text-red-600"
+                      placeholder={formatTND(baseCalculatedSalary.css)}
+                    />
                   </div>
                   
-                  {/* Net Salary - Highlighted */}
-                  <div className="flex justify-between items-center py-4 mt-2 text-base font-bold text-primary bg-primary/5 px-4 rounded-lg border-2 border-primary/20">
+                  {/* Net Salary - Editable & Highlighted */}
+                  <div className="flex justify-between items-center py-4 mt-2 text-base font-bold text-primary bg-primary/5 px-4 rounded-lg border-2 border-primary/20 gap-2">
                     <span>Salaire Net:</span>
-                    <span className="text-lg">{formatTND(calculatedSalary.salaire_net)}</span>
+                    <Input
+                      type="number"
+                      step="0.001"
+                      value={manualOverrides.salaire_net ?? calculatedSalary.salaire_net}
+                      onChange={(e) => updateOverride('salaire_net', e.target.value ? parseFloat(e.target.value) : null)}
+                      className="w-36 h-10 text-right text-lg font-bold text-primary border-primary/40"
+                      placeholder={formatTND(baseCalculatedSalary.salaire_net)}
+                    />
                   </div>
                 </div>
               </CardContent>

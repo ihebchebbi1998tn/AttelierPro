@@ -581,6 +581,51 @@ export const timeEntryService = {
   }
 };
 
+// Pointage interfaces
+export interface EmployeePointage {
+  id: number;
+  employee_id: number;
+  month: string;
+  jr_travaille_count: number;
+  absent_count: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+// Pointage API
+export const pointageService = {
+  // Get pointage records with optional filters
+  getAll: async (filters?: {
+    employee_id?: number;
+    month?: string;
+  }): Promise<EmployeePointage[]> => {
+    const params = new URLSearchParams();
+    if (filters?.employee_id) params.append('employee_id', filters.employee_id.toString());
+    if (filters?.month) params.append('month', filters.month);
+
+    console.log('🔍 Fetching pointage with params:', params.toString());
+    const response = await axios.get<ApiResponse<EmployeePointage[]>>(
+      `${BASE_URL}/rh_employe_pointage.php?${params.toString()}`
+    );
+    console.log('📦 Pointage API response:', response.data);
+    return response.data.data || [];
+  },
+
+  // Create or update pointage records
+  createOrUpdateBatch: async (rows: Array<{
+    employee_id: number;
+    month: string;
+    jr_travaille_count: number;
+    absent_count: number;
+  }>): Promise<ApiResponse> => {
+    const response = await axios.post<ApiResponse>(
+      `${BASE_URL}/rh_employe_pointage.php`,
+      { rows }
+    );
+    return response.data;
+  }
+};
+
 // Statistics API
 export const statisticsService = {
   // Get RH statistics

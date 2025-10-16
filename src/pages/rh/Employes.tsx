@@ -70,7 +70,8 @@ import {
   timeEntryService, 
   holidayService,
   shiftTemplateService,
-  scheduleService
+  scheduleService,
+  pointageService
 } from "@/utils/rhService";
 import WeeklyPlanningCreator from "@/components/WeeklyPlanningCreator";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -191,37 +192,86 @@ const Employes = () => {
       absences: number;
     }> = {};
     
+    // Get current month for pointage lookup (YYYY-MM format)
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    console.log('📅 Current month for pointage:', currentMonth);
+    console.log('👥 Loading status for employees:', employees.map(e => ({ id: e.id, name: `${e.prenom} ${e.nom}` })));
+    
     await Promise.all(
       employees.map(async (employee) => {
         try {
-          // Check for planning (shift templates or schedules)
-          const [templates, schedules, salaries, timeEntries, holidays] = await Promise.all([
+          console.log(`\n🔍 Processing employee ${employee.id} (${employee.prenom} ${employee.nom})`);
+          console.log(`  Employee ID type: ${typeof employee.id}, value: ${employee.id}`);
+          
+          // Check for planning (shift templates or schedules) and salaries
+          const [templates, schedules, salaries, pointageRecords] = await Promise.all([
             shiftTemplateService.getAll(employee.id),
             scheduleService.getAll({ employee_id: employee.id }),
             salaryService.getAll({ employee_id: employee.id }),
-            timeEntryService.getAll({ employee_id: employee.id }),
-            holidayService.getAll({ employee_id: employee.id, status: 'approved' })
+            pointageService.getAll({ employee_id: employee.id, month: currentMonth })
           ]);
           
-          // Count worked days
-          const workedDays = timeEntries.filter(entry => 
-            entry.total_hours && entry.total_hours > 0
-          ).length;
+          console.log(`  📊 Pointage records for employee ${employee.id}:`, pointageRecords);
+          console.log(`  📊 Number of pointage records: ${pointageRecords.length}`);
           
-          // Count absences (approved holidays)
-          const absences = holidays.reduce((sum, holiday) => {
-            if (holiday.half_day === 'FULL') return sum + 1;
-            if (holiday.half_day === 'AM' || holiday.half_day === 'PM') return sum + 0.5;
-            return sum;
-          }, 0);
+          // Get worked days and absences from pointage table for current month
+          let workedDays = 0;
+          let absences = 0;
           
-          statusMap[employee.id] = {
+          if (pointageRecords && pointageRecords.length > 0) {
+            // Log each record in detail
+            pointageRecords.forEach((record, index) => {
+              console.log(`  📋 Record ${index}:`, {
+                id: record.id,
+                employee_id: record.employee_id,
+                employee_id_type: typeof record.employee_id,
+                month: record.month,
+                jr_travaille_count: record.jr_travaille_count,
+                jr_travaille_type: typeof record.jr_travaille_count,
+                absent_count: record.absent_count,
+                absent_type: typeof record.absent_count,
+                raw_record: record
+              });
+              
+              // Check if this record matches the current employee
+              const employeeIdMatch = Number(record.employee_id) === Number(employee.id);
+              console.log(`    ✓ Employee ID match (${record.employee_id} === ${employee.id}): ${employeeIdMatch}`);
+              
+              // Check if month matches
+              const monthMatch = record.month === currentMonth;
+              console.log(`    ✓ Month match (${record.month} === ${currentMonth}): ${monthMatch}`);
+            });
+            
+            // Sum up all records for this employee and month
+            workedDays = pointageRecords.reduce((sum, record) => {
+              const count = Number(record.jr_travaille_count) || 0;
+              console.log(`  ➕ Adding jr_travaille_count: ${record.jr_travaille_count} (converted: ${count})`);
+              return sum + count;
+            }, 0);
+            
+            absences = pointageRecords.reduce((sum, record) => {
+              const count = Number(record.absent_count) || 0;
+              console.log(`  ➕ Adding absent_count: ${record.absent_count} (converted: ${count})`);
+              return sum + count;
+            }, 0);
+            
+            console.log(`  ✅ FINAL for employee ${employee.id} (${employee.prenom} ${employee.nom}): workedDays=${workedDays}, absences=${absences}`);
+          } else {
+            console.log(`  ⚠️ NO POINTAGE RECORDS found for employee ${employee.id} in month ${currentMonth}`);
+          }
+          
+          const finalStatus = {
             hasPlanning: templates.length > 0 || schedules.length > 0,
             hasSalary: salaries.length > 0,
             workedDays,
             absences
           };
+          
+          console.log(`  📝 Setting status for employee ${employee.id}:`, finalStatus);
+          statusMap[employee.id] = finalStatus;
+          
         } catch (error) {
+          console.error(`❌ Error loading status for employee ${employee.id}:`, error);
           // If error, mark as not filled
           statusMap[employee.id] = {
             hasPlanning: false,
@@ -232,6 +282,13 @@ const Employes = () => {
         }
       })
     );
+    
+    console.log('\n📊 ========== FINAL employeeStatus map ==========');
+    Object.entries(statusMap).forEach(([empId, status]) => {
+      const emp = employees.find(e => String(e.id) === String(empId));
+      console.log(`Employee ${empId} (${emp?.prenom} ${emp?.nom}):`, status);
+    });
+    console.log('================================================\n');
     
     setEmployeeStatus(statusMap);
   };

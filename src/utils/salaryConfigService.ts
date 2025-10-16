@@ -62,8 +62,8 @@ export const salaryConfigService = {
     
     return {
       cnss_rate: configMap.cnss_rate || 0.0968,
-      css_rate: configMap.css_rate || 0.01,
-      deduction_chef_famille: configMap.deduction_chef_famille || 150,
+      css_rate: configMap.css_rate || 0.005,
+      deduction_chef_famille: configMap.deduction_chef_famille || 300,
       deduction_per_child: configMap.deduction_per_child || 100,
       tax_brackets: taxBrackets
     };

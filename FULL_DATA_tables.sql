@@ -1,4 +1,31 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.2
+-- https://www.phpmyadmin.net/
+--
+-- Host: luccybcdb.mysql.db
+-- Generation Time: Oct 16, 2025 at 03:52 PM
+-- Server version: 8.0.43-34
+-- PHP Version: 8.1.33
 
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `luccybcdb`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `batch_status_history`
+--
 
 CREATE TABLE `batch_status_history` (
   `id` int NOT NULL,
@@ -11,226 +38,6 @@ CREATE TABLE `batch_status_history` (
   `ip_address` varchar(45) DEFAULT NULL,
   `user_agent` text
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `blogs`
---
-
-CREATE TABLE `blogs` (
-  `id` int NOT NULL,
-  `title` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `content` longtext COLLATE utf8mb4_general_ci NOT NULL,
-  `excerpt` text COLLATE utf8mb4_general_ci,
-  `image_url` varchar(500) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `author` varchar(100) COLLATE utf8mb4_general_ci DEFAULT 'Coach',
-  `status` enum('published','draft') COLLATE utf8mb4_general_ci DEFAULT 'published',
-  `reading_time` int DEFAULT '0',
-  `views` int DEFAULT '0',
-  `category` varchar(100) COLLATE utf8mb4_general_ci DEFAULT 'Science',
-  `tags` varchar(500) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `featured` tinyint(1) DEFAULT '0',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `chat_messages`
---
-
-CREATE TABLE `chat_messages` (
-  `id_message` int NOT NULL,
-  `id_session` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `sender_type` enum('client','agent') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `sender_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `message_content` text COLLATE utf8mb4_unicode_ci,
-  `message_type` enum('text','file','system','image') COLLATE utf8mb4_unicode_ci DEFAULT 'text',
-  `is_read` tinyint(1) DEFAULT '0',
-  `date_sent` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `image_url` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `image_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `image_size` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `chat_sessions`
---
-
-CREATE TABLE `chat_sessions` (
-  `id_session` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `client_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `client_email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `client_phone` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('active','closed','archived') COLLATE utf8mb4_unicode_ci DEFAULT 'active',
-  `last_activity` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `date_created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `message_count` int DEFAULT '0',
-  `unread_count` int DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `customers`
---
-
-CREATE TABLE `customers` (
-  `id_customer` int NOT NULL,
-  `nom_customer` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `prenom_customer` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email_customer` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `telephone_customer` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `adresse_customer` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `ville_customer` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `code_postal_customer` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `pays_customer` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `date_creation_customer` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `date_modification_customer` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `delivery_addresses`
---
-
-CREATE TABLE `delivery_addresses` (
-  `id_delivery_address` int NOT NULL,
-  `id_order` int NOT NULL,
-  `nom_destinataire` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `prenom_destinataire` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `telephone_destinataire` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `adresse_livraison` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `ville_livraison` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `code_postal_livraison` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `pays_livraison` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `instructions_livraison` text COLLATE utf8mb4_unicode_ci,
-  `date_creation_delivery` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `emails`
---
-
-CREATE TABLE `emails` (
-  `id_email` int NOT NULL,
-  `nom_client` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `email_client` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `telephone_client` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `sujet_message` varchar(500) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `message_client` text COLLATE utf8mb4_general_ci NOT NULL,
-  `vue_par_admin` tinyint(1) DEFAULT '0',
-  `date_vue_admin` timestamp NULL DEFAULT NULL,
-  `date_creation` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `fcm_tokens`
---
-
-CREATE TABLE `fcm_tokens` (
-  `id` int NOT NULL,
-  `token` varchar(255) NOT NULL,
-  `user_type` enum('admin','client') NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `newsletter_subscribers`
---
-
-CREATE TABLE `newsletter_subscribers` (
-  `id_subscriber` int NOT NULL,
-  `email_subscriber` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `nom_subscriber` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `prenom_subscriber` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `age_subscriber` int DEFAULT NULL,
-  `status_subscriber` enum('active','unsubscribed','bounced','pending') COLLATE utf8mb4_unicode_ci DEFAULT 'active',
-  `source_subscriber` enum('website','checkout','social','manual','import','popup') COLLATE utf8mb4_unicode_ci DEFAULT 'website',
-  `date_inscription` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `date_unsubscribe` timestamp NULL DEFAULT NULL,
-  `ip_inscription` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `token_unsubscribe` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `preferences_subscriber` text COLLATE utf8mb4_unicode_ci COMMENT 'JSON field for subscriber preferences'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `orders`
---
-
-CREATE TABLE `orders` (
-  `id_order` int NOT NULL,
-  `id_customer` int NOT NULL,
-  `numero_commande` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `sous_total_order` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `discount_amount_order` decimal(10,2) DEFAULT '0.00',
-  `discount_percentage_order` decimal(5,2) DEFAULT '0.00',
-  `delivery_cost_order` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `total_order` decimal(10,2) NOT NULL,
-  `status_order` enum('pending','confirmed','processing','shipped','delivered','cancelled','refunded') COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
-  `date_livraison_souhaitee` date DEFAULT NULL,
-  `payment_link_konnekt` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `payment_status` enum('pending','paid','failed','refunded') COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
-  `payment_method` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `notes_order` text COLLATE utf8mb4_unicode_ci,
-  `vue_par_admin` tinyint(1) DEFAULT '0' COMMENT 'Track if order has been viewed by admin (0 = not viewed, 1 = viewed)',
-  `date_vue_admin` timestamp NULL DEFAULT NULL COMMENT 'Date when admin first viewed the order',
-  `date_creation_order` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `date_modification_order` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `date_confirmation_order` timestamp NULL DEFAULT NULL,
-  `date_livraison_order` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `order_items`
---
-
-CREATE TABLE `order_items` (
-  `id_order_item` int NOT NULL,
-  `id_order` int NOT NULL,
-  `id_product` int NOT NULL,
-  `nom_product_snapshot` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `reference_product_snapshot` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `price_product_snapshot` decimal(10,2) NOT NULL,
-  `size_selected` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `color_selected` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `quantity_ordered` int NOT NULL DEFAULT '1',
-  `subtotal_item` decimal(10,2) NOT NULL,
-  `discount_item` decimal(10,2) DEFAULT '0.00',
-  `total_item` decimal(10,2) NOT NULL,
-  `date_creation_item` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `order_tracking`
---
-
-CREATE TABLE `order_tracking` (
-  `id_tracking` int NOT NULL,
-  `id_order` int NOT NULL,
-  `status_previous` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status_new` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `notes_tracking` text COLLATE utf8mb4_unicode_ci,
-  `date_tracking` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -571,6 +378,22 @@ CREATE TABLE `production_employees` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `production_employe_pointage`
+--
+
+CREATE TABLE `production_employe_pointage` (
+  `id` int NOT NULL,
+  `employee_id` int NOT NULL,
+  `month` varchar(64) NOT NULL,
+  `jr_travaille_count` int NOT NULL DEFAULT '0',
+  `absent_count` int NOT NULL DEFAULT '0',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `production_holidays`
 --
 
@@ -578,15 +401,19 @@ CREATE TABLE `production_holidays` (
   `id` int NOT NULL,
   `employee_id` int NOT NULL,
   `date` date NOT NULL,
+  `date_end` date DEFAULT NULL,
   `half_day` enum('AM','PM','FULL') DEFAULT 'FULL',
+  `start_time` time DEFAULT NULL,
+  `end_time` time DEFAULT NULL,
   `motif` varchar(255) DEFAULT NULL,
   `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `is_paid` tinyint(1) DEFAULT '1',
   `created_by` int DEFAULT NULL,
   `approved_by` int DEFAULT NULL,
   `approved_at` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Enhanced leave management with time ranges, periods, and paid/unpaid status';
 
 -- --------------------------------------------------------
 
@@ -1231,7 +1058,8 @@ CREATE TABLE `production_surmesure_commandes` (
   `second_try_scheduled_time` time DEFAULT NULL COMMENT 'Scheduled time for second try',
   `third_try_scheduled_time` time DEFAULT NULL COMMENT 'Scheduled time for third try',
   `is_seen` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the order has been seen by admin (0=not seen, 1=seen)',
-  `selected_matieres` json DEFAULT NULL COMMENT 'JSON array of selected matiere IDs for the order'
+  `selected_matieres` json DEFAULT NULL COMMENT 'JSON array of selected matiere IDs for the order',
+  `selected_coupe_options` json DEFAULT NULL COMMENT 'Selected coupe image options (array of {id, title, imageUrl})'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -1462,81 +1290,6 @@ CREATE TABLE `production_videos` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `products`
---
-
-CREATE TABLE `products` (
-  `id_product` int NOT NULL,
-  `reference_product` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `nom_product` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `img_product` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `img2_product` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `img3_product` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `img4_product` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `description_product` text COLLATE utf8mb4_unicode_ci,
-  `type_product` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `category_product` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `itemgroup_product` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `price_product` decimal(10,2) NOT NULL,
-  `qnty_product` int DEFAULT '0',
-  `3xl_size` int DEFAULT '0',
-  `s_size` int DEFAULT '0',
-  `xs_size` int DEFAULT '0',
-  `4xl_size` int DEFAULT '0',
-  `m_size` int DEFAULT '0',
-  `l_size` int DEFAULT '0',
-  `xl_size` int DEFAULT '0',
-  `xxl_size` int DEFAULT '0',
-  `color_product` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `collection_product` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status_product` enum('active','inactive','draft') COLLATE utf8mb4_unicode_ci DEFAULT 'active',
-  `related_products` text COLLATE utf8mb4_unicode_ci,
-  `discount_product` decimal(5,2) DEFAULT '0.00',
-  `AutoReapprovisionnement` tinyint(1) DEFAULT '0',
-  `AutoReapprovisionnement_quantity` int DEFAULT '0',
-  `AutoReapprovisionnement_quantity_sizes` json DEFAULT NULL,
-  `createdate_product` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `48_size` int DEFAULT '0',
-  `50_size` int DEFAULT '0',
-  `52_size` int DEFAULT '0',
-  `54_size` int DEFAULT '0',
-  `56_size` int DEFAULT '0',
-  `58_size` int DEFAULT '0',
-  `60_size` int DEFAULT '0',
-  `62_size` int DEFAULT '0',
-  `64_size` int DEFAULT '0',
-  `66_size` int DEFAULT '0',
-  `39_size` int DEFAULT '0',
-  `40_size` int DEFAULT '0',
-  `85_size` int DEFAULT '0',
-  `90_size` int DEFAULT '0',
-  `95_size` int DEFAULT '0',
-  `100_size` int DEFAULT '0',
-  `105_size` int DEFAULT '0',
-  `110_size` int DEFAULT '0',
-  `115_size` int DEFAULT '0',
-  `120_size` int DEFAULT '0',
-  `125_size` int DEFAULT '0',
-  `41_size` int DEFAULT '0',
-  `42_size` int DEFAULT '0',
-  `43_size` int DEFAULT '0',
-  `44_size` int DEFAULT '0',
-  `45_size` int DEFAULT '0',
-  `46_size` int DEFAULT '0',
-  `47_size` int DEFAULT '0',
-  `img5_product` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `30_size` int DEFAULT '0',
-  `31_size` int DEFAULT '0',
-  `32_size` int DEFAULT '0',
-  `33_size` int DEFAULT '0',
-  `34_size` int DEFAULT '0',
-  `36_size` int DEFAULT '0',
-  `38_size` int DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `product_measurement_scales`
 --
 
@@ -1605,42 +1358,6 @@ CREATE TABLE `product_transfer_batches` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `reservations`
---
-
-CREATE TABLE `reservations` (
-  `id_reservation` int NOT NULL,
-  `nom_client` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email_client` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `telephone_client` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `date_reservation` date NOT NULL,
-  `heure_reservation` time NOT NULL,
-  `statut_reservation` enum('pending','confirmed','cancelled','completed') COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
-  `notes_reservation` text COLLATE utf8mb4_unicode_ci,
-  `date_creation` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `date_confirmation` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `specification_templates`
---
-
-CREATE TABLE `specification_templates` (
-  `id` int NOT NULL,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Specification name (e.g., Matériaux, Boutons)',
-  `input_type` enum('input','select','checkbox') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'input' COMMENT 'Type of input: free text, dropdown, or checkboxes',
-  `options` json DEFAULT NULL COMMENT 'Array of options for select/checkbox types: ["Option 1", "Option 2"]',
-  `is_active` tinyint(1) DEFAULT '1' COMMENT 'Whether this template is active',
-  `display_order` int DEFAULT '0' COMMENT 'Order in which templates appear',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `surmesure_tries`
 --
 
@@ -1655,41 +1372,27 @@ CREATE TABLE `surmesure_tries` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- --------------------------------------------------------
-
 --
--- Table structure for table `temp_messages`
+-- Dumping data for table `surmesure_tries`
 --
 
-CREATE TABLE `temp_messages` (
-  `id_temp_message` int NOT NULL,
-  `temp_session_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `message_content` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `message_type` enum('text','image') COLLATE utf8mb4_unicode_ci DEFAULT 'text',
-  `image_url` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `image_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `date_sent` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `transferred` tinyint(1) DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `visitor_tracking`
---
-
-CREATE TABLE `visitor_tracking` (
-  `id` int NOT NULL,
-  `ip_address` varchar(45) NOT NULL,
-  `page_visited` varchar(255) NOT NULL,
-  `referrer` varchar(500) DEFAULT 'Direct',
-  `user_agent` text,
-  `city` varchar(100) DEFAULT 'Unknown',
-  `country` varchar(100) DEFAULT 'Unknown',
-  `device_type` varchar(20) DEFAULT 'Unknown',
-  `session_id` varchar(100) DEFAULT NULL,
-  `visit_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+INSERT INTO `surmesure_tries` (`id`, `order_id`, `try_number`, `scheduled_date`, `scheduled_time`, `completed_at`, `created_at`, `updated_at`) VALUES
+(1, 14, 1, '2025-09-23', '14:00:00', '2025-09-20 12:15:00', '2025-09-23 12:58:18', '2025-09-23 13:23:41'),
+(5, 14, 2, '2025-09-30', '14:00:00', '2025-09-20 16:30:00', '2025-09-23 13:03:25', '2025-09-23 13:23:56'),
+(6, 17, 1, '2025-09-26', NULL, NULL, '2025-09-23 13:48:36', '2025-09-23 13:48:36'),
+(7, 18, 1, '2025-09-28', NULL, NULL, '2025-09-26 09:22:15', '2025-09-26 09:22:15'),
+(8, 19, 1, '2025-09-29', NULL, NULL, '2025-09-27 10:13:23', '2025-09-27 10:13:23'),
+(9, 20, 1, '2025-09-29', NULL, NULL, '2025-09-27 13:17:21', '2025-09-27 13:17:21'),
+(11, 2, 1, '2025-10-09', NULL, NULL, '2025-10-02 15:07:59', '2025-10-02 15:07:59'),
+(16, 1, 1, '2025-10-15', NULL, NULL, '2025-10-07 10:59:42', '2025-10-07 10:59:42'),
+(19, 4, 1, '2025-10-20', NULL, NULL, '2025-10-07 16:29:53', '2025-10-07 16:29:53'),
+(20, 5, 1, '2025-10-16', NULL, NULL, '2025-10-09 15:55:59', '2025-10-09 15:55:59'),
+(21, 6, 1, '2025-10-16', NULL, NULL, '2025-10-09 16:07:26', '2025-10-09 16:07:26'),
+(22, 7, 1, '2025-12-12', NULL, NULL, '2025-10-10 15:27:41', '2025-10-10 15:27:41'),
+(25, 10, 1, '2025-11-25', NULL, NULL, '2025-10-14 09:05:52', '2025-10-14 09:05:52'),
+(26, 11, 1, '2025-11-28', NULL, NULL, '2025-10-14 09:27:48', '2025-10-14 09:27:48'),
+(27, 12, 1, '2025-10-29', NULL, NULL, '2025-10-14 15:02:20', '2025-10-14 15:02:20'),
+(28, 13, 1, '2025-10-21', NULL, NULL, '2025-10-14 15:05:55', '2025-10-14 15:05:55');
 
 -- --------------------------------------------------------
 
@@ -1698,35 +1401,35 @@ CREATE TABLE `visitor_tracking` (
 -- (See below for the actual view)
 --
 CREATE TABLE `vw_surmesure_orders_complete` (
-`client_address` text
-,`client_email` varchar(255)
+`id` int
 ,`client_name` varchar(100)
-,`client_phone` varchar(20)
-,`client_region` varchar(50)
 ,`client_vorname` varchar(100)
-,`comments_count` bigint
-,`created_at` timestamp
-,`first_try_completed_at` datetime
-,`first_try_date` date
-,`first_try_full_scheduled` varchar(21)
-,`first_try_scheduled_time` time
-,`id` int
-,`images_count` bigint
-,`measurements` json
+,`client_email` varchar(255)
+,`client_phone` varchar(20)
+,`client_address` text
+,`client_region` varchar(50)
 ,`product_name` varchar(255)
 ,`ready_date` date
-,`second_try_completed_at` datetime
+,`first_try_date` date
 ,`second_try_date` date
-,`second_try_full_scheduled` varchar(21)
-,`second_try_scheduled_time` time
-,`status` enum('new','in_progress','ready_for_pickup','ready_for_pickup','first_try','needs_revision','ready_for_second_try','completed')
-,`third_try_completed_at` datetime
 ,`third_try_date` date
-,`third_try_full_scheduled` varchar(21)
-,`third_try_scheduled_time` time
+,`status` enum('new','in_progress','ready_for_pickup','ready_for_pickup','first_try','needs_revision','ready_for_second_try','completed')
+,`measurements` json
 ,`tolerance` json
+,`created_at` timestamp
 ,`updated_at` timestamp
+,`first_try_completed_at` datetime
+,`second_try_completed_at` datetime
+,`third_try_completed_at` datetime
+,`first_try_scheduled_time` time
+,`second_try_scheduled_time` time
+,`third_try_scheduled_time` time
+,`first_try_full_scheduled` varchar(21)
+,`second_try_full_scheduled` varchar(21)
+,`third_try_full_scheduled` varchar(21)
+,`images_count` bigint
 ,`videos_count` bigint
+,`comments_count` bigint
 );
 
 --
@@ -1740,48 +1443,6 @@ ALTER TABLE `batch_status_history`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_batch_id` (`batch_id`),
   ADD KEY `idx_changed_at` (`changed_at`);
-
---
--- Indexes for table `chat_messages`
---
-ALTER TABLE `chat_messages`
-  ADD PRIMARY KEY (`id_message`);
-
---
--- Indexes for table `customers`
---
-ALTER TABLE `customers`
-  ADD PRIMARY KEY (`id_customer`);
-
---
--- Indexes for table `delivery_addresses`
---
-ALTER TABLE `delivery_addresses`
-  ADD PRIMARY KEY (`id_delivery_address`);
-
---
--- Indexes for table `emails`
---
-ALTER TABLE `emails`
-  ADD PRIMARY KEY (`id_email`);
-
---
--- Indexes for table `newsletter_subscribers`
---
-ALTER TABLE `newsletter_subscribers`
-  ADD PRIMARY KEY (`id_subscriber`);
-
---
--- Indexes for table `orders`
---
-ALTER TABLE `orders`
-  ADD PRIMARY KEY (`id_order`);
-
---
--- Indexes for table `order_items`
---
-ALTER TABLE `order_items`
-  ADD PRIMARY KEY (`id_order_item`);
 
 --
 -- Indexes for table `productions_batches_images`
@@ -1869,6 +1530,14 @@ ALTER TABLE `production_clients_externes`
 ALTER TABLE `production_employees`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_date_naissance` (`date_naissance`);
+
+--
+-- Indexes for table `production_employe_pointage`
+--
+ALTER TABLE `production_employe_pointage`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_employee_month` (`employee_id`,`month`),
+  ADD KEY `idx_employee_id` (`employee_id`);
 
 --
 -- Indexes for table `production_holidays`
@@ -2206,12 +1875,6 @@ ALTER TABLE `production_videos`
   ADD KEY `uploaded_user` (`uploaded_user`);
 
 --
--- Indexes for table `products`
---
-ALTER TABLE `products`
-  ADD PRIMARY KEY (`id_product`);
-
---
 -- Indexes for table `product_measurement_scales`
 --
 ALTER TABLE `product_measurement_scales`
@@ -2248,19 +1911,6 @@ ALTER TABLE `product_transfer_batches`
   ADD KEY `idx_transfer_date` (`transfer_date`);
 
 --
--- Indexes for table `reservations`
---
-ALTER TABLE `reservations`
-  ADD PRIMARY KEY (`id_reservation`);
-
---
--- Indexes for table `specification_templates`
---
-ALTER TABLE `specification_templates`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_active_order` (`is_active`,`display_order`);
-
---
 -- Indexes for table `surmesure_tries`
 --
 ALTER TABLE `surmesure_tries`
@@ -2268,17 +1918,6 @@ ALTER TABLE `surmesure_tries`
   ADD UNIQUE KEY `unique_order_try` (`order_id`,`try_number`),
   ADD KEY `idx_order_id` (`order_id`),
   ADD KEY `idx_try_number` (`try_number`);
-
---
--- Indexes for table `visitor_tracking`
---
-ALTER TABLE `visitor_tracking`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_page_visited` (`page_visited`),
-  ADD KEY `idx_visit_date` (`visit_date`),
-  ADD KEY `idx_country` (`country`),
-  ADD KEY `idx_device_type` (`device_type`),
-  ADD KEY `idx_session_id` (`session_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -2289,48 +1928,6 @@ ALTER TABLE `visitor_tracking`
 --
 ALTER TABLE `batch_status_history`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `chat_messages`
---
-ALTER TABLE `chat_messages`
-  MODIFY `id_message` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `customers`
---
-ALTER TABLE `customers`
-  MODIFY `id_customer` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `delivery_addresses`
---
-ALTER TABLE `delivery_addresses`
-  MODIFY `id_delivery_address` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `emails`
---
-ALTER TABLE `emails`
-  MODIFY `id_email` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `newsletter_subscribers`
---
-ALTER TABLE `newsletter_subscribers`
-  MODIFY `id_subscriber` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `orders`
---
-ALTER TABLE `orders`
-  MODIFY `id_order` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `order_items`
---
-ALTER TABLE `order_items`
-  MODIFY `id_order_item` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `productions_batches_images`
@@ -2396,6 +1993,12 @@ ALTER TABLE `production_clients_externes`
 -- AUTO_INCREMENT for table `production_employees`
 --
 ALTER TABLE `production_employees`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `production_employe_pointage`
+--
+ALTER TABLE `production_employe_pointage`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
@@ -2627,12 +2230,6 @@ ALTER TABLE `production_videos`
   MODIFY `video_id` int NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `products`
---
-ALTER TABLE `products`
-  MODIFY `id_product` int NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `product_measurement_scales`
 --
 ALTER TABLE `product_measurement_scales`
@@ -2657,28 +2254,10 @@ ALTER TABLE `product_transfer_batches`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `reservations`
---
-ALTER TABLE `reservations`
-  MODIFY `id_reservation` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `specification_templates`
---
-ALTER TABLE `specification_templates`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `surmesure_tries`
 --
 ALTER TABLE `surmesure_tries`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `visitor_tracking`
---
-ALTER TABLE `visitor_tracking`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 -- --------------------------------------------------------
 
