@@ -417,12 +417,803 @@ const BatchDetails = () => {
     }
   };
 
-  // Print function - directly prints the modal content for 100% consistency
+  // Updated print function - matches ProductReport styling exactly
   const handlePrintReport = () => {
-    window.print();
+    const reportElement = document.getElementById('batch-report-content');
+    if (!reportElement) return;
+    
+    // Generate complete report HTML with auto-print script
+    const reportHTML = generateBatchReportHTML(reportElement.innerHTML);
+    
+    // Create blob and URL
+    const blob = new Blob([reportHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    
+    // Open in new window/tab
+    window.open(url, '_blank');
+    
+    // Clean up the URL after some time
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 15000);
   };
 
+  const generateBatchReportHTML = (reportContent: string) => {
+    // If the rendered reportContent is missing the materials table, append it explicitly
+    let finalReportContent = reportContent;
+    try {
+      if (!/MAT.{0,20}ÉRIAUX\s+UTILIS[ÉE]S/i.test(reportContent) && batch && batch.materials_used && batch.materials_used.length > 0) {
+        // Build materials HTML (same structure as BatchReport component)
+        const grouped: any = {};
+        (batch.materials_used || []).forEach((m: any) => {
+          const key = `${m.nom_matiere}-${m.couleur || 'N/A'}`;
+          if (!grouped[key]) grouped[key] = { ...m, quantity_used: Number(m.quantity_used) || 0 };
+          else grouped[key].quantity_used += Number(m.quantity_used) || 0;
+        });
 
+        const sizesObj = (() => {
+          try {
+            return batch.sizes_breakdown ? JSON.parse(batch.sizes_breakdown) : {};
+          } catch (e) {
+            return {};
+          }
+        })();
+
+        let materialsHtml = `\n<div class="mb-6">\n  <h2 class="text-lg font-bold border-b-2 border-black pb-1 mb-3">MATÉRIAUX UTILISÉS</h2>\n  <div class="border-2 border-black">\n    <table class="w-full text-xs">\n      <thead>\n        <tr class="border-b-2 border-black bg-gray-100">\n          <th class="text-left p-2 border-r border-black">MATÉRIAU</th>\n          <th class="text-left p-2 border-r border-black">COULEUR</th>\n          <th class="text-left p-2 border-r border-black">RÉPARTITION PAR TAILLE</th>\n          <th class="text-left p-2 border-r border-black">TOTAL</th>\n          <th class="text-left p-2 border-r border-black">UNITÉ</th>\n          <th class="text-left p-2">COMMENTAIRE</th>\n        </tr>\n      </thead>\n      <tbody>\n`;
+
+        Object.values(grouped).forEach((material: any, idx: number) => {
+          // compute size breakdown
+          let sizeBreakdown: any = {};
+          try {
+            const parsedSizes: any = sizesObj || {};
+            const totalQuantity = Number(material.quantity_used) || 0;
+            const totalPieces = Object.values(parsedSizes).reduce((s: number, v: any) => s + Number(v || 0), 0) as number;
+            if (totalPieces > 0) {
+              Object.entries(parsedSizes).forEach(([size, pieces]) => {
+                const numPieces = Number(pieces) || 0;
+                if (numPieces > 0) {
+                  const proportion = numPieces / totalPieces;
+                  sizeBreakdown[size] = (totalQuantity * proportion).toFixed(1);
+                }
+              });
+            }
+          } catch (e) {
+            sizeBreakdown = {};
+          }
+
+          materialsHtml += `        <tr class="${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">\n` +
+            `          <td class="p-2 border-r border-black font-medium">${material.nom_matiere}</td>\n` +
+            `          <td class="p-2 border-r border-black">${material.couleur || 'N/A'}</td>\n` +
+            `          <td class="p-2 border-r border-black">`;
+
+          if (Object.keys(sizeBreakdown).length > 0) {
+            materialsHtml += `<div class="flex flex-wrap gap-2">`;
+            Object.entries(sizeBreakdown).forEach(([size, quantity]) => {
+              materialsHtml += `<div class="bg-gray-100 px-2 py-1 rounded"><span class="font-medium">${size === 'none' ? 'Standard' : size.toUpperCase()}:</span> <span class="ml-1">${quantity} ${material.quantity_unit}</span></div>`;
+            });
+            materialsHtml += `</div>`;
+          } else {
+            materialsHtml += `<span class="text-gray-600 italic">Toutes tailles</span>`;
+          }
+
+          materialsHtml += `</td>\n` +
+            `          <td class="p-2 border-r border-black font-bold">${material.quantity_used} ${material.quantity_unit}</td>\n` +
+            `          <td class="p-2 border-r border-black text-center">${material.quantity_type_name || ''}</td>\n` +
+            `          <td class="p-2">${material.commentaire || '-'}</td>\n` +
+            `        </tr>\n`;
+        });
+
+        materialsHtml += `      </tbody>\n    </table>\n    <div class="mt-3 text-right"><span class="font-bold">Coût Total Matériaux: ${Number(batch.total_materials_cost || 0).toFixed(2)} TND</span></div>\n  </div>\n</div>\n`;
+
+        // Append to final content
+        finalReportContent = reportContent + materialsHtml;
+      }
+    } catch (e) {
+      console.error('Error appending materials to print report:', e);
+      finalReportContent = reportContent;
+    }
+
+    return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <title>Rapport de Production - ${batch?.batch_reference}</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Reset and base styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    body {
+      font-family: "Segoe UI", "Arial", "Helvetica", sans-serif;
+      font-size: 13px;
+      line-height: 1.4;
+      color: #000 !important;
+      background: white !important;
+      padding: 18px;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    /* Print-specific styles */
+    @media print {
+      body {
+        padding: 12px;
+        margin: 0;
+      }
+      @page {
+        margin: 0.8cm;
+        size: A4;
+      }
+    }
+    
+    /* Typography */
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+    
+    h2 {
+      font-size: 16px;
+      font-weight: 700;
+      border-bottom: 2px solid #000;
+      padding-bottom: 4px;
+      margin-bottom: 10px;
+      margin-top: 18px;
+      letter-spacing: 0.5px;
+    }
+    
+    /* Header section */
+    .text-center {
+      text-align: center;
+    }
+    
+    .border-b-2 {
+      border-bottom: 1.5px solid #000;
+    }
+    
+    .pb-4 {
+      padding-bottom: 12px;
+    }
+    
+    .mb-6 {
+      margin-bottom: 18px;
+    }
+    
+    .mb-2 {
+      margin-bottom: 6px;
+    }
+    
+    .mb-3 {
+      margin-bottom: 8px;
+    }
+    
+    /* Grid layouts */
+    .grid {
+      display: grid;
+    }
+    
+    .grid-cols-2 {
+      grid-template-columns: 1fr 1fr;
+    }
+    
+    .grid-cols-8 {
+      grid-template-columns: repeat(8, 1fr);
+    }
+    
+    .gap-2 {
+      gap: 6px;
+    }
+    
+    .gap-4 {
+      gap: 12px;
+    }
+    
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.5px solid #000;
+      margin-bottom: 12px;
+      font-size: 11px;
+    }
+    
+    th, td {
+      border: 1px solid #000;
+      padding: 6px 7px;
+      text-align: left;
+      vertical-align: top;
+    }
+    
+    th {
+      background-color: #f8f9fa !important;
+      font-weight: 600;
+      font-size: 11px;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .bg-gray-100 {
+      background-color: #f8f9fa !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .bg-gray-50 {
+      background-color: #fbfcfd !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .bg-white {
+      background-color: #ffffff !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    /* Borders */
+    .border {
+      border: 1px solid #000;
+    }
+    
+    .border-black {
+      border-color: #000;
+    }
+    
+    .border-b {
+      border-bottom: 1px solid #000;
+    }
+    
+    .border-r {
+      border-right: 1px solid #000;
+    }
+    
+    .border-gray-300 {
+      border: 1px solid #d1d5db;
+    }
+    
+    /* Padding and margins */
+    .p-1 {
+      padding: 3px;
+    }
+    
+    .p-2 {
+      padding: 6px;
+    }
+    
+    .p-8 {
+      padding: 24px;
+    }
+    
+    .pb-1 {
+      padding-bottom: 3px;
+    }
+    
+    /* Text styles */
+    .text-xs {
+      font-size: 10px;
+    }
+    
+    .text-sm {
+      font-size: 12px;
+    }
+    
+    .text-base {
+      font-size: 13px;
+    }
+    
+    .text-lg {
+      font-size: 16px;
+    }
+    
+    .text-xl {
+      font-size: 18px;
+    }
+    
+    .text-2xl {
+      font-size: 22px;
+    }
+    
+    .text-3xl {
+      font-size: 24px;
+    }
+    
+    .font-bold {
+      font-weight: 600;
+    }
+    
+    .font-medium {
+      font-weight: 500;
+    }
+    
+    .text-center {
+      text-align: center;
+    }
+    
+    .text-left {
+      text-align: left;
+    }
+    
+    /* Size boxes */
+    .inline-block {
+      display: inline-block;
+    }
+    
+    .mr-2 {
+      margin-right: 6px;
+    }
+    
+    /* Page breaks */
+    .break-inside-avoid {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    
+    /* Print page breaks - Critical for proper page layout */
+    .print\\:break-before-page {
+      page-break-before: always !important;
+      break-before: page !important;
+    }
+    
+    /* Ensure smaller content sections don't break awkwardly */
+    table {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    
+    /* Remove break-inside avoid from large sections that might cause empty pages */
+    .mb-6 {
+      break-inside: auto;
+      page-break-inside: auto;
+    }
+    
+    /* Image grid and card for print */
+    .image-grid {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .image-grid-page {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6mm;
+    }
+    .image-card {
+      height: 110mm !important;
+      max-height: 110mm !important;
+      width: 100%;
+      border: 1px solid #000;
+      background: #fbfcfd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3mm;
+    }
+    .image-card img {
+      max-width: 95% !important;
+      max-height: 95% !important;
+      width: auto !important;
+      height: auto !important;
+      object-fit: contain !important;
+      min-height: 85mm !important;
+    }
+    
+    /* Ensure images don't create excessive white space */
+    .h-20 {
+      height: 60px !important;
+      max-height: 60px !important;
+    }
+    
+    /* Grid improvements for better print layout */
+    .grid {
+      break-inside: auto;
+      page-break-inside: auto;
+    }
+    
+    /* Utility fallbacks used in report */
+    .flex{display:flex;}
+    .items-center{align-items:center;}
+    .justify-center{justify-content:center;}
+    .max-w-full{max-width:100%;}
+    .max-h-full{max-height:100%;}
+    .object-contain{object-fit:contain;}
+    
+    /* Strong text */
+    strong {
+      font-weight: 600;
+      font-size: 11px;
+    }
+    
+    /* Measurement scale specific styles */
+    .w-full {
+      width: 100%;
+    }
+    
+    /* Hide any unwanted elements during print */
+    button, .cursor-pointer {
+      display: none !important;
+    }
+    
+    /* Ensure all content is visible */
+    * {
+      color: #000 !important;
+    }
+    
+    /* Size grid styling */
+    .grid-cols-8 > div {
+      border: 1px solid #d1d5db;
+      padding: 3px;
+      text-align: center;
+      font-size: 8px;
+      min-height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Material table responsive text */
+    .material-sizes span {
+      display: inline-block;
+      margin-right: 6px;
+      font-size: 8px;
+    }
+    
+    /* Ensure HTML content in description is properly styled */
+    div[dangerouslySetInnerHTML] p {
+      margin-bottom: 6px;
+    }
+    
+    div[dangerouslySetInnerHTML] ul {
+      margin-left: 16px;
+      margin-bottom: 6px;
+    }
+    
+    div[dangerouslySetInnerHTML] li {
+      margin-bottom: 3px;
+    }
+    
+    /* Additional BatchReport specific styles */
+    .font-mono {
+      font-family: "Segoe UI", "Arial", "Helvetica", sans-serif;
+    }
+    
+    .leading-tight {
+      line-height: 1.2;
+    }
+    
+    /* Ensure proper spacing and layout */
+    .mb-4 {
+      margin-bottom: 12px;
+    }
+    
+    .mt-1 {
+      margin-top: 3px;
+    }
+    
+    .mt-2 {
+      margin-top: 6px;
+    }
+    
+    /* Status badges and indicators */
+    .badge {
+      display: inline-block;
+      padding: 2px 4px;
+      border: 1px solid #000;
+      font-size: 8px;
+      font-weight: 500;
+    }
+    
+    /* Ensure proper table cell alignment */
+    td.text-center {
+      text-align: center;
+    }
+    
+    td.text-right {
+      text-align: right;
+    }
+    
+    /* Handle measurement scale tables */
+    .measurement-table {
+      font-size: 8px;
+    }
+    
+    .measurement-table th,
+    .measurement-table td {
+      padding: 3px 4px;
+      font-size: 8px;
+      text-align: center;
+    }
+    
+    .measurement-table th:first-child,
+    .measurement-table td:first-child {
+      text-align: left;
+    }
+    
+    /* Professional spacing adjustments */
+    .text-sm div {
+      font-size: 9px;
+      line-height: 1.2;
+    }
+    
+    /* Compact layout for better space utilization */
+    .grid-cols-2 > div {
+      padding-right: 8px;
+    }
+    
+    /* Professional header styling */
+    .text-center .text-sm {
+      font-size: 9px;
+      color: #333;
+      font-weight: 400;
+    }
+    
+    /* Ensure consistent font sizing throughout */
+    div {
+      font-size: inherit;
+    }
+    
+    /* Table header improvements */
+    thead tr {
+      background-color: #f8f9fa !important;
+    }
+    
+    /* Subtle improvements for readability */
+    table {
+      font-variant-numeric: tabular-nums;
+    }
+    
+    /* Color classes for highlighting important info */
+    .text-blue-600 {
+      color: #2563eb !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .text-purple-600 {
+      color: #9333ea !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .text-green-600 {
+      color: #16a34a !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .text-red-600 {
+      color: #dc2626 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .text-gray-700 {
+      color: #374151 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .text-gray-600 {
+      color: #4b5563 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    /* Font weight utilities */
+    .font-semibold {
+      font-weight: 600;
+    }
+    
+    .font-bold {
+      font-weight: 700;
+    }
+    
+    /* Blue specification box styling */
+    .border-blue-600 {
+      border: 2px solid #2563eb !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .bg-blue-600 {
+      background-color: #2563eb !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .bg-blue-50 {
+      background-color: #eff6ff !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .text-white {
+      color: #ffffff !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .px-3 {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+    
+    .py-2 {
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
+    
+    .p-3 {
+      padding: 8px;
+    }
+    
+    .space-y-1 > * + * {
+      margin-top: 3px;
+    }
+    
+    /* Print-specific improvements for image and text layout */
+    @media print {
+      /* Force grid layout for image and info section */
+      .grid-cols-3 {
+        display: grid !important;
+        grid-template-columns: 1fr 2fr !important;
+      }
+      
+      .print\\:grid-cols-3 {
+        display: grid !important;
+        grid-template-columns: 1fr 2fr !important;
+      }
+      
+      .col-span-1,
+      .print\\:col-span-1 {
+        grid-column: span 1 !important;
+      }
+      
+      .col-span-2,
+      .print\\:col-span-2 {
+        grid-column: span 2 !important;
+      }
+      
+      /* Make image smaller in print */
+      .print\\:h-32 {
+        height: 128px !important;
+        max-height: 128px !important;
+      }
+      
+      .print\\:object-contain {
+        object-fit: contain !important;
+      }
+      
+      /* Adjust text sizes for print */
+      .print\\:text-2xl {
+        font-size: 22px !important;
+      }
+      
+      .print\\:text-lg {
+        font-size: 16px !important;
+      }
+      
+      .print\\:text-base {
+        font-size: 13px !important;
+      }
+      
+      .print\\:text-sm {
+        font-size: 12px !important;
+      }
+      
+      .print\\:text-xs {
+        font-size: 10px !important;
+      }
+      
+      /* Adjust spacing for print */
+      .print\\:gap-3 {
+        gap: 8px !important;
+      }
+      
+      .print\\:p-3 {
+        padding: 8px !important;
+      }
+      
+      .print\\:p-2 {
+        padding: 6px !important;
+      }
+      
+      .print\\:px-2 {
+        padding-left: 6px !important;
+        padding-right: 6px !important;
+      }
+      
+      .print\\:py-1 {
+        padding-top: 3px !important;
+        padding-bottom: 3px !important;
+      }
+      
+      .print\\:py-1\\.5 {
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+      }
+      
+      .print\\:pb-1\\.5 {
+        padding-bottom: 4px !important;
+      }
+      
+      .print\\:mb-1 {
+        margin-bottom: 3px !important;
+      }
+      
+      .print\\:mb-1\\.5 {
+        margin-bottom: 4px !important;
+      }
+      
+      .print\\:mb-2 {
+        margin-bottom: 6px !important;
+      }
+      
+      .print\\:mb-4 {
+        margin-bottom: 12px !important;
+      }
+      
+      .print\\:mt-2 {
+        margin-top: 6px !important;
+      }
+      
+      .print\\:space-y-2 > * + * {
+        margin-top: 6px !important;
+      }
+      
+      .print\\:space-y-0\\.5 > * + * {
+        margin-top: 2px !important;
+      }
+      
+      .print\\:gap-y-1 {
+        row-gap: 3px !important;
+      }
+      
+      /* Ensure font sans is used */
+      .font-sans {
+        font-family: "Segoe UI", "Arial", "Helvetica", sans-serif !important;
+      }
+      
+      /* Ensure proper line height */
+      .leading-normal {
+        line-height: 1.4 !important;
+      }
+      
+      .print\\:p-6 {
+        padding: 18px !important;
+      }
+      
+      .print\\:pb-3 {
+        padding-bottom: 8px !important;
+      }
+    }
+  </style>
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        window.print();
+      }, 500);
+    });
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        window.print();
+      }, 800);
+    });
+  </script>
+</head>
+<body>
+  ${reportContent}
+</body>
+</html>`;
+  };
   const fetchBatchImages = async (batchId: string) => {
     try {
       console.log('🔍 Fetching batch images for batch ID:', batchId);
