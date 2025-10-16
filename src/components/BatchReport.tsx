@@ -129,17 +129,273 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
     };
 
     return (
-      <div ref={ref} className="batch-report-root bg-white text-black p-8 font-mono leading-tight print:p-6 print:font-mono print-exact print-a4">
-        {/* Component-scoped print overrides to avoid toolchain purge of Tailwind print utilities */}
+      <div ref={ref} className="batch-report-root bg-white text-black p-8 font-mono leading-tight">
+        {/* Comprehensive print styles for perfect output matching modal */}
         <style>{`
+      @page {
+        size: A4;
+        margin: 15mm 15mm 15mm 15mm;
+      }
+      
+      @page {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+          
           @media print {
-            .batch-report-root { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color: #000 !important; background: #fff !important; }
-            .batch-report-root .batch-right-col { overflow: visible !important; height: auto !important; }
-            .batch-report-root .batch-image-container { height: auto !important; min-height: 0 !important; }
-            .batch-report-root img { object-fit: contain !important; max-height: 260mm !important; }
-            .batch-report-root .no-print { display: none !important; }
-            .batch-report-root table { page-break-inside: avoid !important; }
-            .batch-report-root .print-force-border th, .batch-report-root .print-force-border td { border: 1px solid #000 !important; }
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              box-sizing: border-box !important;
+            }
+            
+            html, body {
+              background: white !important;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            
+            .batch-report-root {
+              color: #000 !important;
+              background: #fff !important;
+              padding: 20px !important;
+              margin: 0 !important;
+              font-family: monospace !important;
+              width: 100% !important;
+            }
+            
+            /* Headers - bold and clear */
+            .batch-report-root h1 {
+              font-size: 24pt !important;
+              font-weight: bold !important;
+              color: #000 !important;
+              text-align: center !important;
+              margin-bottom: 8px !important;
+              page-break-after: avoid !important;
+            }
+            
+            .batch-report-root h2 {
+              font-size: 14pt !important;
+              font-weight: bold !important;
+              color: #000 !important;
+              page-break-after: avoid !important;
+            }
+            
+            /* All borders must be solid black */
+            .batch-report-root [class*="border"] {
+              border-color: #000 !important;
+            }
+            
+            .batch-report-root .border-4 {
+              border-width: 4px !important;
+            }
+            
+            .batch-report-root .border-2 {
+              border-width: 2px !important;
+            }
+            
+            .batch-report-root .border {
+              border-width: 1px !important;
+            }
+            
+            .batch-report-root .border-b-4 {
+              border-bottom-width: 4px !important;
+            }
+            
+            .batch-report-root .border-b-2 {
+              border-bottom-width: 2px !important;
+            }
+            
+            .batch-report-root .border-b {
+              border-bottom-width: 1px !important;
+            }
+            
+            .batch-report-root .border-r-2 {
+              border-right-width: 2px !important;
+            }
+            
+            /* Background colors must show */
+            .batch-report-root .bg-black {
+              background-color: #000 !important;
+              color: #fff !important;
+            }
+            
+            .batch-report-root .bg-gray-50 {
+              background-color: #f9fafb !important;
+            }
+            
+            .batch-report-root .bg-gray-100 {
+              background-color: #f3f4f6 !important;
+            }
+            
+            .batch-report-root .bg-yellow-50 {
+              background-color: #fefce8 !important;
+              border: 2px solid #000 !important;
+            }
+            
+            /* Text colors */
+            .batch-report-root .text-white {
+              color: #fff !important;
+            }
+            
+            .batch-report-root .text-blue-600 {
+              color: #2563eb !important;
+            }
+            
+            .batch-report-root .text-red-600 {
+              color: #dc2626 !important;
+            }
+            
+            /* CRITICAL: Maintain flex layout for image + info section */
+            .batch-report-root .print-product-section {
+              display: flex !important;
+              flex-direction: row !important;
+              align-items: stretch !important;
+              gap: 0 !important;
+              border: 2px solid #000 !important;
+              page-break-inside: avoid !important;
+              margin-bottom: 20px !important;
+            }
+            
+            /* Left side: Image column - FIXED WIDTH */
+            .batch-report-root .print-image-column {
+              width: 33.333% !important;
+              min-width: 33.333% !important;
+              max-width: 33.333% !important;
+              flex-shrink: 0 !important;
+              border-right: 2px solid #000 !important;
+              display: flex !important;
+              flex-direction: column !important;
+              overflow: hidden !important;
+            }
+            
+            .batch-report-root .batch-image-container {
+              display: flex !important;
+              flex-direction: column !important;
+              height: 400px !important;
+              min-height: 400px !important;
+              max-height: 400px !important;
+              width: 100% !important;
+            }
+            
+            .batch-report-root .batch-image-container img {
+              width: 100% !important;
+              height: 100% !important;
+              object-fit: contain !important;
+              max-height: 360px !important;
+            }
+            
+            /* Right side: Info column - STACK VERTICALLY */
+            .batch-report-root .batch-right-col {
+              width: 66.667% !important;
+              flex: 1 !important;
+              display: flex !important;
+              flex-direction: column !important;
+              overflow: visible !important;
+            }
+            
+            /* Info sections stacked vertically with borders */
+            .batch-report-root .batch-info-section {
+              border-bottom: 2px solid #000 !important;
+              padding: 12px !important;
+            }
+            
+            .batch-report-root .batch-info-section:last-child {
+              border-bottom: none !important;
+            }
+            
+            /* Product info grid layout for better structure */
+            .batch-report-root .batch-info-section .product-info-grid {
+              display: grid !important;
+              grid-template-columns: 1fr 1fr !important;
+              gap: 8px 16px !important;
+            }
+            
+            .batch-report-root .batch-info-section .product-info-grid > div {
+              display: flex !important;
+            }
+            
+            /* Size configuration - more compact */
+            .batch-report-root .size-config-section {
+              margin-bottom: 15px !important;
+            }
+            
+            .batch-report-root .size-config-section h2 {
+              margin-bottom: 8px !important;
+              padding-bottom: 6px !important;
+            }
+            
+            .batch-report-root .size-config-section table th,
+            .batch-report-root .size-config-section table td {
+              padding: 6px 8px !important;
+              font-size: 10pt !important;
+            }
+            
+            /* Tables */
+            .batch-report-root table {
+              page-break-inside: avoid !important;
+              border-collapse: collapse !important;
+              width: 100% !important;
+              border: 2px solid #000 !important;
+            }
+            
+            .batch-report-root table th,
+            .batch-report-root table td {
+              border: 1px solid #000 !important;
+              padding: 8px !important;
+              text-align: left !important;
+            }
+            
+            .batch-report-root table thead tr {
+              background-color: #f3f4f6 !important;
+              border-bottom: 2px solid #000 !important;
+            }
+            
+            .batch-report-root table th {
+              font-weight: bold !important;
+            }
+            
+            /* Page breaks */
+            .batch-report-root .print-no-break {
+              page-break-inside: avoid !important;
+            }
+            
+            /* Hide elements not needed in print */
+            .batch-report-root .no-print {
+              display: none !important;
+            }
+            
+            /* Spacing consistency */
+            .batch-report-root .mb-8,
+            .batch-report-root .mb-6 {
+              margin-bottom: 20px !important;
+            }
+            
+            .batch-report-root .mb-3 {
+              margin-bottom: 10px !important;
+            }
+            
+            .batch-report-root .pb-4,
+            .batch-report-root .pb-2 {
+              padding-bottom: 8px !important;
+            }
+            
+            /* Font sizes for print */
+            .batch-report-root .text-4xl {
+              font-size: 24pt !important;
+            }
+            
+            .batch-report-root .text-xl {
+              font-size: 14pt !important;
+            }
+            
+            .batch-report-root .text-sm {
+              font-size: 10pt !important;
+            }
+            
+            .batch-report-root .text-xs {
+              font-size: 9pt !important;
+            }
           }
         `}</style>
         {/* Header */}
@@ -153,17 +409,17 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
         </div>
 
         {/* Product Image and Information Section - Side by Side */}
-        <div className="mb-8 border-2 border-black print:mb-6 print:border-2 print:border-black print:break-inside-avoid print-no-break">
-          <div className="flex items-stretch gap-0 print:flex print:items-stretch print:gap-0">
+        <div className="mb-8 border-2 border-black print-no-break print-product-section">
+          <div className="flex items-stretch gap-0">
             {/* Left: Product Image - Fixed Width */}
-            <div className="w-1/3 border-r-2 border-black print:w-1/3 print:border-r-2 print:border-black">
+            <div className="w-1/3 border-r-2 border-black print-image-column">
               {productImages.length > 0 ? (
-                <div className="h-[400px] flex flex-col print-h-auto print-flex batch-image-container" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-                  <div className="text-center py-2 text-xs font-bold border-b-2 border-black bg-black text-white print:text-center print:py-2 print:text-xs print:font-bold print:border-b-2 print:border-black print:bg-black print:text-white">PRODUIT</div>
+                <div className="h-[400px] flex flex-col batch-image-container" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+                  <div className="text-center py-2 text-xs font-bold border-b-2 border-black bg-black text-white">PRODUIT</div>
                   <img
                     src={productImages[0]}
                     alt={batch.nom_product}
-                    className="w-full flex-1 object-contain print-w-full print-flex print-object-contain"
+                    className="w-full flex-1 object-contain"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
@@ -175,9 +431,9 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                   />
                 </div>
               ) : (
-                <div className="h-[400px] flex flex-col print-h-auto print-flex batch-image-container" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-                  <div className="text-center py-2 text-xs font-bold border-b-2 border-black bg-black text-white print:text-center print:py-2 print:text-xs print:font-bold print:border-b-2 print:border-black print:bg-black print:text-white">PRODUIT</div>
-                  <div className="flex-1 flex items-center justify-center text-xs print:text-xs">
+                <div className="h-[400px] flex flex-col batch-image-container" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+                  <div className="text-center py-2 text-xs font-bold border-b-2 border-black bg-black text-white">PRODUIT</div>
+                  <div className="flex-1 flex items-center justify-center text-xs">
                     Aucune image
                   </div>
                 </div>
@@ -185,57 +441,57 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
             </div>
 
             {/* Right: Product Information - Takes remaining space */}
-            <div className="w-2/3 flex flex-col print-w-full print-flex print-h-auto batch-right-col" style={{ overflow: 'visible' }}>
+            <div className="w-2/3 flex flex-col batch-right-col">
               {/* Product Info Section */}
-              <div className="border-b-2 border-black p-4 print:border-b-2 print:border-black print:p-3">
-                <h2 className="text-sm font-bold mb-3 pb-1 border-b border-black print:text-xs print:font-bold print:mb-2 print:pb-1 print:border-b print:border-black">INFORMATIONS PRODUIT</h2>
-                <div className="space-y-1.5 text-xs print:space-y-1 print:text-[10px]">
-                  <div className="flex">
-                    <span className="w-32 font-bold">Nom:</span>
-                    <span className="flex-1 font-bold">{batch.nom_product}</span>
+              <div className="border-b-2 border-black p-4 batch-info-section">
+                <h2 className="text-sm font-bold mb-3 pb-1 border-b border-black">INFORMATIONS PRODUIT</h2>
+                <div className="product-info-grid text-xs">
+                  <div>
+                    <span className="font-bold mr-2">Nom:</span>
+                    <span className="font-bold">{batch.nom_product}</span>
                   </div>
-                  <div className="flex">
-                    <span className="w-32 font-bold">Référence:</span>
-                    <span className="flex-1">{batch.reference_product}</span>
+                  <div>
+                    <span className="font-bold mr-2">Référence:</span>
+                    <span>{batch.reference_product}</span>
                   </div>
-                  <div className="flex">
-                    <span className="w-32 font-bold">Boutique:</span>
-                    <span className="flex-1">{companyName}</span>
+                  <div>
+                    <span className="font-bold mr-2">Boutique:</span>
+                    <span>{companyName}</span>
                   </div>
-                  <div className="flex">
-                    <span className="w-32 font-bold">Statut:</span>
-                    <span className="flex-1">{getStatusLabel(batch.status)}</span>
+                  <div>
+                    <span className="font-bold mr-2">Statut:</span>
+                    <span>{getStatusLabel(batch.status)}</span>
                   </div>
-                  <div className="flex">
-                    <span className="w-32 font-bold">Quantité:</span>
-                    <span className="flex-1 font-bold">{batch.quantity_to_produce} unités</span>
+                  <div>
+                    <span className="font-bold mr-2">Quantité:</span>
+                    <span className="font-bold">{batch.quantity_to_produce} unités</span>
                   </div>
-                  <div className="flex">
-                    <span className="w-32 font-bold">Coût matériaux:</span>
-                    <span className="flex-1 font-bold">{Number(batch.total_materials_cost || 0).toFixed(2)} TND</span>
+                  <div>
+                    <span className="font-bold mr-2">Coût matériaux:</span>
+                    <span className="font-bold">{Number(batch.total_materials_cost || 0).toFixed(2)} TND</span>
                   </div>
                 </div>
               </div>
 
               {/* Production Dates Section */}
-              <div className="border-b-2 border-black p-4 print:border-b-2 print:border-black print:p-3">
-                <h2 className="text-sm font-bold mb-3 pb-1 border-b border-black print:text-xs print:font-bold print:mb-2 print:pb-1 print:border-b print:border-black">DATES DE PRODUCTION</h2>
-                <div className="space-y-1.5 text-xs print:space-y-1 print:text-[10px]">
-                  <div className="flex">
-                    <span className="w-32 font-bold">Création:</span>
-                    <span className="flex-1">{formatDate(batch.created_at)}</span>
+              <div className="border-b-2 border-black p-4 batch-info-section">
+                <h2 className="text-sm font-bold mb-3 pb-1 border-b border-black">DATES DE PRODUCTION</h2>
+                <div className="product-info-grid text-xs">
+                  <div>
+                    <span className="font-bold mr-2">Création:</span>
+                    <span>{formatDate(batch.created_at)}</span>
                   </div>
-                  <div className="flex">
-                    <span className="w-32 font-bold">Démarrage:</span>
-                    <span className="flex-1">{formatDate(batch.started_at)}</span>
+                  <div>
+                    <span className="font-bold mr-2">Démarrage:</span>
+                    <span>{formatDate(batch.started_at)}</span>
                   </div>
-                  <div className="flex">
-                    <span className="w-32 font-bold">Fin:</span>
-                    <span className="flex-1">{formatDate(batch.completed_at) !== 'Non spécifiée' ? formatDate(batch.completed_at) : '-'}</span>
+                  <div>
+                    <span className="font-bold mr-2">Fin:</span>
+                    <span>{formatDate(batch.completed_at) !== 'Non spécifiée' ? formatDate(batch.completed_at) : '-'}</span>
                   </div>
-                  <div className="flex">
-                    <span className="w-32 font-bold">Démarré par:</span>
-                    <span className="flex-1">{batch.started_by_name || 'Admin Production'}</span>
+                  <div>
+                    <span className="font-bold mr-2">Démarré par:</span>
+                    <span>{batch.started_by_name || 'Admin Production'}</span>
                   </div>
                 </div>
               </div>
@@ -251,9 +507,9 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                    
                    if (specs && Object.keys(specs).length > 0) {
                      return (
-                       <div className="flex-1 p-4 print:flex-1 print:p-3">
-                         <h2 className="text-sm font-bold mb-3 pb-1 border-b border-black print:text-xs print:font-bold print:mb-2 print:pb-1 print:border-b print:border-black">SPÉCIFICATIONS</h2>
-                         <div className="space-y-1.5 text-xs print:space-y-1 print:text-[10px]">
+                       <div className="flex-1 p-4 batch-info-section">
+                         <h2 className="text-sm font-bold mb-3 pb-1 border-b border-black">SPÉCIFICATIONS</h2>
+                         <div className="space-y-1.5 text-xs">
                            {Object.entries(specs).map(([key, value], index) => (
                              <div key={index} className="flex">
                                <span className="w-32 font-bold">{key}:</span>
@@ -275,26 +531,26 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
 
         {/* Size Breakdown */}
         {parsedSizes.length > 0 && (
-          <div className="mb-6 print:mb-4">
-            <h2 className="text-xl font-bold border-b-2 border-black pb-2 mb-3 print:text-lg print:pb-1.5 print:mb-2">CONFIGURATION DES TAILLES</h2>
+          <div className="mb-6 print-no-break size-config-section">
+            <h2 className="text-xl font-bold border-b-2 border-black pb-2 mb-3">CONFIGURATION DES TAILLES</h2>
               <div className="border-2 border-black">
-              <table className="w-full text-sm print:text-xs print-force-border">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b-2 border-black bg-gray-100">
-                    <th className="text-left p-3 border-r border-black font-bold print:p-2">TAILLE</th>
-                    <th className="text-left p-3 font-bold print:p-2">QUANTITÉ</th>
+                    <th className="text-left p-2 border-r border-black font-bold">TAILLE</th>
+                    <th className="text-left p-2 font-bold">QUANTITÉ</th>
                   </tr>
                 </thead>
                 <tbody>
                   {parsedSizes.map((size, index) => (
                     <tr key={index} className={index !== parsedSizes.length - 1 ? "border-b border-black" : ""}>
-                      <td className="p-3 border-r border-black font-semibold print:p-2">{size.size_name}</td>
-                      <td className="p-3 font-medium print:p-2">{size.quantity} unités</td>
+                      <td className="p-2 border-r border-black font-semibold">{size.size_name}</td>
+                      <td className="p-2 font-medium">{size.quantity} unités</td>
                     </tr>
                   ))}
                   <tr className="bg-gray-50 border-t-2 border-black">
-                    <td className="p-3 border-r border-black font-bold print:p-2">TOTAL</td>
-                    <td className="p-3 font-bold text-blue-600 print:p-2">{parsedSizes.reduce((sum, size) => sum + size.quantity, 0)} unités</td>
+                    <td className="p-2 border-r border-black font-bold">TOTAL</td>
+                    <td className="p-2 font-bold text-blue-600">{parsedSizes.reduce((sum, size) => sum + size.quantity, 0)} unités</td>
                   </tr>
                 </tbody>
               </table>
@@ -304,18 +560,18 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
 
         {/* Materials Used */}
         {batch.materials_used && batch.materials_used.length > 0 && (
-          <div className="mb-6 print:mb-4">
-            <h2 className="text-xl font-bold border-b-2 border-black pb-2 mb-3 print:text-lg print:pb-1.5 print:mb-2">MATÉRIAUX UTILISÉS</h2>
+          <div className="mb-6 print-no-break">
+            <h2 className="text-xl font-bold border-b-2 border-black pb-2 mb-3">MATÉRIAUX UTILISÉS</h2>
             <div className="border-2 border-black">
-              <table className="w-full text-sm print:text-xs print-force-border">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b-2 border-black bg-gray-100">
-                    <th className="text-left p-3 border-r border-black font-bold print:p-2">MATÉRIAU</th>
-                    <th className="text-left p-3 border-r border-black font-bold print:p-2">COULEUR</th>
-                    <th className="text-left p-3 border-r border-black font-bold print:p-2">RÉPARTITION</th>
-                    <th className="text-left p-3 border-r border-black font-bold print:p-2">TOTAL</th>
-                    <th className="text-left p-3 border-r border-black font-bold print:p-2">UNITÉ</th>
-                    <th className="text-left p-3 font-bold print:p-2">COMMENTAIRE</th>
+                    <th className="text-left p-3 border-r border-black font-bold">MATÉRIAU</th>
+                    <th className="text-left p-3 border-r border-black font-bold">COULEUR</th>
+                    <th className="text-left p-3 border-r border-black font-bold">RÉPARTITION</th>
+                    <th className="text-left p-3 border-r border-black font-bold">TOTAL</th>
+                    <th className="text-left p-3 border-r border-black font-bold">UNITÉ</th>
+                    <th className="text-left p-3 font-bold">COMMENTAIRE</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -358,9 +614,9 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
 
                       return (
                         <tr key={index} className={index !== Object.values(groupedMaterials || {}).length - 1 ? "border-b border-black" : ""}>
-                          <td className="p-3 border-r border-black font-semibold print:p-2">{material.nom_matiere}</td>
-                          <td className="p-3 border-r border-black font-medium print:p-2">{material.couleur || 'N/A'}</td>
-                          <td className="p-3 border-r border-black print:p-2">
+                          <td className="p-3 border-r border-black font-semibold">{material.nom_matiere}</td>
+                          <td className="p-3 border-r border-black font-medium">{material.couleur || 'N/A'}</td>
+                          <td className="p-3 border-r border-black">
                             {Object.keys(sizeBreakdown).length > 0 ? (
                               <div className="flex flex-wrap gap-1.5">
                                 {Object.entries(sizeBreakdown).map(([size, quantity]) => (
@@ -378,13 +634,13 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                               <span className="text-gray-600 italic text-xs">Toutes tailles</span>
                             )}
                           </td>
-                          <td className="p-3 border-r border-black font-bold text-blue-600 print:p-2">
+                          <td className="p-3 border-r border-black font-bold text-blue-600">
                             {material.quantity_used} {material.quantity_unit}
                           </td>
-                          <td className="p-3 border-r border-black text-center font-medium print:p-2">
+                          <td className="p-3 border-r border-black text-center font-medium">
                             {material.quantity_type_name}
                           </td>
-                          <td className="p-3 text-xs print:p-2">
+                          <td className="p-3 text-xs">
                             {material.commentaire || '-'}
                           </td>
                         </tr>
@@ -394,8 +650,8 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                 </tbody>
               </table>
             </div>
-            <div className="mt-3 text-right print:mt-2">
-              <span className="text-base font-bold print:text-sm">Coût Total Matériaux: <span className="text-red-600">{Number(batch.total_materials_cost || 0).toFixed(2)} TND</span></span>
+            <div className="mt-3 text-right">
+              <span className="text-base font-bold">Coût Total Matériaux: <span className="text-red-600">{Number(batch.total_materials_cost || 0).toFixed(2)} TND</span></span>
             </div>
           </div>
         )}
