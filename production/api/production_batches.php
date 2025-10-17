@@ -821,20 +821,105 @@ try {
                     break;
                 }
 
-                $stmt = $db->prepare("
-                    UPDATE production_batches 
-                    SET status = 'cancelled', 
-                        cancelled_at = NOW(), 
-                        cancelled_by = 1, 
-                        cancellation_reason = :reason,
-                        updated_at = NOW()
-                    WHERE id = :id
-                ");
-                $stmt->bindValue(':id', $data['id'], PDO::PARAM_INT);
-                $stmt->bindValue(':reason', $data['cancellation_reason']);
-                $stmt->execute();
-
-                echo json_encode(['success' => true, 'message' => 'Batch annulé avec succès']);
+                try {
+                    $db->beginTransaction();
+                    
+                    // Get batch materials quantities to restore stock
+                    $batchStmt = $db->prepare("
+                        SELECT materials_quantities, quantity_to_produce, product_id 
+                        FROM production_batches 
+                        WHERE id = :id
+                    ");
+                    $batchStmt->bindValue(':id', $data['id'], PDO::PARAM_INT);
+                    $batchStmt->execute();
+                    $batchData = $batchStmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    error_log("=== BATCH CANCELLATION DEBUG ===");
+                    error_log("Batch ID: " . $data['id']);
+                    error_log("Batch Data: " . json_encode($batchData));
+                    error_log("Materials Quantities Raw: " . ($batchData['materials_quantities'] ?? 'NULL'));
+                    
+                    // Restore stock if materials_quantities exists
+                    if ($batchData && !empty($batchData['materials_quantities'])) {
+                        $materialsQuantities = json_decode($batchData['materials_quantities'], true);
+                        $quantityToProduce = intval($batchData['quantity_to_produce'] ?? 0);
+                        
+                        error_log("Materials Quantities Decoded: " . json_encode($materialsQuantities));
+                        error_log("Quantity to Produce: " . $quantityToProduce);
+                        
+                        if ($quantityToProduce > 0 && is_array($materialsQuantities)) {
+                            error_log("Starting stock restoration for " . count($materialsQuantities) . " materials");
+                            
+                            foreach ($materialsQuantities as $materialId => $perPieceQuantity) {
+                                // Calculate total: materials_quantities stores per-piece values, so multiply by quantity_to_produce
+                                $totalQuantity = floatval($perPieceQuantity) * $quantityToProduce;
+                                
+                                error_log("Material ID: $materialId, Per-Piece: $perPieceQuantity, Total: $totalQuantity");
+                                
+                                // Restore stock
+                                $restoreStmt = $db->prepare("
+                                    UPDATE production_matieres 
+                                    SET quantite_stock = quantite_stock + :quantity 
+                                    WHERE id = :material_id
+                                ");
+                                $restoreStmt->bindValue(':quantity', $totalQuantity, PDO::PARAM_STR);
+                                $restoreStmt->bindValue(':material_id', intval($materialId), PDO::PARAM_INT);
+                                $restoreStmt->execute();
+                                
+                                error_log("Stock updated for material $materialId, rows affected: " . $restoreStmt->rowCount());
+                                
+                                // Create reversal transaction
+                                $transactionStmt = $db->prepare("
+                                    INSERT INTO production_transactions_stock (
+                                        material_id, 
+                                        type_mouvement, 
+                                        quantite,
+                                        quantity_type_id,
+                                        prix_unitaire,
+                                        cout_total,
+                                        motif,
+                                        reference_commande,
+                                        user_id,
+                                        date_transaction
+                                    ) VALUES (:material_id, 'in', :quantity, 1, 0, 0, :motif, :ref, 1, NOW())
+                                ");
+                                $transactionStmt->bindValue(':material_id', intval($materialId), PDO::PARAM_INT);
+                                $transactionStmt->bindValue(':quantity', $totalQuantity, PDO::PARAM_STR);
+                                $transactionStmt->bindValue(':motif', "Annulation Batch #{$data['id']} - " . $data['cancellation_reason']);
+                                $transactionStmt->bindValue(':ref', $data['id'], PDO::PARAM_INT);
+                                $transactionStmt->execute();
+                                
+                                error_log("Transaction created for material $materialId, transaction ID: " . $db->lastInsertId());
+                            }
+                            error_log("Stock restoration completed successfully");
+                        } else {
+                            error_log("Skipping restoration: quantityToProduce=$quantityToProduce, materialsQuantities is array: " . (is_array($materialsQuantities) ? 'yes' : 'no'));
+                        }
+                    } else {
+                        error_log("No materials_quantities data found or batch data missing");
+                    }
+                    
+                    // Update batch status
+                    $stmt = $db->prepare("
+                        UPDATE production_batches 
+                        SET status = 'cancelled', 
+                            cancelled_at = NOW(), 
+                            cancelled_by = 1, 
+                            cancellation_reason = :reason,
+                            updated_at = NOW()
+                        WHERE id = :id
+                    ");
+                    $stmt->bindValue(':id', $data['id'], PDO::PARAM_INT);
+                    $stmt->bindValue(':reason', $data['cancellation_reason']);
+                    $stmt->execute();
+                    
+                    $db->commit();
+                    echo json_encode(['success' => true, 'message' => 'Batch annulé avec succès et stock restauré']);
+                } catch (Exception $e) {
+                    $db->rollBack();
+                    error_log("Error cancelling batch: " . $e->getMessage());
+                    echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'annulation: ' . $e->getMessage()]);
+                }
             } else if (isset($data['action']) && $data['action'] === 'update_status') {
                 $sql = ($data['status'] === 'termine')
                     ? "UPDATE production_batches SET status = :st, completed_at = NOW() WHERE id = :id"

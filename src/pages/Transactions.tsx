@@ -141,8 +141,9 @@ const Transactions = () => {
     });
     
     let filtered = transactions.filter(transaction =>
-      transaction.material_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.user_name.toLowerCase().includes(searchTerm.toLowerCase())
+      (transaction.material_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.user_name.toLowerCase().includes(searchTerm.toLowerCase())) &&
+      transaction.note !== null && transaction.note !== undefined && transaction.note !== ''
     );
 
     console.log('- after search filter:', filtered.length);

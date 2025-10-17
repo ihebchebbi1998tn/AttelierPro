@@ -59,6 +59,37 @@ try {
             exit;
         }
         
+        // Group materials by material_id to avoid duplicate transactions
+        // and calculate correct quantities based on size-specific or general configuration
+        $grouped_materials = [];
+        foreach ($materials as $material) {
+            $material_id = $material['material_id'];
+            $size_specific = $material['size_specific'] ?? null;
+            $quantity_needed = floatval($material['quantity_needed']);
+            
+            if (!isset($grouped_materials[$material_id])) {
+                $grouped_materials[$material_id] = [
+                    'material_id' => $material_id,
+                    'material_name' => $material['material_name'],
+                    'quantite_stock' => $material['quantite_stock'],
+                    'total_quantity_needed' => 0
+                ];
+            }
+            
+            // Calculate quantity based on size-specific configuration
+            if ($size_specific && $size_specific !== 'none' && isset($quantities_to_produce[$size_specific])) {
+                // Size-specific: multiply by quantity for that specific size
+                $grouped_materials[$material_id]['total_quantity_needed'] += $quantity_needed * intval($quantities_to_produce[$size_specific]);
+            } else if (!$size_specific || $size_specific === 'none') {
+                // General/non-size-specific: multiply by total quantity (only once)
+                // Use a flag to ensure we only count general materials once
+                if (!isset($grouped_materials[$material_id]['general_counted'])) {
+                    $grouped_materials[$material_id]['total_quantity_needed'] += $quantity_needed * $total_quantity;
+                    $grouped_materials[$material_id]['general_counted'] = true;
+                }
+            }
+        }
+        
         // Begin transaction
         $pdo->beginTransaction();
         
@@ -66,9 +97,8 @@ try {
             $transactions = [];
             $insufficient_materials = [];
             
-            foreach ($materials as $material) {
-                $quantity_needed_per_item = floatval($material['quantity_needed']);
-                $total_needed = $quantity_needed_per_item * $total_quantity;
+            foreach ($grouped_materials as $material) {
+                $total_needed = $material['total_quantity_needed'];
                 $current_stock = floatval($material['quantite_stock']);
                 
                 // Check if stock is sufficient

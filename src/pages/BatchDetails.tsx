@@ -2539,7 +2539,12 @@ const BatchDetails = () => {
   };
 
   const cancelBatch = async () => {
+    console.log('=== CANCEL BATCH CALLED ===');
+    console.log('Batch ID:', batch?.id);
+    console.log('Cancellation Reason:', cancellationReason);
+    
     if (!batch || !cancellationReason.trim()) {
+      console.log('Missing batch or cancellation reason');
       return;
     }
 
@@ -2554,6 +2559,7 @@ const BatchDetails = () => {
     }
 
     try {
+      console.log('Sending cancellation request...');
       const response = await fetch('https://luccibyey.com.tn/production/api/production_batches.php', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -2564,20 +2570,22 @@ const BatchDetails = () => {
         })
       });
 
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', data);
+      
       if (data.success) {
-        setBatch({ ...batch, status: 'cancelled' as any, cancellation_reason: cancellationReason });
-        setShowFinalCancelConfirm(false);
-        setShowCancelModal(false);
-        setCancellationReason('');
         toast({
           title: "Batch Annulé",
-          description: "Le batch a été annulé avec succès",
+          description: "Le batch a été annulé avec succès. Stock restauré.",
         });
+        
+        // Reload the page to show updated data
+        window.location.reload();
       } else {
         toast({
           title: "Erreur",
-          description: data.message,
+          description: data.message || "Erreur lors de l'annulation",
           variant: "destructive",
         });
       }
@@ -3422,14 +3430,7 @@ const BatchDetails = () => {
                               <span className="text-sm">{material.couleur || 'Non spécifiée'}</span>
                             </TableCell>
                             <TableCell>
-                              <div className="space-y-1">
-                                <span className="font-medium text-muted-foreground">{material.quantity_used || '-'}</span>
-                                {Number(material.quantity_used) > 0 && (
-                                  <div className="text-xs text-muted-foreground">
-                                    {material.quantity_used} × {batch.quantity_to_produce} = {(Number(material.quantity_used) * batch.quantity_to_produce).toFixed(2)} {material.quantity_unit}
-                                  </div>
-                                )}
-                              </div>
+                              <span className="font-medium text-muted-foreground">{material.quantity_used || '-'} {material.quantity_unit}</span>
                             </TableCell>
                             <TableCell>
                               {canEdit ? (
@@ -3555,7 +3556,7 @@ const BatchDetails = () => {
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-muted-foreground">Qté préconfiguré:</span>
-                              <span className="text-sm font-medium text-muted-foreground">{material.quantity_used || '-'}</span>
+                              <span className="text-sm font-medium text-muted-foreground">{material.quantity_used || '-'} {material.quantity_unit}</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-muted-foreground">Qté réelle utilisée:</span>
@@ -4013,13 +4014,16 @@ const BatchDetails = () => {
             }}>
               Retour
             </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={cancelBatch}
+            <Button 
+              onClick={(e) => {
+                e.preventDefault();
+                cancelBatch();
+              }}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               <X className="h-4 w-4 mr-2" />
               ANNULER DÉFINITIVEMENT
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
