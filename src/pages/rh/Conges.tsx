@@ -56,6 +56,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { employeeService, holidayService, Employee, Holiday, CreateHolidayData } from "@/utils/rhService";
+import { pointageService, MarkLeaveData } from "@/utils/pointageService";
 
 const Conges = () => {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -111,12 +112,31 @@ const Conges = () => {
   const loadHolidays = async () => {
     try {
       setLoading(true);
-      const filters = {
+      
+      // Load leave records from pointage table
+      const pointageLeaves = await pointageService.getLeaveRecords({
         employee_id: selectedEmployee !== "all" ? parseInt(selectedEmployee) : undefined,
-        status: statusFilter !== "all" ? statusFilter : undefined
-      };
-      const data = await holidayService.getAll(filters);
-      setHolidays(data);
+        leave_status: statusFilter !== "all" ? statusFilter : undefined
+      });
+      
+      // Convert pointage records to Holiday format for display
+      const convertedHolidays: Holiday[] = pointageLeaves.map(record => ({
+        id: record.id,
+        employee_id: record.employee_id,
+        employee_name: record.prenom && record.nom ? `${record.prenom} ${record.nom}` : undefined,
+        prenom: record.prenom,
+        nom: record.nom,
+        date: record.date || '',
+        half_day: record.leave_duration === 'FULL' ? 'FULL' : 
+                  record.leave_duration === 'AM' ? 'AM' : 
+                  record.leave_duration === 'PM' ? 'PM' : 'FULL',
+        motif: record.motif || '',
+        status: record.leave_status || 'approved',
+        is_paid: record.is_paid_leave !== undefined ? record.is_paid_leave : true,
+        created_at: record.created_at
+      }));
+      
+      setHolidays(convertedHolidays);
     } catch (error) {
       toast({
         title: "Erreur",
@@ -141,41 +161,42 @@ const Conges = () => {
     try {
       setSubmitting(true);
       
-      // If date range is selected, create multiple entries
+      // Prepare leave data for pointage
+      const leaveData: Omit<MarkLeaveData, 'employee_id' | 'date'> = {
+        leave_type: (newHoliday.leave_type as any) || 'annual',
+        leave_duration: newHoliday.half_day as any,
+        motif: newHoliday.motif,
+        is_paid_leave: true,
+        leave_status: 'approved'
+      };
+      
+      // If date range is selected, mark multiple days
       if (newHoliday.start_date && newHoliday.end_date) {
-        const startDate = new Date(newHoliday.start_date);
-        const endDate = new Date(newHoliday.end_date);
-        const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        const startDate = newHoliday.start_date.toISOString().split('T')[0];
+        const endDate = newHoliday.end_date.toISOString().split('T')[0];
         
-        // Create entry for each day in the range
-        for (let i = 0; i <= daysDiff; i++) {
-          const currentDate = new Date(startDate);
-          currentDate.setDate(startDate.getDate() + i);
-          
-          const holidayData: CreateHolidayData = {
-            employee_id: newHoliday.employee_id,
-            date: currentDate.toISOString().split('T')[0],
-            half_day: newHoliday.half_day,
-            motif: `${newHoliday.leave_type ? `[${newHoliday.leave_type}] ` : ''}${newHoliday.motif}`
-          };
-          
-          await holidayService.create(holidayData);
-        }
+        await pointageService.markLeaveRange(
+          newHoliday.employee_id,
+          startDate,
+          endDate,
+          leaveData
+        );
       } else {
         // Single date entry
-        const holidayData: CreateHolidayData = {
+        const leaveDate = newHoliday.start_date 
+          ? newHoliday.start_date.toISOString().split('T')[0] 
+          : newHoliday.date;
+          
+        await pointageService.markLeave({
           employee_id: newHoliday.employee_id,
-          date: newHoliday.start_date ? newHoliday.start_date.toISOString().split('T')[0] : newHoliday.date,
-          half_day: newHoliday.half_day,
-          motif: `${newHoliday.leave_type ? `[${newHoliday.leave_type}] ` : ''}${newHoliday.motif}`
-        };
-        
-        await holidayService.create(holidayData);
+          date: leaveDate,
+          ...leaveData
+        });
       }
       
       toast({
         title: "Succès",
-        description: "Demande de congé créée avec succès"
+        description: "Congé marqué avec succès dans le pointage"
       });
       
       setNewHoliday({

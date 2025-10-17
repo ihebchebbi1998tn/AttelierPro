@@ -71,8 +71,9 @@ import {
   holidayService,
   shiftTemplateService,
   scheduleService,
-  pointageService
+  pointageService as rhPointageService
 } from "@/utils/rhService";
+import { pointageService } from "@/utils/pointageService";
 import WeeklyPlanningCreator from "@/components/WeeklyPlanningCreator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DollarSign, CalendarPlus } from "lucide-react";
@@ -109,6 +110,7 @@ const Employes = () => {
     date: new Date().toISOString().split('T')[0],
     dateEnd: '',
     leaveType: 'single' as 'single' | 'period',
+    leaveCategory: 'annual' as 'annual' | 'sick' | 'special' | 'unpaid' | 'maternity' | 'paternity' | 'other',
     halfDay: 'FULL' as 'AM' | 'PM' | 'FULL',
     startTime: '',
     endTime: '',
@@ -215,7 +217,7 @@ const Employes = () => {
             shiftTemplateService.getAll(employee.id),
             scheduleService.getAll({ employee_id: employee.id }),
             salaryService.getAll({ employee_id: employee.id }),
-            pointageService.getAll({ employee_id: employee.id, month: currentMonth })
+            rhPointageService.getAll({ employee_id: employee.id, month: currentMonth })
           ]);
           
           console.log(`  📊 Pointage records for employee ${employee.id}:`, pointageRecords);
@@ -1017,6 +1019,7 @@ const Employes = () => {
                               date: new Date().toISOString().split('T')[0],
                               dateEnd: '',
                               leaveType: 'single',
+                              leaveCategory: 'annual',
                               halfDay: 'FULL',
                               startTime: '',
                               endTime: '',
@@ -1082,9 +1085,31 @@ const Employes = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Leave Type Category */}
+            <div className="space-y-2">
+              <Label>Catégorie de congé</Label>
+              <Select
+                value={leaveData.leaveCategory || 'annual'}
+                onValueChange={(value) => setLeaveData({ ...leaveData, leaveCategory: value as any })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner le type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="annual">Congé annuel</SelectItem>
+                  <SelectItem value="sick">Congé maladie</SelectItem>
+                  <SelectItem value="special">Congé spécial</SelectItem>
+                  <SelectItem value="unpaid">Congé non payé</SelectItem>
+                  <SelectItem value="maternity">Congé maternité</SelectItem>
+                  <SelectItem value="paternity">Congé paternité</SelectItem>
+                  <SelectItem value="other">Autre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Type de congé */}
             <div className="space-y-2">
-              <Label>Type de congé</Label>
+              <Label>Durée du congé</Label>
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
@@ -1226,11 +1251,25 @@ const Employes = () => {
               Annuler
             </Button>
             <Button onClick={async () => {
+              console.log('🔵 BUTTON CLICKED - Créer le congé');
               try {
-                if (!selectedEmployeeForLeave) return;
+                console.log('🔵 Inside try block');
+                console.log('🔵 selectedEmployeeForLeave:', selectedEmployeeForLeave);
+                if (!selectedEmployeeForLeave) {
+                  console.log('❌ No employee selected, returning');
+                  return;
+                }
+
+                console.log('🏖️ === LEAVE SUBMISSION START ===');
+                console.log('👤 Employee:', {
+                  id: selectedEmployeeForLeave.id,
+                  name: `${selectedEmployeeForLeave.prenom} ${selectedEmployeeForLeave.nom}`
+                });
+                console.log('📋 Leave Data:', leaveData);
 
                 // Validate period dates
                 if (leaveData.leaveType === 'period' && (!leaveData.dateEnd || leaveData.dateEnd < leaveData.date)) {
+                  console.log('❌ Validation failed: Invalid period dates');
                   toast({
                     title: "Erreur",
                     description: "Veuillez sélectionner une date de fin valide",
@@ -1239,22 +1278,91 @@ const Employes = () => {
                   return;
                 }
                 
-                await holidayService.create({
-                  employee_id: selectedEmployeeForLeave.id,
-                  date: leaveData.date,
-                  date_end: leaveData.leaveType === 'period' ? leaveData.dateEnd : undefined,
-                  half_day: leaveData.halfDay,
-                  start_time: leaveData.startTime || undefined,
-                  end_time: leaveData.endTime || undefined,
-                  motif: leaveData.motif || 'Congé',
-                  status: 'approved',
-                  is_paid: leaveData.isPaid,
+                // Determine leave_duration based on half_day and times
+                let leave_duration: 'FULL' | 'AM' | 'PM' | 'HOURS' = 'FULL';
+                let leave_hours: number | undefined = undefined;
+                
+                if (leaveData.halfDay === 'AM') {
+                  leave_duration = 'AM';
+                } else if (leaveData.halfDay === 'PM') {
+                  leave_duration = 'PM';
+                } else if (leaveData.startTime && leaveData.endTime) {
+                  // Calculate hours-based leave
+                  const start = new Date(`2000-01-01T${leaveData.startTime}`);
+                  const end = new Date(`2000-01-01T${leaveData.endTime}`);
+                  leave_hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                  leave_duration = 'HOURS';
+                }
+
+                console.log('⏱️ Calculated Duration:', {
+                  leave_duration,
+                  leave_hours: leave_hours || 'N/A'
                 });
+                
+                // Use pointage service to mark leave
+                if (leaveData.leaveType === 'period' && leaveData.dateEnd) {
+                  console.log('📅 Submitting PERIOD leave:', {
+                    employee_id: selectedEmployeeForLeave.id,
+                    start_date: leaveData.date,
+                    end_date: leaveData.dateEnd,
+                    leave_type: leaveData.leaveCategory,
+                    leave_duration,
+                    leave_hours,
+                    motif: leaveData.motif || 'Congé',
+                    is_paid_leave: leaveData.isPaid,
+                    leave_status: 'approved'
+                  });
+
+                  // Mark leave for date range
+                  await pointageService.markLeaveRange(
+                    selectedEmployeeForLeave.id,
+                    leaveData.date,
+                    leaveData.dateEnd,
+                    {
+                      leave_type: (leaveData.leaveCategory as any) || 'annual',
+                      leave_duration,
+                      leave_hours,
+                      motif: leaveData.motif || 'Congé',
+                      is_paid_leave: leaveData.isPaid,
+                      leave_status: 'approved'
+                    }
+                  );
+                  console.log('✅ Period leave marked successfully');
+                } else {
+                  console.log('📅 Submitting SINGLE DAY leave:', {
+                    employee_id: selectedEmployeeForLeave.id,
+                    date: leaveData.date,
+                    leave_type: leaveData.leaveCategory,
+                    leave_duration,
+                    leave_hours,
+                    motif: leaveData.motif || 'Congé',
+                    is_paid_leave: leaveData.isPaid,
+                    leave_status: 'approved'
+                  });
+
+                  // Mark single day leave
+                  await pointageService.markLeave({
+                    employee_id: selectedEmployeeForLeave.id,
+                    date: leaveData.date,
+                    leave_type: (leaveData.leaveCategory as any) || 'annual',
+                    leave_duration,
+                    leave_hours,
+                    motif: leaveData.motif || 'Congé',
+                    is_paid_leave: leaveData.isPaid,
+                    leave_status: 'approved'
+                  });
+                  console.log('✅ Single day leave marked successfully');
+                }
+
+                console.log('🏖️ === LEAVE SUBMISSION END ===');
 
                 toast({
                   title: "Congé créé",
-                  description: `Le congé pour ${selectedEmployeeForLeave.prenom} ${selectedEmployeeForLeave.nom} a été créé avec succès.`,
+                  description: `Le congé pour ${selectedEmployeeForLeave.prenom} ${selectedEmployeeForLeave.nom} a été marqué dans le pointage.`,
                 });
+
+                // Refetch employees to get latest data
+                await loadEmployees();
 
                 setShowLeaveDialog(false);
                 setSelectedEmployeeForLeave(null);
@@ -1262,6 +1370,7 @@ const Employes = () => {
                   date: new Date().toISOString().split('T')[0],
                   dateEnd: '',
                   leaveType: 'single',
+                  leaveCategory: 'annual',
                   halfDay: 'FULL',
                   startTime: '',
                   endTime: '',
