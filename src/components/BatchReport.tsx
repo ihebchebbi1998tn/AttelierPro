@@ -466,10 +466,6 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                     <span className="font-bold mr-2">Quantité:</span>
                     <span className="font-bold">{batch.quantity_to_produce} unités</span>
                   </div>
-                  <div>
-                    <span className="font-bold mr-2">Coût matériaux:</span>
-                    <span className="font-bold">{Number(batch.total_materials_cost || 0).toFixed(2)} TND</span>
-                  </div>
                 </div>
               </div>
 
@@ -568,8 +564,7 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                   <tr className="border-b-2 border-black bg-gray-100">
                     <th className="text-left p-3 border-r border-black font-bold">MATÉRIAU</th>
                     <th className="text-left p-3 border-r border-black font-bold">COULEUR</th>
-                    <th className="text-left p-3 border-r border-black font-bold">RÉPARTITION</th>
-                    <th className="text-left p-3 border-r border-black font-bold">TOTAL</th>
+                    <th className="text-left p-3 border-r border-black font-bold">TOTAL PRÉ CONFIGURÉ</th>
                     <th className="text-left p-3 border-r border-black font-bold">UNITÉ</th>
                     <th className="text-left p-3 font-bold">COMMENTAIRE</th>
                   </tr>
@@ -590,50 +585,10 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                     }, {});
 
                     return Object.values(groupedMaterials || {}).map((material: any, index: number) => {
-                      let sizeBreakdown: { [size: string]: string } = {};
-                      try {
-                        if (batch.sizes_breakdown) {
-                          const parsedSizes: { [key: string]: number } = JSON.parse(batch.sizes_breakdown);
-                          const totalQuantity = Number(material.quantity_used) || 0;
-                          const totalPieces = Object.values(parsedSizes).reduce((sum: number, qty: number) => sum + qty, 0);
-                          
-                          if (totalPieces > 0) {
-                            Object.entries(parsedSizes).forEach(([size, pieces]) => {
-                              const numPieces = Number(pieces) || 0;
-                              if (numPieces > 0) {
-                                const proportion = numPieces / totalPieces;
-                                const materialForSize = (totalQuantity * proportion).toFixed(1);
-                                sizeBreakdown[size] = materialForSize;
-                              }
-                            });
-                          }
-                        }
-                      } catch (e) {
-                        sizeBreakdown = {};
-                      }
-
                       return (
                         <tr key={index} className={index !== Object.values(groupedMaterials || {}).length - 1 ? "border-b border-black" : ""}>
                           <td className="p-3 border-r border-black font-semibold">{material.nom_matiere}</td>
                           <td className="p-3 border-r border-black font-medium">{material.couleur || 'N/A'}</td>
-                          <td className="p-3 border-r border-black">
-                            {Object.keys(sizeBreakdown).length > 0 ? (
-                              <div className="flex flex-wrap gap-1.5">
-                                {Object.entries(sizeBreakdown).map(([size, quantity]) => (
-                                  <div key={size} className="bg-gray-100 px-2 py-1 rounded text-xs">
-                                    <span className="font-semibold">
-                                      {size === 'none' ? 'STD' : size.toUpperCase()}:
-                                    </span>
-                                    <span className="ml-1 font-medium">
-                                      {quantity} {material.quantity_unit}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-gray-600 italic text-xs">Toutes tailles</span>
-                            )}
-                          </td>
                           <td className="p-3 border-r border-black font-bold text-blue-600">
                             {material.quantity_used} {material.quantity_unit}
                           </td>
@@ -649,9 +604,6 @@ const BatchReport = forwardRef<HTMLDivElement, BatchReportProps>(
                   })()}
                 </tbody>
               </table>
-            </div>
-            <div className="mt-3 text-right">
-              <span className="text-base font-bold">Coût Total Matériaux: <span className="text-red-600">{Number(batch.total_materials_cost || 0).toFixed(2)} TND</span></span>
             </div>
           </div>
         )}

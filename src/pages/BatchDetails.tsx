@@ -458,59 +458,19 @@ const BatchDetails = () => {
           else grouped[key].quantity_used += Number(m.quantity_used) || 0;
         });
 
-        const sizesObj = (() => {
-          try {
-            return batch.sizes_breakdown ? JSON.parse(batch.sizes_breakdown) : {};
-          } catch (e) {
-            return {};
-          }
-        })();
-
-        let materialsHtml = `\n<div class="mb-6">\n  <h2 class="text-lg font-bold border-b-2 border-black pb-1 mb-3">MATÉRIAUX UTILISÉS</h2>\n  <div class="border-2 border-black">\n    <table class="w-full text-xs">\n      <thead>\n        <tr class="border-b-2 border-black bg-gray-100">\n          <th class="text-left p-2 border-r border-black">MATÉRIAU</th>\n          <th class="text-left p-2 border-r border-black">COULEUR</th>\n          <th class="text-left p-2 border-r border-black">RÉPARTITION PAR TAILLE</th>\n          <th class="text-left p-2 border-r border-black">TOTAL</th>\n          <th class="text-left p-2 border-r border-black">UNITÉ</th>\n          <th class="text-left p-2">COMMENTAIRE</th>\n        </tr>\n      </thead>\n      <tbody>\n`;
+        let materialsHtml = `\n<div class="mb-6">\n  <h2 class="text-lg font-bold border-b-2 border-black pb-1 mb-3">MATÉRIAUX UTILISÉS</h2>\n  <div class="border-2 border-black">\n    <table class="w-full text-xs">\n      <thead>\n        <tr class="border-b-2 border-black bg-gray-100">\n          <th class="text-left p-2 border-r border-black">MATÉRIAU</th>\n          <th class="text-left p-2 border-r border-black">COULEUR</th>\n          <th class="text-left p-2 border-r border-black">TOTAL PRÉ CONFIGURÉ</th>\n          <th class="text-left p-2 border-r border-black">UNITÉ</th>\n          <th class="text-left p-2">COMMENTAIRE</th>\n        </tr>\n      </thead>\n      <tbody>\n`;
 
         Object.values(grouped).forEach((material: any, idx: number) => {
-          // compute size breakdown
-          let sizeBreakdown: any = {};
-          try {
-            const parsedSizes: any = sizesObj || {};
-            const totalQuantity = Number(material.quantity_used) || 0;
-            const totalPieces = Object.values(parsedSizes).reduce((s: number, v: any) => s + Number(v || 0), 0) as number;
-            if (totalPieces > 0) {
-              Object.entries(parsedSizes).forEach(([size, pieces]) => {
-                const numPieces = Number(pieces) || 0;
-                if (numPieces > 0) {
-                  const proportion = numPieces / totalPieces;
-                  sizeBreakdown[size] = (totalQuantity * proportion).toFixed(1);
-                }
-              });
-            }
-          } catch (e) {
-            sizeBreakdown = {};
-          }
-
           materialsHtml += `        <tr class="${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">\n` +
             `          <td class="p-2 border-r border-black font-medium">${material.nom_matiere}</td>\n` +
             `          <td class="p-2 border-r border-black">${material.couleur || 'N/A'}</td>\n` +
-            `          <td class="p-2 border-r border-black">`;
-
-          if (Object.keys(sizeBreakdown).length > 0) {
-            materialsHtml += `<div class="flex flex-wrap gap-2">`;
-            Object.entries(sizeBreakdown).forEach(([size, quantity]) => {
-              materialsHtml += `<div class="bg-gray-100 px-2 py-1 rounded"><span class="font-medium">${size === 'none' ? 'Standard' : size.toUpperCase()}:</span> <span class="ml-1">${quantity} ${material.quantity_unit}</span></div>`;
-            });
-            materialsHtml += `</div>`;
-          } else {
-            materialsHtml += `<span class="text-gray-600 italic">Toutes tailles</span>`;
-          }
-
-          materialsHtml += `</td>\n` +
             `          <td class="p-2 border-r border-black font-bold">${material.quantity_used} ${material.quantity_unit}</td>\n` +
             `          <td class="p-2 border-r border-black text-center">${material.quantity_type_name || ''}</td>\n` +
             `          <td class="p-2">${material.commentaire || '-'}</td>\n` +
             `        </tr>\n`;
         });
 
-        materialsHtml += `      </tbody>\n    </table>\n    <div class="mt-3 text-right"><span class="font-bold">Coût Total Matériaux: ${Number(batch.total_materials_cost || 0).toFixed(2)} TND</span></div>\n  </div>\n</div>\n`;
+        materialsHtml += `      </tbody>\n    </table>\n  </div>\n</div>\n`;
 
         // Append to final content
         finalReportContent = reportContent + materialsHtml;
@@ -2099,52 +2059,53 @@ const BatchDetails = () => {
         throw new Error(saveData.error || "Erreur lors de la sauvegarde des quantités");
       }
       
-      // Step 2: Deduct stock using actual filled quantities (not estimated)
-      // Prepare totals per material to avoid ambiguity on server side
-      const materialsTotals: Record<string, number> = Object.fromEntries(
-        Object.entries(materialsQuantities).map(([materialId, perPiece]) => {
-          const perPieceNum = Number(perPiece) || 0;
-          const total = perPieceNum * (Number(batch.quantity_to_produce) || 0);
-          return [materialId, total];
-        })
-      );
+      // Step 2: Adjust stock based on difference between pre-configured and actual quantities
+      // Build materials adjustments array: compare actual filled vs pre-configured quantities
+      const materialsAdjustments = batch.materials_used?.map((material) => {
+        const preConfiguredQty = Number(material.quantity_used) || 0; // Pre-configured per piece
+        const actualQty = Number(materialsQuantities[material.material_id]) || 0; // Actual per piece
+        
+        // Calculate total quantities based on quantity_to_produce
+        const totalPreConfigured = preConfiguredQty * (Number(batch.quantity_to_produce) || 0);
+        const totalActual = actualQty * (Number(batch.quantity_to_produce) || 0);
+        
+        return {
+          material_id: material.material_id,
+          configured_quantity: totalPreConfigured,
+          actual_quantity: totalActual
+        };
+      }) || [];
 
-      console.log('Deducting stock with actual quantities (per-piece + totals):', {
-        action: 'deduct_stock_with_actual_quantities',
+      console.log('Adjusting stock based on differences:', {
         batch_id: batch.id,
-        materials_quantities: materialsQuantities,
-        materials_quantities_totals: materialsTotals,
+        materials_adjustments: materialsAdjustments,
         production_number: batch.batch_reference
       });
 
-      const deductResponse = await fetch('https://luccibyey.com.tn/production/api/production_stock_deduction.php', {
+      const adjustResponse = await fetch('https://luccibyey.com.tn/production/api/adjust_materials_stock.php', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          action: 'deduct_stock_with_actual_quantities',
           batch_id: batch.id,
-          materials_quantities: materialsQuantities,
-          materials_quantities_totals: materialsTotals,
-          production_number: batch.batch_reference,
-          user_id: 1
+          materials_adjustments: materialsAdjustments
         }),
       });
       
-      if (!deductResponse.ok) {
-        throw new Error(`Stock deduction HTTP error! status: ${deductResponse.status}`);
+      if (!adjustResponse.ok) {
+        throw new Error(`Stock adjustment HTTP error! status: ${adjustResponse.status}`);
       }
       
-      const deductData = await deductResponse.json();
-      console.log('Deduct stock response:', deductData);
+      const adjustData = await adjustResponse.json();
+      console.log('Adjust stock response:', adjustData);
       
-      if (!deductData.success) {
-        // Quantities saved but stock deduction failed
+      if (!adjustData.success) {
+        // Quantities saved but stock adjustment failed
         toast({
           title: "Avertissement",
-          description: deductData.message || "Quantités sauvegardées mais le stock n'a pas pu être déduit. Veuillez vérifier le stock.",
+          description: adjustData.message || "Quantités sauvegardées mais le stock n'a pas pu être ajusté. Veuillez vérifier le stock.",
           variant: "destructive",
         });
         setQuantitiesSaved(true);
@@ -2155,10 +2116,12 @@ const BatchDetails = () => {
       // Both operations succeeded
       setQuantitiesSaved(true);
       
-      const transactionCount = deductData.transactions?.length || 0;
+      const adjustmentCount = adjustData.adjustments?.length || 0;
+      const totalAdjusted = adjustData.adjustments?.reduce((sum: number, adj: any) => sum + Math.abs(adj.difference), 0) || 0;
+      
       toast({
         title: "Succès",
-        description: `Quantités sauvegardées avec succès. ${transactionCount} transaction(s) de stock créée(s).`,
+        description: `Quantités sauvegardées avec succès. ${adjustmentCount} ajustement(s) de stock effectué(s) (Total: ${totalAdjusted.toFixed(2)} unités).`,
       });
       
       // Refresh batch details to show updated data
@@ -2168,7 +2131,7 @@ const BatchDetails = () => {
       console.error('Error in confirmSaveMaterialsQuantities:', error);
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Erreur lors de la sauvegarde des quantités et de la déduction du stock",
+        description: error instanceof Error ? error.message : "Erreur lors de la sauvegarde des quantités et de l'ajustement du stock",
         variant: "destructive",
       });
     } finally {
