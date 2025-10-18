@@ -306,12 +306,9 @@ const ConfigurerMateriaux = () => {
 
       const data = await response.json();
       if (data.success) {
-        // Automatically deduct stock after successful save
-        await deductStockForMaterials();
-        
         toast({
           title: "Auto-sauvegarde",
-          description: "Configuration sauvegardée et stock déduit automatiquement",
+          description: "Configuration sauvegardée automatiquement",
         });
       }
     } catch (error) {
@@ -319,34 +316,6 @@ const ConfigurerMateriaux = () => {
     }
   }, [productId, toast]);
 
-  const deductStockForMaterials = async () => {
-    try {
-      const response = await fetch('https://luccibyey.com.tn/production/api/deduct_materials_stock.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          product_id: productId,
-          quantities_to_produce: productionQuantities
-        })
-      });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        if (data.insufficient_materials) {
-          const insufficientList = data.insufficient_materials
-            .map((m: any) => `${m.material_name}: ${m.shortage.toFixed(2)} manquant`)
-            .join(', ');
-          
-          console.log('Stock insuffisant:', insufficientList);
-        }
-      }
-    } catch (error) {
-      console.error('Error deducting stock:', error);
-    }
-  };
 
 
   // Debounced auto-save trigger

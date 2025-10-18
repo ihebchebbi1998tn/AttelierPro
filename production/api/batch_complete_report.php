@@ -22,7 +22,11 @@ try {
 
     // First, get batch information with product details
     $batch_query = "
-        SELECT pb.*, 
+        SELECT pb.*,
+               pb.status as batch_status,
+               pb.cancelled_at,
+               pb.cancelled_by,
+               pb.cancellation_reason,
                pr.nom_product as nom_produit,
                pr.reference_product as ref_produit,
                pr.external_product_id,
@@ -34,7 +38,7 @@ try {
                pr.description_product as description,
                pr.price_product as prix_vente,
                pr.boutique_origin,
-               pr.production_specifications
+               pr.production_specifications as product_specifications
         FROM production_batches pb 
         LEFT JOIN production_ready_products pr ON pb.product_id = pr.id
         WHERE pb.batch_reference = ?
@@ -46,6 +50,11 @@ try {
     
     if (!$batch) {
         throw new Exception('Batch not found');
+    }
+    
+    // Ensure status field is properly set (fix any column conflicts)
+    if (isset($batch['batch_status'])) {
+        $batch['status'] = $batch['batch_status'];
     }
 
     // Get materials used in this batch

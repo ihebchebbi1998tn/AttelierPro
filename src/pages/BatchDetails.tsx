@@ -2545,6 +2545,11 @@ const BatchDetails = () => {
     
     if (!batch || !cancellationReason.trim()) {
       console.log('Missing batch or cancellation reason');
+      toast({
+        title: "Erreur",
+        description: "Veuillez fournir une raison pour l'annulation",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -2559,14 +2564,14 @@ const BatchDetails = () => {
     }
 
     try {
-      console.log('Sending cancellation request...');
-      const response = await fetch('https://luccibyey.com.tn/production/api/production_batches.php', {
-        method: 'PUT',
+      console.log('Sending cancellation request to cancel_batch.php...');
+      const response = await fetch('https://luccibyey.com.tn/production/api/cancel_batch.php', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: batch.id,
-          action: 'cancel_batch',
-          cancellation_reason: cancellationReason
+          batch_id: batch.batch_reference,
+          cancellation_reason: cancellationReason,
+          cancelled_by: null
         })
       });
 
@@ -2575,17 +2580,25 @@ const BatchDetails = () => {
       console.log('Response data:', data);
       
       if (data.success) {
+        console.log('Materials restored:', data.materials_restored);
+        console.log('Transactions created:', data.transactions_created);
+        
         toast({
           title: "Batch Annulé",
-          description: "Le batch a été annulé avec succès. Stock restauré.",
+          description: `Stock restauré (${data.materials_restored?.length || 0} matériaux)`,
         });
         
+        setShowCancelModal(false);
+        setCancellationReason("");
+        
         // Reload the page to show updated data
-        window.location.reload();
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       } else {
         toast({
           title: "Erreur",
-          description: data.message || "Erreur lors de l'annulation",
+          description: data.error || "Erreur lors de l'annulation",
           variant: "destructive",
         });
       }
@@ -2716,8 +2729,37 @@ const BatchDetails = () => {
         </div>
       </div>
 
+      {/* Cancelled Batch Alert - Prominent Banner */}
+      {batch.status === 'cancelled' && (
+        <Card className="border-destructive bg-destructive/10 shadow-lg">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-destructive rounded-full">
+                <X className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-destructive mb-2">Batch Annulé</h3>
+                <div className="space-y-2 text-sm">
+                  <p><span className="font-semibold">Date d'annulation:</span> {formatDate(batch.cancelled_at)}</p>
+                  {batch.cancelled_by && <p><span className="font-semibold">Annulé par:</span> {batch.cancelled_by}</p>}
+                  {batch.cancellation_reason && (
+                    <div className="mt-3 p-3 bg-destructive/20 rounded-md border border-destructive/30">
+                      <p className="font-semibold text-destructive mb-1">Raison de l'annulation:</p>
+                      <p className="text-destructive/90">{batch.cancellation_reason}</p>
+                    </div>
+                  )}
+                  <p className="text-muted-foreground mt-3 italic">
+                    Les matériaux ont été restaurés dans le stock et les transactions d'annulation ont été enregistrées.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Production Note Alert - Highlighted at Top */}
-      {batch.production_specifications && 
+      {batch.production_specifications &&
        batch.production_specifications !== 'null' && 
        batch.production_specifications !== '{}' && (() => {
          try {

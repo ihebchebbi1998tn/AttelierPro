@@ -354,6 +354,8 @@ const ProductDetails = () => {
         
         // Add stock back to the material
         if (totalQuantityToRestore > 0) {
+          console.log('📦 Restoring stock:', totalQuantityToRestore, 'units for material ID:', materialToDelete.material_id);
+          
           const restoreStockResponse = await fetch('https://luccibyey.com.tn/production/api/transactions_stock.php', {
             method: 'POST',
             headers: {
@@ -369,13 +371,18 @@ const ProductDetails = () => {
           
           const restoreData = await restoreStockResponse.json();
           console.log('Stock restoration result:', restoreData);
+          
+          if (!restoreData.success) {
+            throw new Error('Échec de la restauration du stock');
+          }
         }
         
         const isFused = materialToDelete.commentaire?.includes('Fusionné');
+        const materialName = materialToDelete.material_name || 'Matériau';
         
         toast({
-          title: isFused ? "Matériaux fusionnés supprimés" : "Matériau supprimé",
-          description: `${allEntriesForThisMaterial.length} entrée(s) supprimée(s) et ${totalQuantityToRestore} unité(s) ajoutée(s) au stock`,
+          title: isFused ? "✅ Matériaux fusionnés supprimés" : "✅ Matériau supprimé",
+          description: `${materialName}: ${allEntriesForThisMaterial.length} entrée(s) supprimée(s). Stock restauré: +${totalQuantityToRestore.toFixed(2)} ${materialToDelete.quantity_unit || 'unités'}`,
         });
       }
       

@@ -468,27 +468,7 @@ try {
                         $needed = (float)$mat['quantity_needed'] * $plannedPieces;
                         if ($needed <= 0) continue; // Skip if no material needed
                         
-                        if ($needed > $mat['stock']) {
-                            // Get material details for better error message
-                            $matDetailStmt = $db->prepare("SELECT nom, couleur FROM production_matieres WHERE id = :id");
-                            $matDetailStmt->bindValue(':id', $mat['material_id'], PDO::PARAM_INT);
-                            $matDetailStmt->execute();
-                            $matDetail = $matDetailStmt->fetch();
-                            
-                            $matName = $matDetail ? $matDetail['nom'] : "Matériau ID {$mat['material_id']}";
-                            $matColor = $matDetail && $matDetail['couleur'] ? " ({$matDetail['couleur']})" : '';
-                            
-                            // Get quantity unit for better error message
-                            $unitStmt = $db->prepare("SELECT unite FROM production_quantity_types WHERE id = :id");
-                            $unitStmt->bindValue(':id', $mat['material_quantity_type_id'], PDO::PARAM_INT);
-                            $unitStmt->execute();
-                            $unitData = $unitStmt->fetch();
-                            $unit = $unitData ? $unitData['unite'] : '';
-                            
-                            echo json_encode(['success' => false, 'message' => "Stock insuffisant pour {$matName}{$matColor}. Disponible: {$mat['stock']} {$unit}, Requis: {$needed} {$unit}"]);
-                            $db->rollBack();
-                            return;
-                        }
+                        // Removed stock sufficiency check - allow production even with low stock
 
                         $unitCost = $mat['prix'] ?? 0;
                         $lineCost = $needed * $unitCost;
@@ -661,6 +641,7 @@ try {
                     $materials = $materialsStmt->fetchAll();
 
                     $totalCost = 0;
+                    $transactionsCreated = []; // Track all created transactions
                     $processedKeys = [];
                     foreach ($materials as $mat) {
                         $sizeSpecific = $mat['size_specific'] ?? null;
@@ -679,11 +660,8 @@ try {
                         }
 
                         $needed = (float)$mat['quantity_needed'] * $plannedPieces;
-                        if ($needed > $mat['stock']) {
-                            echo json_encode(['success' => false, 'message' => "Stock insuffisant pour matériau ID {$mat['material_id']}"]);
-                            $db->rollBack();
-                            return;
-                        }
+                        
+                        // Removed stock sufficiency check - allow production even with low stock
 
                         $unitCost = $mat['prix'] ?? 0;
                         $lineCost = $needed * $unitCost;
@@ -714,13 +692,25 @@ try {
                         $tx->execute();
                         $transactionId = $db->lastInsertId();
 
-                        // Stock is already deducted by production_stock_deduction.php
-                        // No need to deduct again here to avoid double deduction
-                        // COMMENTED OUT: 
-                        // $up = $db->prepare("UPDATE production_matieres SET quantite_stock = quantite_stock - :q WHERE id = :mid");
-                        // $up->bindValue(':q', $needed);
-                        // $up->bindValue(':mid', $mat['material_id'], PDO::PARAM_INT);
-                        // $up->execute();
+                        error_log("✅ Transaction créée: ID $transactionId pour matériau {$mat['material_id']}, quantité $needed");
+
+                        // Deduct stock from inventory
+                        $up = $db->prepare("UPDATE production_matieres SET quantite_stock = quantite_stock - :q WHERE id = :mid");
+                        $up->bindValue(':q', $needed);
+                        $up->bindValue(':mid', $mat['material_id'], PDO::PARAM_INT);
+                        $up->execute();
+                        
+                        error_log("✅ Stock déduit: -$needed pour matériau {$mat['material_id']}");
+
+                        // Track transactions for response
+                        $transactionsCreated[] = [
+                            'transaction_id' => $transactionId,
+                            'material_id' => $mat['material_id'],
+                            'material_name' => $mat['nom'] ?? 'N/A',
+                            'quantity' => $needed,
+                            'unit_cost' => $unitCost,
+                            'total_cost' => $lineCost
+                        ];
 
                         // Save in batch_materials
                         $bm = $db->prepare("
@@ -759,7 +749,9 @@ try {
                         'message' => 'Production démarrée avec succès',
                         'batch_id' => $batchId,
                         'batch_reference' => $batchReference,
-                        'total_cost' => $totalCost
+                        'total_cost' => $totalCost,
+                        'transactions_created' => count($transactionsCreated),
+                        'transactions_details' => $transactionsCreated
                     ]);
                 } catch (Exception $e) {
                     $db->rollBack();

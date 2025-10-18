@@ -201,32 +201,7 @@ const ProductionPlanning = () => {
         return;
       }
 
-      // First, deduct materials from stock
-      const deductionData = {
-        action: 'deduct_stock_production',
-        product_id: typeof product?.id === 'string' ? parseInt(product.id) : Number(product?.id),
-        planned_quantities: filteredQuantities,
-        user_id: 1 // Default user ID - should be from auth context
-      };
-      console.log('Deducting materials:', deductionData);
-      const deductionResponse = await fetch('https://luccibyey.com.tn/production/api/production_stock_deduction.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(deductionData)
-      });
-      if (!deductionResponse.ok) {
-        const errorText = await deductionResponse.text();
-        throw new Error(`Erreur lors de la déduction des matériaux: ${errorText}`);
-      }
-      const deductionResult = await deductionResponse.json();
-      console.log('Deduction result:', deductionResult);
-      if (!deductionResult.success) {
-        throw new Error(deductionResult.message || 'Erreur lors de la déduction des matériaux');
-      }
-
-      // Now create the production batch
+      // Create the production batch (stock will be deducted automatically by the batch creation)
       const sizesBreakdown = JSON.stringify(filteredQuantities);
       const requestData = {
         action: 'start_production',
@@ -235,8 +210,7 @@ const ProductionPlanning = () => {
         sizes_breakdown: sizesBreakdown,
         user_id: 1,
         // Default user ID - should be from auth context
-        notes: `Production lancée depuis la planification pour ${product?.nom_product}`,
-        materials_cost: deductionResult.total_cost || 0
+        notes: `Production lancée depuis la planification pour ${product?.nom_product}`
       };
       console.log('Sending production request:', requestData);
       const response = await fetch('https://luccibyey.com.tn/production/api/production_batches.php', {
@@ -259,7 +233,7 @@ const ProductionPlanning = () => {
       if (result.success) {
         toast({
           title: "Production démarrée !",
-          description: `Batch ${result.batch_reference} créé avec succès. Matériaux déduits: ${deductionResult.total_cost?.toFixed(2) || 0} TND`
+          description: `Batch ${result.batch_reference} créé avec succès`
         });
 
         // Navigate to productions page to see the created batch
