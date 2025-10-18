@@ -154,6 +154,13 @@ const BatchDetails = () => {
   const [materialStocks, setMaterialStocks] = useState<{[key: number]: number}>({});
   const [stockWarnings, setStockWarnings] = useState<{[key: number]: boolean}>({});
 
+  // Helper function to check if a batch is cancelled
+  const isBatchCancelled = (batchData: ProductionBatch | null): boolean => {
+    if (!batchData) return false;
+    // Check both status field and cancelled_at field
+    return batchData.status === 'cancelled' || (batchData.cancelled_at !== null && batchData.cancelled_at !== undefined);
+  };
+
   useEffect(() => {
     if (id) {
       fetchBatchDetails(parseInt(id));
@@ -1767,6 +1774,13 @@ const BatchDetails = () => {
       if (data.success) {
         console.log('🔍 DEBUG - Batch data received:', data.data);
         console.log('🔍 DEBUG - Materials used:', data.data.materials_used);
+        
+        // Fix status if cancelled_at exists but status is empty/null
+        if (data.data.cancelled_at && (!data.data.status || data.data.status === '')) {
+          console.log('⚠️ Fixing cancelled batch with empty status');
+          data.data.status = 'cancelled';
+        }
+        
         setBatch(data.data);
         
         // Initialize materials quantities from batch data
@@ -1901,6 +1915,9 @@ const BatchDetails = () => {
   };
 
   const getStatusColor = (status: string) => {
+    // Fallback for empty/null status
+    if (!status || status === '') return 'bg-gray-400';
+    
     switch (status) {
       case 'planifie': return 'bg-gray-500';
       case 'en_cours': return 'bg-blue-500';
@@ -1928,6 +1945,9 @@ const BatchDetails = () => {
   };
 
   const getStatusLabel = (status: string) => {
+    // Fallback for empty/null status
+    if (!status || status === '') return 'Statut inconnu';
+    
     switch (status) {
       case 'planifie': return 'Planifié';
       case 'en_cours': return 'En Cours';
@@ -2613,8 +2633,8 @@ const BatchDetails = () => {
   };
 
   const canUpdateToStatus = (targetStatus: string, currentStatus: string) => {
-    // Can't update if already cancelled
-    if (currentStatus === 'cancelled') return false;
+    // Can't update if already cancelled (check both status and cancelled_at)
+    if (currentStatus === 'cancelled' || (batch?.cancelled_at && batch.cancelled_at !== null)) return false;
     
     const statusOrder = ['planifie', 'en_cours', 'termine', 'en_a_collecter', 'en_magasin'];
     const currentIndex = statusOrder.indexOf(currentStatus);
@@ -2714,7 +2734,7 @@ const BatchDetails = () => {
                 <FileText className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                 Rapport
               </Button>
-              {batch.status !== 'cancelled' && batch.status !== 'termine' && (
+              {!isBatchCancelled(batch) && batch.status !== 'termine' && (
                 <AlertDialog open={showCancelModal} onOpenChange={setShowCancelModal}>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm" className="flex-1 md:flex-initial text-xs md:text-sm">
@@ -2730,26 +2750,41 @@ const BatchDetails = () => {
       </div>
 
       {/* Cancelled Batch Alert - Prominent Banner */}
-      {batch.status === 'cancelled' && (
-        <Card className="border-destructive bg-destructive/10 shadow-lg">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-destructive rounded-full">
-                <X className="h-6 w-6 text-white" />
+      {isBatchCancelled(batch) && (
+        <Card className="border-4 border-destructive bg-destructive/20 shadow-2xl animate-in fade-in duration-500">
+          <CardContent className="p-6 md:p-8">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-destructive rounded-full flex-shrink-0 shadow-lg">
+                <X className="h-8 w-8 text-white" />
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-destructive mb-2">Batch Annulé</h3>
-                <div className="space-y-2 text-sm">
-                  <p><span className="font-semibold">Date d'annulation:</span> {formatDate(batch.cancelled_at)}</p>
-                  {batch.cancelled_by && <p><span className="font-semibold">Annulé par:</span> {batch.cancelled_by}</p>}
-                  {batch.cancellation_reason && (
-                    <div className="mt-3 p-3 bg-destructive/20 rounded-md border border-destructive/30">
-                      <p className="font-semibold text-destructive mb-1">Raison de l'annulation:</p>
-                      <p className="text-destructive/90">{batch.cancellation_reason}</p>
-                    </div>
-                  )}
-                  <p className="text-muted-foreground mt-3 italic">
-                    Les matériaux ont été restaurés dans le stock et les transactions d'annulation ont été enregistrées.
+              <div className="flex-1 space-y-4">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-2xl md:text-3xl font-bold text-destructive">BATCH ANNULÉ</h3>
+                  <Badge variant="destructive" className="text-lg px-4 py-1.5 font-bold">NON ACTIF</Badge>
+                </div>
+                
+                <div className="bg-white/50 backdrop-blur-sm p-4 rounded-lg border-2 border-destructive/30">
+                  <p className="text-lg font-bold text-destructive mb-3">⚠️ Ce batch ne peut plus être modifié ou traité</p>
+                  <div className="space-y-2 text-sm">
+                    <p><span className="font-semibold">Date d'annulation:</span> {formatDate(batch.cancelled_at)}</p>
+                    {batch.cancelled_by && <p><span className="font-semibold">Annulé par:</span> {batch.cancelled_by}</p>}
+                  </div>
+                </div>
+
+                {batch.cancellation_reason && (
+                  <div className="p-4 bg-destructive/10 rounded-lg border-2 border-destructive/40">
+                    <p className="font-bold text-destructive mb-2 flex items-center gap-2">
+                      <AlertCircle className="h-5 w-5" />
+                      Raison de l'annulation:
+                    </p>
+                    <p className="text-base text-destructive/90 font-medium">{batch.cancellation_reason}</p>
+                  </div>
+                )}
+                
+                <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-md border border-muted">
+                  <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-muted-foreground italic">
+                    Les matériaux ont été automatiquement restaurés dans le stock et toutes les transactions d'annulation ont été enregistrées.
                   </p>
                 </div>
               </div>
@@ -2845,7 +2880,7 @@ const BatchDetails = () => {
       </div>
 
       {/* Materials Quantities Alert & Table - Above Status (Only if planifie and not saved) */}
-      {batch.status === 'planifie' && batch.materials_used && batch.materials_used.length > 0 && !quantitiesSaved && (
+      {!isBatchCancelled(batch) && batch.status === 'planifie' && batch.materials_used && batch.materials_used.length > 0 && !quantitiesSaved && (
         <Card className="border-destructive/50 shadow-lg bg-destructive/5">
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between gap-4">
@@ -3012,11 +3047,21 @@ const BatchDetails = () => {
        })()}
 
       {/* Progress Timeline */}
-      <Card>
+      <Card className={isBatchCancelled(batch) ? 'opacity-60 pointer-events-none relative' : ''}>
+        {isBatchCancelled(batch) && (
+          <div className="absolute inset-0 bg-destructive/5 backdrop-blur-[1px] z-10 rounded-lg flex items-center justify-center">
+            <Badge variant="destructive" className="text-xl px-6 py-3 font-bold shadow-2xl">
+              BATCH ANNULÉ - AUCUNE ACTION DISPONIBLE
+            </Badge>
+          </div>
+        )}
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
             Progression du Batch
+            {isBatchCancelled(batch) && (
+              <Badge variant="destructive" className="ml-2">Annulé</Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -3038,8 +3083,10 @@ const BatchDetails = () => {
                 const isCurrentStatus = batch.status === status;
                 const isCompleted = getProgressPercentage(batch.status) >= getProgressPercentage(status);
                 
+                // Disable all status changes if batch is cancelled
+                let canUpdate = !isBatchCancelled(batch) && canUpdateToStatus(status, batch.status);
+                
                 // Special handling - if materials not saved and batch is planifie, disable en_cours and all subsequent statuses
-                let canUpdate = canUpdateToStatus(status, batch.status);
                 if (batch.status === 'planifie' && !quantitiesSaved) {
                   // Disable en_cours and all statuses after it
                   if (['en_cours', 'termine', 'en_a_collecter', 'en_magasin'].includes(status)) {
@@ -3473,6 +3520,7 @@ const BatchDetails = () => {
                             </TableCell>
                             <TableCell>
                               <span className="font-medium text-muted-foreground">{material.quantity_used || '-'} {material.quantity_unit}</span>
+                              <span className="text-xs text-muted-foreground block mt-0.5">(Total déjà calculé)</span>
                             </TableCell>
                             <TableCell>
                               {canEdit ? (
@@ -3488,8 +3536,8 @@ const BatchDetails = () => {
                                   />
                                   {Number(quantityValue) > 0 && (
                                     <div className="space-y-1">
-                                      <span className="text-xs text-muted-foreground">
-                                        {quantityValue} × {batch.quantity_to_produce} = {(Number(quantityValue) * batch.quantity_to_produce).toFixed(2)} {material.quantity_unit}
+                                      <span className="text-xs text-primary/80 font-medium">
+                                        Par pièce: {quantityValue} {material.quantity_unit} × {batch.quantity_to_produce} unités = {(Number(quantityValue) * batch.quantity_to_produce).toFixed(2)} {material.quantity_unit} (Total)
                                       </span>
                                       {stockWarnings[material.material_id] && (() => {
                                         const totalRequired = Number(quantityValue) * batch.quantity_to_produce;
@@ -3596,9 +3644,12 @@ const BatchDetails = () => {
                             </Badge>
                           </div>
                           <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">Qté préconfiguré:</span>
-                              <span className="text-sm font-medium text-muted-foreground">{material.quantity_used || '-'} {material.quantity_unit}</span>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">Qté préconfiguré:</span>
+                                <span className="text-sm font-medium text-muted-foreground">{material.quantity_used || '-'} {material.quantity_unit}</span>
+                              </div>
+                              <span className="text-xs text-muted-foreground">(Total déjà calculé)</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-muted-foreground">Qté réelle utilisée:</span>
@@ -3618,8 +3669,8 @@ const BatchDetails = () => {
                             </div>
                             {Number(quantityValue) > 0 && (
                               <div className="space-y-1">
-                                <span className="text-xs text-muted-foreground">
-                                  {quantityValue} × {batch.quantity_to_produce} = {(Number(quantityValue) * batch.quantity_to_produce).toFixed(2)} {material.quantity_unit}
+                                <span className="text-xs text-primary/80 font-medium">
+                                  Par pièce: {quantityValue} {material.quantity_unit} × {batch.quantity_to_produce} unités = {(Number(quantityValue) * batch.quantity_to_produce).toFixed(2)} {material.quantity_unit} (Total)
                                 </span>
                                 {stockWarnings[material.material_id] && (() => {
                                   const totalRequired = Number(quantityValue) * batch.quantity_to_produce;
