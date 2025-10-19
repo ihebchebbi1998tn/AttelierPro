@@ -77,6 +77,7 @@ import { pointageService } from "@/utils/pointageService";
 import WeeklyPlanningCreator from "@/components/WeeklyPlanningCreator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DollarSign, CalendarPlus } from "lucide-react";
+import { AbsenceDetailsModal } from "@/components/AbsenceDetailsModal";
 
 
 
@@ -117,6 +118,8 @@ const Employes = () => {
     motif: '',
     isPaid: true,
   });
+  const [showAbsenceModal, setShowAbsenceModal] = useState(false);
+  const [selectedEmployeeForAbsence, setSelectedEmployeeForAbsence] = useState<Employee | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importRows, setImportRows] = useState<any[]>([]);
   const [importColumns, setImportColumns] = useState<string[]>([]);
@@ -794,6 +797,26 @@ const Employes = () => {
                       <Badge variant="outline" className="text-xs">
                         {statutCivilLabels[employee.statut_civil]}
                       </Badge>
+                      <span className="flex items-center gap-1">
+                        Jours: <Badge variant="outline" className="text-xs">{status.workedDays}</Badge>
+                      </span>
+                      <span 
+                        className="flex items-center gap-1 cursor-pointer hover:text-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedEmployeeForAbsence(employee);
+                          setShowAbsenceModal(true);
+                        }}
+                        title="Cliquer pour voir les détails"
+                      >
+                        Abs: 
+                        <Badge 
+                          variant={status.absences > 0 ? "destructive" : "outline"} 
+                          className="text-xs cursor-pointer hover:opacity-80"
+                        >
+                          {status.absences}
+                        </Badge>
+                      </span>
                     </div>
                     <div className="flex gap-1 pt-2 border-t">
                       <Button
@@ -973,8 +996,19 @@ const Employes = () => {
                         {employeeStatus[employee.id]?.workedDays || 0}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={employeeStatus[employee.id]?.absences > 0 ? "destructive" : "outline"}>
+                    <TableCell 
+                      className="text-center cursor-pointer hover:bg-muted/50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedEmployeeForAbsence(employee);
+                        setShowAbsenceModal(true);
+                      }}
+                      title="Cliquer pour voir les détails des absences"
+                    >
+                      <Badge 
+                        variant={employeeStatus[employee.id]?.absences > 0 ? "destructive" : "outline"}
+                        className="cursor-pointer hover:opacity-80"
+                      >
                         {employeeStatus[employee.id]?.absences || 0}
                       </Badge>
                     </TableCell>
@@ -1223,15 +1257,24 @@ const Employes = () => {
             )}
 
             {/* Paid/Unpaid */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="is-paid"
-                checked={leaveData.isPaid}
-                onCheckedChange={(checked) => setLeaveData({ ...leaveData, isPaid: checked as boolean })}
-              />
-              <Label htmlFor="is-paid" className="cursor-pointer">
-                Congé payé
-              </Label>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is-paid"
+                  checked={leaveData.isPaid}
+                  onCheckedChange={(checked) => setLeaveData({ ...leaveData, isPaid: checked as boolean })}
+                />
+                <Label htmlFor="is-paid" className="cursor-pointer">
+                  Congé payé
+                </Label>
+              </div>
+              {!leaveData.isPaid && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-md p-3">
+                  <p className="text-xs text-destructive font-medium">
+                    ⚠️ Les jours d'absence non payés seront déduits du salaire net sur le bulletin de paie
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Motif */}
@@ -1845,6 +1888,14 @@ const Employes = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Absence Details Modal */}
+      <AbsenceDetailsModal
+        open={showAbsenceModal}
+        onOpenChange={setShowAbsenceModal}
+        employee={selectedEmployeeForAbsence!}
+        month={new Date().toISOString().slice(0, 7)} // Current month
+      />
     </div>
   );
 };

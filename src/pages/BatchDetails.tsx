@@ -2062,16 +2062,16 @@ const BatchDetails = () => {
       // Step 2: Adjust stock based on difference between pre-configured and actual quantities
       // Build materials adjustments array: compare actual filled vs pre-configured quantities
       const materialsAdjustments = batch.materials_used?.map((material) => {
-        const preConfiguredQty = Number(material.quantity_used) || 0; // Pre-configured per piece
-        const actualQty = Number(materialsQuantities[material.material_id]) || 0; // Actual per piece
+        const preConfiguredQty = Number(material.quantity_used) || 0; // Already TOTAL pre-configured (not per piece)
+        const actualQtyPerPiece = Number(materialsQuantities[material.material_id]) || 0; // Actual per piece
         
-        // Calculate total quantities based on quantity_to_produce
-        const totalPreConfigured = preConfiguredQty * (Number(batch.quantity_to_produce) || 0);
-        const totalActual = actualQty * (Number(batch.quantity_to_produce) || 0);
+        // Calculate total actual based on quantity_to_produce
+        // Pre-configured is already total, so don't multiply it again
+        const totalActual = actualQtyPerPiece * (Number(batch.quantity_to_produce) || 0);
         
         return {
           material_id: material.material_id,
-          configured_quantity: totalPreConfigured,
+          configured_quantity: preConfiguredQty, // Already total
           actual_quantity: totalActual
         };
       }) || [];
@@ -3502,28 +3502,59 @@ const BatchDetails = () => {
                                       <span className="text-xs text-primary/80 font-medium">
                                         Par pièce: {quantityValue} {material.quantity_unit} × {batch.quantity_to_produce} unités = {(Number(quantityValue) * batch.quantity_to_produce).toFixed(2)} {material.quantity_unit} (Total)
                                       </span>
-                                      {stockWarnings[material.material_id] && (() => {
-                                        const totalRequired = Number(quantityValue) * batch.quantity_to_produce;
+                                      {(() => {
+                                        const preConfiguredQty = Number(material.quantity_used) || 0; // Total pre-configured
+                                        const actualQtyPerPiece = Number(quantityValue) || 0;
+                                        const totalActual = actualQtyPerPiece * batch.quantity_to_produce;
+                                        const difference = totalActual - preConfiguredQty;
                                         const availableStock = materialStocks[material.material_id] || 0;
-                                        const maxUnits = Math.floor(availableStock / Number(quantityValue));
+                                        const maxUnits = Math.floor(availableStock / actualQtyPerPiece);
                                         
-                                        return (
-                                          <div className="flex flex-col gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded border border-destructive/30">
-                                            <div className="flex items-start gap-1">
-                                              <AlertCircle className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                                              <div className="flex-1">
-                                                <div className="font-semibold">Stock insuffisant!</div>
-                                                <div className="mt-1">Requis: {totalRequired.toFixed(2)} {material.quantity_unit}</div>
-                                                <div>Disponible: {availableStock.toFixed(2)} {material.quantity_unit}</div>
-                                                {maxUnits > 0 && (
-                                                  <div className="mt-1 text-muted-foreground">
-                                                    Suggestion: Réduire à {maxUnits} unité{maxUnits > 1 ? 's' : ''}
-                                                  </div>
-                                                )}
+                                        // Show stock warning if insufficient
+                                        if (stockWarnings[material.material_id]) {
+                                          return (
+                                            <div className="flex flex-col gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded border border-destructive/30">
+                                              <div className="flex items-start gap-1">
+                                                <AlertCircle className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                                                <div className="flex-1">
+                                                  <div className="font-semibold">Stock insuffisant!</div>
+                                                  <div className="mt-1">Requis: {totalActual.toFixed(2)} {material.quantity_unit}</div>
+                                                  <div>Disponible: {availableStock.toFixed(2)} {material.quantity_unit}</div>
+                                                  {maxUnits > 0 && (
+                                                    <div className="mt-1 text-muted-foreground">
+                                                      Suggestion: Réduire à {maxUnits} unité{maxUnits > 1 ? 's' : ''}
+                                                    </div>
+                                                  )}
+                                                </div>
                                               </div>
                                             </div>
-                                          </div>
-                                        );
+                                          );
+                                        }
+                                        
+                                        // Show stock adjustment preview
+                                        if (difference !== 0 && actualQtyPerPiece > 0) {
+                                          return (
+                                            <div className={`flex flex-col gap-1 text-xs p-2 rounded border ${
+                                              difference > 0 
+                                                ? 'text-orange-700 bg-orange-50 border-orange-200 dark:text-orange-400 dark:bg-orange-950/30 dark:border-orange-800' 
+                                                : 'text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-950/30 dark:border-green-800'
+                                            }`}>
+                                              <div className="font-semibold">
+                                                {difference > 0 ? '⚠️ Déduction supplémentaire' : '✓ Réajout au stock'}
+                                              </div>
+                                              <div>Préconfiguré: {preConfiguredQty.toFixed(2)} {material.quantity_unit}</div>
+                                              <div>Réel utilisé: {totalActual.toFixed(2)} {material.quantity_unit}</div>
+                                              <div className="font-semibold mt-1 pt-1 border-t border-current/20">
+                                                {difference > 0 
+                                                  ? `Stock à déduire: ${Math.abs(difference).toFixed(2)} ${material.quantity_unit}`
+                                                  : `Stock à réajouter: ${Math.abs(difference).toFixed(2)} ${material.quantity_unit}`
+                                                }
+                                              </div>
+                                            </div>
+                                          );
+                                        }
+                                        
+                                        return null;
                                       })()}
                                     </div>
                                   )}
@@ -3635,29 +3666,60 @@ const BatchDetails = () => {
                                 <span className="text-xs text-primary/80 font-medium">
                                   Par pièce: {quantityValue} {material.quantity_unit} × {batch.quantity_to_produce} unités = {(Number(quantityValue) * batch.quantity_to_produce).toFixed(2)} {material.quantity_unit} (Total)
                                 </span>
-                                {stockWarnings[material.material_id] && (() => {
-                                  const totalRequired = Number(quantityValue) * batch.quantity_to_produce;
-                                  const availableStock = materialStocks[material.material_id] || 0;
-                                  const maxUnits = Math.floor(availableStock / Number(quantityValue));
-                                  
-                                  return (
-                                    <div className="flex flex-col gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded border border-destructive/30">
-                                      <div className="flex items-start gap-1">
-                                        <AlertCircle className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                                        <div className="flex-1">
-                                          <div className="font-semibold">Stock insuffisant!</div>
-                                          <div className="mt-1">Requis: {totalRequired.toFixed(2)} {material.quantity_unit}</div>
-                                          <div>Disponible: {availableStock.toFixed(2)} {material.quantity_unit}</div>
-                                          {maxUnits > 0 && (
-                                            <div className="mt-1 text-muted-foreground">
-                                              Suggestion: Réduire à {maxUnits} unité{maxUnits > 1 ? 's' : ''}
+                                  {(() => {
+                                    const preConfiguredQty = Number(material.quantity_used) || 0; // Total pre-configured
+                                    const actualQtyPerPiece = Number(quantityValue) || 0;
+                                    const totalActual = actualQtyPerPiece * batch.quantity_to_produce;
+                                    const difference = totalActual - preConfiguredQty;
+                                    const availableStock = materialStocks[material.material_id] || 0;
+                                    const maxUnits = Math.floor(availableStock / actualQtyPerPiece);
+                                    
+                                    // Show stock warning if insufficient
+                                    if (stockWarnings[material.material_id]) {
+                                      return (
+                                        <div className="flex flex-col gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded border border-destructive/30">
+                                          <div className="flex items-start gap-1">
+                                            <AlertCircle className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                                            <div className="flex-1">
+                                              <div className="font-semibold">Stock insuffisant!</div>
+                                              <div className="mt-1">Requis: {totalActual.toFixed(2)} {material.quantity_unit}</div>
+                                              <div>Disponible: {availableStock.toFixed(2)} {material.quantity_unit}</div>
+                                              {maxUnits > 0 && (
+                                                <div className="mt-1 text-muted-foreground">
+                                                  Suggestion: Réduire à {maxUnits} unité{maxUnits > 1 ? 's' : ''}
+                                                </div>
+                                              )}
                                             </div>
-                                          )}
+                                          </div>
                                         </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })()}
+                                      );
+                                    }
+                                    
+                                    // Show stock adjustment preview
+                                    if (difference !== 0 && actualQtyPerPiece > 0) {
+                                      return (
+                                        <div className={`flex flex-col gap-1 text-xs p-2 rounded border ${
+                                          difference > 0 
+                                            ? 'text-orange-700 bg-orange-50 border-orange-200 dark:text-orange-400 dark:bg-orange-950/30 dark:border-orange-800' 
+                                            : 'text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-950/30 dark:border-green-800'
+                                        }`}>
+                                          <div className="font-semibold">
+                                            {difference > 0 ? '⚠️ Déduction supplémentaire' : '✓ Réajout au stock'}
+                                          </div>
+                                          <div>Préconfiguré: {preConfiguredQty.toFixed(2)} {material.quantity_unit}</div>
+                                          <div>Réel utilisé: {totalActual.toFixed(2)} {material.quantity_unit}</div>
+                                          <div className="font-semibold mt-1 pt-1 border-t border-current/20">
+                                            {difference > 0 
+                                              ? `Stock à déduire: ${Math.abs(difference).toFixed(2)} ${material.quantity_unit}`
+                                              : `Stock à réajouter: ${Math.abs(difference).toFixed(2)} ${material.quantity_unit}`
+                                            }
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    return null;
+                                  })()}
                               </div>
                             )}
                           </div>

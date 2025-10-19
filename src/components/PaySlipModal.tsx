@@ -6,6 +6,7 @@ import { SalaryCalculationResult } from "@/utils/tunisianSalaryCalculator";
 import { format, getDaysInMonth, getDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useEffect, useState } from "react";
+import { pointageService } from "@/utils/pointageService";
 
 interface PaySlipModalProps {
   open: boolean;
@@ -32,8 +33,9 @@ export const PaySlipModal = ({
   const monthName = format(monthDate, "MMMM yyyy", { locale: fr });
   
   const [calculatedWorkDays, setCalculatedWorkDays] = useState<number>(providedWorkDays || 26);
+  const [unpaidAbsenceDays, setUnpaidAbsenceDays] = useState<number>(0);
 
-  // Calculate actual work days based on shift templates and sick days
+  // Calculate actual work days based on shift templates, sick days, and unpaid absences
   useEffect(() => {
     const calculateWorkDays = async () => {
       if (!month) return;
@@ -54,6 +56,12 @@ export const PaySlipModal = ({
           status: 'approved',
           date_start: startDate,
           date_end: endDate
+        });
+
+        // Get pointage records to check for unpaid absences
+        const pointageRecords = await pointageService.getPointage({
+          employee_id: employee.id,
+          month: month
         });
 
         // Count work days based on shift templates
@@ -80,12 +88,31 @@ export const PaySlipModal = ({
           }
         });
 
+        // Calculate unpaid absences from pointage
+        let unpaidDays = 0;
+        pointageRecords.forEach(record => {
+          // Check if this is an unpaid absence
+          // is_paid_leave can be boolean or number in the database
+          const isUnpaid = record.leave_type && !record.is_paid_leave;
+          if (isUnpaid) {
+            if (record.leave_duration === 'FULL') {
+              unpaidDays += 1;
+            } else if (record.leave_duration === 'AM' || record.leave_duration === 'PM') {
+              unpaidDays += 0.5;
+            } else if (record.leave_duration === 'HOURS' && record.leave_hours) {
+              unpaidDays += record.leave_hours / 8; // Assuming 8-hour workday
+            }
+          }
+        });
+
+        setUnpaidAbsenceDays(unpaidDays);
         const finalWorkDays = workDaysCount - sickDaysCount;
         setCalculatedWorkDays(finalWorkDays > 0 ? finalWorkDays : 0);
       } catch (error) {
         console.error('Error calculating work days:', error);
         // Fallback to provided or default value
         setCalculatedWorkDays(providedWorkDays || 26);
+        setUnpaidAbsenceDays(0);
       }
     };
 
@@ -113,6 +140,10 @@ export const PaySlipModal = ({
   const proratedNet = dailyRate * workDays;
   const daysNotWorked = standardWorkDays - workDays;
   const deductionAmount = dailyRate * daysNotWorked;
+  
+  // Calculate unpaid absence deduction
+  const unpaidAbsenceDeduction = dailyRate * unpaidAbsenceDays;
+  const finalNetSalary = proratedNet - unpaidAbsenceDeduction;
 
   const handlePrint = () => {
     const printContent = document.getElementById('pay-slip-content');
@@ -670,13 +701,60 @@ export const PaySlipModal = ({
                           </tr>
                           <tr style={{ background: '#fef3c7' }}>
                             <td colSpan={3} style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center', fontWeight: 'bold', fontSize: '13px', color: '#000' }}>
-                              NET FINAL À PAYER
+                              NET APRÈS PRORATA
                             </td>
                             <td colSpan={2} style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right', fontWeight: 'bold', fontSize: '13px', color: '#000' }}>
                               {proratedNet.toFixed(3)} TND
                             </td>
                           </tr>
                         </>
+                      )}
+
+                      {/* Unpaid Absences Section */}
+                      {unpaidAbsenceDays > 0 && (
+                        <>
+                          <tr style={{ background: '#fee2e2' }}>
+                            <td colSpan={5} style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'center', fontWeight: 'bold', fontSize: '11px', color: '#991b1b' }}>
+                              DÉDUCTION ABSENCES NON PAYÉES
+                            </td>
+                          </tr>
+                          <tr style={{ background: '#fef2f2' }}>
+                            <td colSpan={3} style={{ padding: '8px 12px', border: '1px solid #666', fontSize: '11px', color: '#7f1d1d' }}>
+                              Jours d'absence non payés
+                            </td>
+                            <td colSpan={2} style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'right', fontSize: '11px', color: '#7f1d1d' }}>
+                              {unpaidAbsenceDays} jours
+                            </td>
+                          </tr>
+                          <tr style={{ background: '#fef2f2' }}>
+                            <td colSpan={3} style={{ padding: '8px 12px', border: '1px solid #666', fontSize: '11px', color: '#7f1d1d' }}>
+                              Déduction ({dailyRate.toFixed(3)} × {unpaidAbsenceDays})
+                            </td>
+                            <td colSpan={2} style={{ padding: '8px 12px', border: '1px solid #666', textAlign: 'right', fontWeight: '600', fontSize: '11px', color: '#dc2626' }}>
+                              -{unpaidAbsenceDeduction.toFixed(3)}
+                            </td>
+                          </tr>
+                          <tr style={{ background: '#fee2e2' }}>
+                            <td colSpan={3} style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center', fontWeight: 'bold', fontSize: '13px', color: '#000' }}>
+                              NET FINAL À PAYER
+                            </td>
+                            <td colSpan={2} style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right', fontWeight: 'bold', fontSize: '13px', color: '#000' }}>
+                              {finalNetSalary.toFixed(3)} TND
+                            </td>
+                          </tr>
+                        </>
+                      )}
+
+                      {/* Show final net if only prorated (no unpaid) */}
+                      {isProrated && unpaidAbsenceDays === 0 && (
+                        <tr style={{ background: '#fef3c7' }}>
+                          <td colSpan={3} style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'center', fontWeight: 'bold', fontSize: '13px', color: '#000' }}>
+                            NET FINAL À PAYER
+                          </td>
+                          <td colSpan={2} style={{ padding: '10px 12px', border: '1px solid #666', textAlign: 'right', fontWeight: 'bold', fontSize: '13px', color: '#000' }}>
+                            {proratedNet.toFixed(3)} TND
+                          </td>
+                        </tr>
                       )}
                     </tbody>
                   </table>
