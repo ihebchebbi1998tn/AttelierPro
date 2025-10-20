@@ -522,8 +522,8 @@ const Employes = () => {
 
 
   return (
-    <div className="container mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
-      <div className="container mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
+    <div className="space-y-3 sm:space-y-4 md:space-y-6">
+      <div className="space-y-3 sm:space-y-4 md:space-y-6">
         <div className="flex items-start gap-2">
           <Button 
             variant="outline" 
@@ -1890,12 +1890,14 @@ const Employes = () => {
       </Dialog>
 
       {/* Absence Details Modal */}
-      <AbsenceDetailsModal
-        open={showAbsenceModal}
-        onOpenChange={setShowAbsenceModal}
-        employee={selectedEmployeeForAbsence!}
-        month={new Date().toISOString().slice(0, 7)} // Current month
-      />
+      {selectedEmployeeForAbsence && (
+        <AbsenceDetailsModal
+          open={showAbsenceModal}
+          onOpenChange={setShowAbsenceModal}
+          employee={selectedEmployeeForAbsence}
+          month={new Date().toISOString().slice(0, 7)} // Current month
+        />
+      )}
     </div>
   );
 };
