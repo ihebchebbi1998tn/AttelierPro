@@ -137,7 +137,7 @@ const ConfigurerMateriaux = () => {
     quantityPerItem: 0
   });
   
-  // Step state: 1=tissues (cat=1), 2=buttons (cat=3), 3=epaulette (cat=7), 4=cigarette (cat=6), 5=plastron (cat=5)
+  // Step state: 1=tissues (cat=1), 2=buttons (cat=3), 3=epaulette (cat=7), 4=cigarette (cat=6), 5=plastron (cat=5), 6=zip (cat=12)
   const [currentStep, setCurrentStep] = useState(1);
 
   // Helper to change step and clear search input for better UX on mobile
@@ -846,6 +846,7 @@ const ConfigurerMateriaux = () => {
     if (currentStep === 3 && materialCategoryId !== 7) return false; // epaulette
     if (currentStep === 4 && materialCategoryId !== 6) return false; // cigarette
     if (currentStep === 5 && materialCategoryId !== 5) return false; // plastron
+    if (currentStep === 6 && materialCategoryId !== 12) return false; // zip
     
     // Filter by search term - search across all relevant fields
     const matchesSearch = (material.nom || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -956,10 +957,18 @@ const ConfigurerMateriaux = () => {
               <Badge 
                 variant={currentStep === 5 ? "default" : "outline"} 
                 className={`text-[11px] md:text-sm px-1 md:px-4 py-0.5 md:py-2 ${
-                  currentStep < 4 ? 'hidden md:inline-flex' : ''
+                  currentStep < 4 || currentStep > 6 ? 'hidden md:inline-flex' : ''
                 }`}
               >
                 Étape 5: Plastron
+              </Badge>
+              <Badge 
+                variant={currentStep === 6 ? "default" : "outline"} 
+                className={`text-[11px] md:text-sm px-1 md:px-4 py-0.5 md:py-2 ${
+                  currentStep < 5 ? 'hidden md:inline-flex' : ''
+                }`}
+              >
+                Étape 6: Zip
               </Badge>
             </div>
             <div className="flex gap-2">
@@ -973,7 +982,7 @@ const ConfigurerMateriaux = () => {
                   ← Retour
                 </Button>
               )}
-              {currentStep < 5 && (
+              {currentStep < 6 && (
                 <Button 
                   onClick={() => goToStep(currentStep + 1)}
                   size="sm"
@@ -997,6 +1006,7 @@ const ConfigurerMateriaux = () => {
               {currentStep === 3 && 'Epaulette Disponibles'}
               {currentStep === 4 && 'Cigarette Disponibles'}
               {currentStep === 5 && 'Plastron Disponibles'}
+              {currentStep === 6 && 'Zip Disponibles'}
             </CardTitle>
             <div className="space-y-2 mb-4">
               <p className="text-sm text-muted-foreground">
